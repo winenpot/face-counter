@@ -1,0 +1,25 @@
+[project]
+name = "face-counter"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Vincent Law", email = "winenpot@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "pillow>=12.3.0",
+]
+
+[project.scripts]
+face-counter = "face_counter:main"
+
+[build-system]
+requires = ["uv_build>=0.12.15,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+analytics = [
+    "notebook>=7.6.2",
+    "pytorch>=1.0.2",
+]

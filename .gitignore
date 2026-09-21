@@ -1,0 +1,50 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# raw data files
+data/raw/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# --- Secrets / env ---
+.env
+.env.*
+!.env.example
+
+# --- DVC (belt-and-braces; dvc init already handles these) ---
+/.dvc/cache
+/.dvc/tmp
+/.dvc/config.local
+
+# --- Data & artifacts: let DVC own them ---
+# Don't blanket-ignore /data here. DVC writes precise
+# per-folder .gitignore entries on `dvc add` / `dvc repro`.
+
+# --- ML noise not worth versioning at all ---
+mlruns/
+wandb/
+*.log
+
+# --- IDE / OS ---
+.vscode/
+.idea/
+.DS_Store

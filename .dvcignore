@@ -1,0 +1,27 @@
+# Add patterns of files dvc should ignore, which could improve
+# the performance. Learn more at
+# https://dvc.org/doc/user-guide/dvcignore
+
+
+# .dvcignore — keep DVC from hashing/caching junk inside tracked dirs
+
+# OS / editor artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+
+# Python / notebook byproducts that end up inside data or model dirs
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Temp / partial files from download or preprocessing tools
+*.tmp
+*.part
+*.crdownload
+.~lock.*
+
+# Logs written next to outputs
+*.log
