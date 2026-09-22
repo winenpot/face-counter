@@ -9,8 +9,8 @@ Two stages, so that adding a product does not mean retraining a detector:
     shelf photo -> detector (finds every product) -> crops
                 -> identifier (names each crop)   -> counts + share of shelf
 
-See `docs/ROADMAP.md` for the full plan and `docs/PROPOSAL.md` for the original
-proposal.
+See `docs/ROADMAP.md` for the full plan, `docs/PROPOSAL.md` for the original
+proposal, and `LOGS.md` for a human-readable timeline of what's happened.
 
 ## Status: Phase 0 (foundations)
 
