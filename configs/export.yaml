@@ -1,23 +1,29 @@
 # How photos and their metadata are stored in MongoDB.
 # Adjust the field paths to match your schema (dot notation for nested fields).
+#
+# atpg.photos.files schema (confirmed by a read-only survey, 2026-09-22; see
+# docs/PHASE0_REMAINING.md §1): metadata is flattened onto the GridFS file
+# document itself, so source is "gridfs" and there is no separate metadata
+# collection to join. There is no visit_id, rep_id, city, or created_at on the
+# photo -- region comes from a location join instead (§3, not wired up yet).
 mongo:
   uri_env: MONGO_URI        # env var holding the connection string
-  database: CHANGE_ME       # e.g. field_app
-  gridfs_bucket: fs         # GridFS bucket name -> collections fs.files / fs.chunks
+  database: atpg
+  gridfs_bucket: photos     # -> collections photos.files / photos.chunks
 
 metadata:
   # Where the store / visit / date info lives:
   #   "collection" -> a separate collection whose documents reference the GridFS file id
-  #   "gridfs"     -> inside fs.files.metadata (fields below are then relative to the fs.files doc)
-  source: collection
-  collection: CHANGE_ME     # e.g. shelf_photos  (ignored when source: gridfs)
-  file_id_field: file_id    # field in that collection holding the GridFS ObjectId
+  #   "gridfs"     -> inside the fs.files document itself (fields below are
+  #                   then top-level paths on that document, e.g. "store_code")
+  source: gridfs
   fields:                   # manifest column -> path in the metadata document
-    store_id: store_id
-    visit_id: visit_id
-    taken_at: created_at
-    rep_id: user_id
-    city: city
+    store_id: store_code    # str OR int in Mongo; export.py normalises to a
+                             # trimmed string (0 stores use both types, so this
+                             # never merges two different stores)
+    taken_at: uploadDate
+    # visit_id, rep_id, city: intentionally unmapped, they do not exist on
+    # this document. Do not invent paths for them.
   query: {}                 # optional extra Mongo filter, e.g. {"deleted": false}
 
 export:

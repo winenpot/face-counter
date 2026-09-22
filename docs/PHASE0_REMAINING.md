@@ -8,31 +8,7 @@ data. Re-check them any time with:
 
 ---
 
-## 1. `configs/export.yaml` maps fields that do not exist
-
-`atpg.photos.files` is self-contained — metadata sits on the GridFS document,
-so no join is needed. Actual fields:
-
-| field | type | notes |
-| --- | --- | --- |
-| `photo_id` | str(36) | UUID, unique per photo |
-| `photo_type` | str | `shelf`, `shelf_thumb`, `sardar`, `sardar_thumb`, `contract*` |
-| `store_code` | **str OR int** | see the type trap below |
-| `filename`, `contentType`, `length`, `chunkSize`, `uploadDate` | — | standard GridFS |
-
-No `visit_id`, no `rep_id`, no `city`, no `created_at`. Region comes from the
-`location` join (§3); rep identity is not available at photo level at all.
-
-`store_code` is a string in 21,773 docs and an int in 2,361. **0 stores appear
-as both**, so normalising with `str()` is safe — but an equality filter silently
-misses the other type.
-
-- [ ] Rewrite the config: `source: gridfs`, `database: atpg`,
-      `gridfs_bucket: photos`, `store_id: store_code`, `taken_at: uploadDate`.
-      Leave `visit_id`/`rep_id` unmapped rather than inventing paths.
-- [ ] Normalise `store_code` to a trimmed string in the manifest.
-
-## 2. Export only `photo_type: shelf`
+## 1. Export only `photo_type: shelf`
 
 | photo_type | files | size | |
 | --- | --- | --- | --- |
@@ -59,7 +35,7 @@ Scale is smaller than the roadmap assumed (~20,000 photos, 60–100 GB): budget
 **~30 GB**, not 100. Uploads span 2026-07-08 → 09-22 only, so no seasonal
 variation — do not claim year-over-year drift.
 
-## 3. Join `location` for the region
+## 2. Join `location` for the region
 
 `make_splits.diverse_sample()` round-robins on `city`, which photos do not have.
 `atpg.location` has it: `code` matches `store_code`, **3,717/3,747 stores
@@ -68,14 +44,14 @@ variation — do not claim year-over-year drift.
 - [ ] Join `location.code → store_code` during export; write `region` into the
       manifest's `city` column. The 30 unmatched stores sample as `""`.
 
-## 4. Fix the test set
+## 3. Fix the test set
 
 - [ ] Run the export, then `uv run shelf-splits`. 3,292 stores in the `shelf`
       subset means a 10% holdout gives ~329 test stores — ample for 30 photos.
 - [ ] Label those 30 first, then freeze. Splits hash `store_code`, so
       re-exporting never moves a store.
 
-## 5. Data quality
+## 4. Data quality
 
 - [ ] **69 HEIC files** — Pillow drops them silently into `bad_image`. Add
       `pillow-heif` or log the loss explicitly.
@@ -86,7 +62,7 @@ variation — do not claim year-over-year drift.
       collection-scans 24k docs. Acceptable once; do not add an index to
       production without asking, and keep `throttle_seconds` on during work hours.
 
-## 6. Blocked on the business
+## 5. Blocked on the business
 
 `docs/requests.md` has the messages to send. On the critical path for stage 2.
 
@@ -97,9 +73,9 @@ variation — do not claim year-over-year drift.
 - [ ] **Labeling guide examples** — `docs/labeling_guide.md` still asks for
       three annotated screenshots. Labelers calibrate on those.
 
-## 7. Then Phase 1
+## 6. Then Phase 1
 
-Do not start until §1–§4 land; every item needs a manifest and a frozen test set.
+Do not start until §1–§3 land; every item needs a manifest and a frozen test set.
 Full list in `docs/ROADMAP.md` — train YOLO on SKU-110K, 1280px or SAHI tiling,
 pre-fill boxes in Label Studio, build the gallery from packshots (never the test
 set), embedding matcher with an `other` threshold, evaluation script.
@@ -107,6 +83,15 @@ set), embedding matcher with an `other` threshold, evaluation script.
 ---
 
 ## Done
+
+- [x] **§1: `configs/export.yaml` rewritten to the real schema.**
+      `source: gridfs`, `database: atpg`, `gridfs_bucket: photos`,
+      `store_id: store_code`, `taken_at: uploadDate`. `visit_id`/`rep_id`/`city`
+      left unmapped rather than invented. `export_photos.py` now normalises
+      `store_id` to a trimmed string regardless of whether Mongo returned str
+      or int. Verified against the live `atpg` DB with `--limit 1`; covered by
+      `test_shipped_config_is_filled_in` and
+      `test_int_store_code_normalised_to_string`.
 
 - [x] **Read-only Mongo user.** `.env` now authenticates as `read@atpg` with 0
       mutating actions (was `root` with 136 across all 20 databases). To recreate:

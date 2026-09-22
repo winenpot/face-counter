@@ -165,10 +165,14 @@ def export(cfg: dict, limit: int | None = None, db=None) -> Path:
         tmp.replace(img_dir / file_name)  # atomic: no half-written files after a crash
 
         taken_at = get_path(meta_doc, fields.get("taken_at"))
+        store_id = get_path(meta_doc, fields.get("store_id"), "")
         rows[pid] = {
             "photo_id": pid,
             "file_name": file_name,
-            "store_id": get_path(meta_doc, fields.get("store_id"), ""),
+            # store_code is a str in most atpg documents and an int in the
+            # rest (docs/PHASE0_REMAINING.md §1); normalise so every later
+            # step -- splitting, grouping, dedup -- sees one consistent type.
+            "store_id": str(store_id).strip() if store_id != "" else "",
             "visit_id": get_path(meta_doc, fields.get("visit_id"), ""),
             "taken_at": taken_at.isoformat() if isinstance(taken_at, datetime) else (taken_at or ""),
             "rep_id": get_path(meta_doc, fields.get("rep_id"), ""),

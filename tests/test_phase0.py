@@ -80,12 +80,45 @@ def test_date_filter(fake_db, tmp_path):
 
 
 def test_unedited_config_refuses_to_run(tmp_path):
-    """The shipped config must fail loudly, not export 0 photos and claim success."""
-    cfg = export_photos.load_config(DEFAULT_CONFIG)
-    cfg["export"]["out_dir"] = str(tmp_path / "raw")
+    """A config with unfilled CHANGE_ME placeholders must fail loudly, not
+    export 0 photos and claim success."""
+    cfg = {
+        "mongo": {"database": "CHANGE_ME", "gridfs_bucket": "fs"},
+        "metadata": {"source": "collection", "collection": "CHANGE_ME",
+                     "file_id_field": "file_id", "fields": {}, "query": {}},
+        "export": {"out_dir": str(tmp_path / "raw"), "batch_size": 50},
+    }
     with pytest.raises(SystemExit, match="placeholder"):
         export_photos.export(cfg)
     assert not (tmp_path / "raw" / "manifest.csv").exists()
+
+
+def test_shipped_config_is_filled_in():
+    """configs/export.yaml itself must point at the real atpg schema, not the
+    CHANGE_ME template -- regression test for docs/PHASE0_REMAINING.md §1."""
+    cfg = export_photos.load_config(DEFAULT_CONFIG)
+    assert cfg["mongo"]["database"] == "atpg"
+    assert cfg["mongo"]["gridfs_bucket"] == "photos"
+    assert cfg["metadata"]["source"] == "gridfs"
+    assert cfg["metadata"]["fields"]["store_id"] == "store_code"
+    # visit_id/rep_id/city do not exist on the photo document; must stay unmapped
+    assert set(cfg["metadata"]["fields"]) == {"store_id", "taken_at"}
+
+
+def test_int_store_code_normalised_to_string(tmp_path):
+    """atpg stores store_code as str OR int (docs/PHASE0_REMAINING.md §1);
+    the manifest must always get a trimmed string, never a raw int."""
+    import gridfs
+
+    db = mongomock.MongoClient().field_app
+    fs = gridfs.GridFS(db)
+    fid = fs.put(_jpeg((10, 20, 30)), filename="s.jpg", contentType="image/jpeg")
+    db.shelf_photos.insert_one({"file_id": fid, "store": {"id": 1939}})
+    cfg = _cfg(tmp_path)
+    cfg["metadata"]["fields"] = {"store_id": "store.id"}
+    manifest = export_photos.export(cfg, db=db)
+    row = next(iter(csv.DictReader(open(manifest))))
+    assert row["store_id"] == "1939"  # string, not "1939.0" or repr(1939)
 
 
 def test_splits_no_leakage_and_stable(fake_db, tmp_path):
