@@ -4,6 +4,11 @@ Written after probing the live database on 2026-09-22. Every number here came
 from a read-only query; nothing was written. Supersedes the guesses in
 `configs/export.yaml`, which was authored before anyone had looked at the data.
 
+**Do not take these numbers on trust** — `docs/VERIFY.md` has a read-only
+command for every claim below, and `uv run python scripts/verify_atpg_claims.py`
+re-checks them all in one go. Counts drift upward as photos arrive; the
+verifier allows growth and flags a drop.
+
 **Phase 0 is not finished.** Its exit criteria (`docs/ROADMAP.md`) are "data is
 exportable, the test set is fixed, labeling is secured, and the business side is
 gathering classes and packshots". None of the first three hold: the export
@@ -16,6 +21,8 @@ a manifest and a frozen test set.
 ---
 
 ## 0. BLOCKER — the credential in `.env` is a `root` superuser
+
+_Verify this section yourself: `docs/VERIFY.md` §4._
 
 The connection string works, but it authenticates as **`root` on `admin`**: 136
 privilege actions including `insert`, `update`, `remove`, `dropDatabase`,
