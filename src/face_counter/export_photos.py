@@ -68,19 +68,21 @@ def _parse_date(value):
     return datetime.fromisoformat(str(value))
 
 
-def load_region_map(db, cfg: dict) -> dict[str, str]:
-    """store_id (normalised string) -> region, from the location join.
+def load_join_map(db, join: dict | None) -> dict[str, str]:
+    """key_field -> value_field lookup from an aux collection.
 
-    Optional: only built if metadata.region_join is set. The photo document
-    itself has no city/region (docs/PHASE0_REMAINING.md §1); atpg.location
-    supplies it via code -> store_code (§1 of that doc, ~99% match rate).
+    Generic: used both for region_join (city) and store_join (the real store
+    identity). atpg's `store_code` on a photo is actually a per-visit
+    registration code, not a stable store id (docs/PHASE0_REMAINING.md) --
+    `atpg.location` is the only place a photo's real store identity
+    (`permanent_id`) can be recovered from that code, at ~99% match rate.
+    Optional: returns {} if join is not configured.
     """
-    join = cfg.get("metadata", {}).get("region_join")
     if not join:
         return {}
     coll = db[join["collection"]]
     key_field = join.get("key_field", "code")
-    value_field = join.get("value_field", "region")
+    value_field = join["value_field"]
     out: dict[str, str] = {}
     for doc in coll.find({key_field: {"$ne": None}}, {key_field: 1, value_field: 1}):
         key = str(get_path(doc, key_field, "")).strip()
@@ -172,7 +174,13 @@ def export(cfg: dict, limit: int | None = None, db=None) -> Path:
     fs = gridfs.GridFS(db, collection=cfg["mongo"].get("gridfs_bucket", "fs"))
     fields = cfg["metadata"].get("fields", {})
     throttle = float(cfg["export"].get("throttle_seconds", 0) or 0)
-    region_map = load_region_map(db, cfg)
+    region_map = load_join_map(db, cfg["metadata"].get("region_join"))
+    # store_join: some schemas' "store_id" field is really a per-visit
+    # registration code (atpg's store_code) -- the real, durable store
+    # identity has to be recovered through a second join. Optional: not every
+    # schema needs it (see configs/export.yaml vs. the test fixtures).
+    store_join = cfg["metadata"].get("store_join")
+    store_map = load_join_map(db, store_join)
 
     rows = load_existing(manifest_path)
     stats = {"new": 0, "skipped": 0, "missing": 0, "bad_image": 0}
@@ -211,12 +219,25 @@ def export(cfg: dict, limit: int | None = None, db=None) -> Path:
         tmp.replace(img_dir / file_name)  # atomic: no half-written files after a crash
 
         taken_at = get_path(meta_doc, fields.get("taken_at"))
-        store_id = get_path(meta_doc, fields.get("store_id"), "")
-        store_id = str(store_id).strip() if store_id != "" else ""
-        # region_map is keyed by the same normalised store_id (§1: 30 of
-        # 3,747 stores have no match and fall back to "").
+        raw_store = get_path(meta_doc, fields.get("store_id"), "")
+        raw_store = str(raw_store).strip() if raw_store != "" else ""
+        if store_join:
+            # raw_store (e.g. atpg's store_code) is a per-visit registration
+            # code, not the store's stable identity -- it IS the visit id.
+            # The real store comes from the join; unmatched codes fall back
+            # to "" rather than silently reusing the visit code as if it
+            # were a store (that would defeat the leakage guard in
+            # make_splits.py, which groups by this column).
+            store_id = store_map.get(raw_store, "")
+            visit_id = get_path(meta_doc, fields.get("visit_id"), "") or raw_store
+        else:
+            store_id = raw_store
+            visit_id = get_path(meta_doc, fields.get("visit_id"), "")
+        # region_map is keyed by the same raw per-visit code as store_join,
+        # both come from atpg.location.code (§1: 30 of 3,747 stores have no
+        # match and fall back to "").
         city = get_path(meta_doc, fields.get("city"), "") or region_map.get(
-            store_id, ""
+            raw_store, ""
         )
         rows[pid] = {
             "photo_id": pid,
@@ -225,7 +246,7 @@ def export(cfg: dict, limit: int | None = None, db=None) -> Path:
             # rest (docs/PHASE0_REMAINING.md §1); normalise so every later
             # step -- splitting, grouping, dedup -- sees one consistent type.
             "store_id": store_id,
-            "visit_id": get_path(meta_doc, fields.get("visit_id"), ""),
+            "visit_id": visit_id,
             "taken_at": taken_at.isoformat()
             if isinstance(taken_at, datetime)
             else (taken_at or ""),

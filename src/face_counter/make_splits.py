@@ -33,7 +33,14 @@ SALT = "shelf-detector-v1"  # never change: it would reshuffle which stores are 
 
 
 def group_key(row) -> str:
-    """Store is the leakage unit. Fall back to visit, then the photo itself."""
+    """Store is the leakage unit. Fall back to visit, then the photo itself.
+
+    store_id here must already be the durable store identity (atpg's
+    store_join resolves photos.files.store_code -- a per-visit registration
+    code -- through location.code -> permanent_id). Grouping on the raw
+    per-visit code instead would split by visit, not by store, and defeat
+    this guard entirely: docs/PHASE0_REMAINING.md §1.
+    """
     for col in ("store_id", "visit_id"):
         val = row.get(col)
         if isinstance(val, str) and val.strip() and val.lower() != "nan":

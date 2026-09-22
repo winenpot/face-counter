@@ -18,9 +18,9 @@ metadata:
   #                   then top-level paths on that document, e.g. "store_code")
   source: gridfs
   fields:                   # manifest column -> path in the metadata document
-    store_id: store_code    # str OR int in Mongo; export.py normalises to a
-                             # trimmed string (0 stores use both types, so this
-                             # never merges two different stores)
+    store_id: store_code    # NOT the real store id -- see store_join below.
+                             # This is the raw per-visit code; store_join
+                             # resolves it to the durable store identity.
     taken_at: uploadDate
     # visit_id, rep_id, city: intentionally unmapped, they do not exist on
     # this document. Do not invent paths for them.
@@ -31,6 +31,17 @@ metadata:
     collection: location
     key_field: code
     value_field: region
+  # `store_code` on a photo is NOT the store's identity -- it is the code
+  # issued for one registration/visit event (confirmed live: location shows
+  # one physical store under 5 different `code` values over time, 1,100/3,072
+  # stores do this). The durable store id is `permanent_id`, reachable only
+  # through this same location join. Without this, make_splits.py's by-store
+  # leakage guard actually groups by visit, so the same physical store can
+  # legally land in both train and test. docs/PHASE0_REMAINING.md §1.
+  store_join:
+    collection: location
+    key_field: code
+    value_field: permanent_id
   # Only "shelf" is trainable. "shelf_thumb" shares photo_id with "shelf" (it
   # is a downscaled copy of the same photo, not a separate one) -- exporting
   # both would put a photo and its own copy in the dataset, and if they land

@@ -168,6 +168,54 @@ def test_shipped_config_is_filled_in():
         "key_field": "code",
         "value_field": "region",
     }
+    # store_code is a per-visit registration code, not the store's identity;
+    # the real store id only exists through this same location join.
+    assert cfg["metadata"]["store_join"] == {
+        "collection": "location",
+        "key_field": "code",
+        "value_field": "permanent_id",
+    }
+
+
+def test_store_join_resolves_visit_code_to_real_store(tmp_path):
+    """store_code is a per-visit registration code, NOT the store's identity:
+    a location.code can be reissued for the same physical store over time
+    (confirmed live: one store had 5 different codes). Without the
+    store_join, make_splits.py's by-store leakage guard actually groups by
+    visit, so the same physical store can land in both train and test."""
+    import gridfs
+
+    db = mongomock.MongoClient().atpg
+    fs = gridfs.GridFS(db, collection="photos")
+    # same physical store (permanent_id "5"), two different visit codes
+    fs.put(_jpeg((1, 2, 3)), filename="v1.jpg", photo_type="shelf", store_code="256")
+    fs.put(_jpeg((4, 5, 6)), filename="v2.jpg", photo_type="shelf", store_code="1910")
+    db.location.insert_one({"code": "256", "permanent_id": "5", "region": "R1"})
+    db.location.insert_one({"code": "1910", "permanent_id": "5", "region": "R1"})
+    cfg = {
+        "mongo": {"database": "atpg", "gridfs_bucket": "photos"},
+        "metadata": {
+            "source": "gridfs",
+            "fields": {"store_id": "store_code"},
+            "query": {"photo_type": "shelf"},
+            "store_join": {
+                "collection": "location",
+                "key_field": "code",
+                "value_field": "permanent_id",
+            },
+        },
+        "export": {
+            "out_dir": str(tmp_path / "raw"),
+            "batch_size": 50,
+            "throttle_seconds": 0,
+        },
+    }
+    manifest = export_photos.export(cfg, db=db)
+    rows = list(csv.DictReader(open(manifest)))
+    # both visits resolve to the SAME store, and the raw visit code survives
+    # separately as visit_id -- this is what make_splits.py must group on.
+    assert {r["store_id"] for r in rows} == {"5"}
+    assert {r["visit_id"] for r in rows} == {"256", "1910"}
 
 
 def test_int_store_code_normalised_to_string(tmp_path):

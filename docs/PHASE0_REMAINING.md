@@ -12,8 +12,9 @@ data. Re-check them any time with:
 
 - [ ] Run the export, then `uv run shelf-splits`. 3,292 stores in the `shelf`
       subset means a 10% holdout gives ~329 test stores — ample for 30 photos.
-- [ ] Label those 30 first, then freeze. Splits hash `store_code`, so
-      re-exporting never moves a store.
+- [ ] Label those 30 first, then freeze. Splits hash the resolved `store_id`
+      (§1 of Done, below — NOT the raw `store_code`), so re-exporting never
+      moves a store.
 
 ## 2. Data quality
 
@@ -50,6 +51,40 @@ set), embedding matcher with an `other` threshold, evaluation script.
 
 ## Done
 
+- [x] **`store_code` on a photo is a per-visit registration code, NOT the
+      store's identity — corrected a bug in the two entries below.** Traced
+      from a UI mismatch (field labeled "کد ثبت"/registration code shown next
+      to "کد ثابت"/fixed code, a different number, for the same store).
+      Confirmed live: `atpg.location` shows one physical store under 5
+      different `code` values issued over time (1,100 of 3,072 stores do
+      this); `store_events` logs `action: visit_started`/`visit_resumed` per
+      `store_code`, actor = the rep. The durable store id is
+      `location.permanent_id`, reachable only through the same
+      `code -> permanent_id` join.
+
+      Impact: the manifest's `store_id` column previously held this raw
+      per-visit code. `make_splits.py`'s by-store leakage guard (its whole
+      reason to exist — "same shelf, same visit" per-store dedup) was
+      actually grouping by visit: the same physical store, visited twice,
+      got two different codes and could legally land in both train and test.
+
+      Fix: `configs/export.yaml` gained `metadata.store_join`
+      (`location.code -> permanent_id`), parallel to `region_join`.
+      `export_photos.py`'s join loader is now generic (`load_join_map`, used
+      by both). The raw per-visit code now correctly populates `visit_id`
+      (previously always empty — atpg genuinely has no other visit
+      identifier); `store_id` holds the resolved, durable store. Unmatched
+      codes fall back to `store_id: ""` rather than silently treating the
+      visit code as a store. `make_splits.group_key()` needed no logic
+      change — it already grouped by `store_id` with a `visit_id` fallback —
+      only its docstring was clarified.
+
+      Verified against the live `atpg` DB: photos sharing one visit code
+      (`store_code`) resolved to the same `store_id`, an unmatched code fell
+      back to `store_id: ""`. Covered by
+      `test_store_join_resolves_visit_code_to_real_store` and the
+      `store_join` assertion in `test_shipped_config_is_filled_in`.
+
 - [x] **HEIC files decode instead of dropping into `bad_image`.** `pillow-heif`
       added as a core dependency (not `analytics` — `shelf-export` itself needs
       it); `export_photos.py` calls `pillow_heif.register_heif_opener()` at
@@ -62,7 +97,7 @@ set), embedding matcher with an `other` threshold, evaluation script.
 
 - [x] **Location joined for the region.** `configs/export.yaml` has
       `metadata.region_join` (`location.code -> store_code`, `region` field).
-      `export_photos.load_region_map()` builds the lookup once per run;
+      `export_photos.load_join_map()` builds the lookup once per run;
       `city` falls back to `""` for unmatched stores rather than raising.
       Verified against the live `atpg` DB: 9 of 10 sampled photos got a region
       (`تهران منطقه 5`, `تهران منطقه 6`), 1 fell back to `""` — consistent with
@@ -93,8 +128,9 @@ set), embedding matcher with an `other` threshold, evaluation script.
 - [x] **`configs/export.yaml` rewritten to the real schema.**
 
       `source: gridfs`, `database: atpg`, `gridfs_bucket: photos`,
-      `store_id: store_code`, `taken_at: uploadDate`. `visit_id`/`rep_id`/`city`
-      left unmapped rather than invented. `export_photos.py` now normalises
+      `store_id: store_code`, `taken_at: uploadDate`. `rep_id`/`city`
+      left unmapped rather than invented (`visit_id` is populated via the
+      store_join fix above). `export_photos.py` now normalises the resolved
       `store_id` to a trimmed string regardless of whether Mongo returned str
       or int. Verified against the live `atpg` DB with `--limit 1`; covered by
       `test_shipped_config_is_filled_in` and
