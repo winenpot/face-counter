@@ -42,14 +42,24 @@ server-wide incident rather than a bad export.
       use admin
       db.createUser({
         user: "shelf_reader",
-        pwd: "<long random>",
+        pwd: passwordPrompt(),               // prompts; keeps it out of history
         roles: [ { role: "read", db: "atpg" } ]
       })
 
+      `read` on `atpg` covers every collection in that database, GridFS
+      included — `photos.files`, `photos.chunks` and `location` all work with
+      no extra grants. The user lives in `admin`, so the connection string
+      needs `?authSource=admin` (as in `.env.example`).
+
+      Then confirm it is actually read-only:
+
+      mongosh -u shelf_reader -p --authenticationDatabase admin
+      use atpg
+      db['photos.files'].countDocuments({})    // works
+      db['photos.files'].insertOne({x: 1})     // must fail: not authorized
+
 - [ ] **Rotate the `root` password.** It has been sitting in a `.env` on a
       developer workstation; treat it as exposed.
-- [ ] Verify the replacement is read-only before using it: re-run
-      `connectionStatus` and confirm no mutating actions are granted.
 
 Do this before the full export. A 28 GB read is exactly the kind of long job you
 do not want running as `root` against production.
