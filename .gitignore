@@ -1,26 +1,12 @@
-# Python-generated files
-__pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
-
-# Virtual environments
-.venv
-
-# Jupyter Notebook checkpoints
-.ipynb_checkpoints/
-
-# raw data files
-data/raw/
-
 # --- Python ---
 __pycache__/
 *.py[cod]
+build/
+dist/
+wheels/
+*.egg-info/
 .venv/
 venv/
-*.egg-info/
 .pytest_cache/
 .mypy_cache/
 .ipynb_checkpoints/
@@ -35,9 +21,22 @@ venv/
 /.dvc/tmp
 /.dvc/config.local
 
-# --- Data & artifacts: let DVC own them ---
+# --- Data & artifacts ---
+# Exported photos: large, and DVC owns their versioning.
+data/raw/
+# Generated from the manifest by shelf-splits / shelf-label-prep; both are
+# reproducible from data/raw + configs, so they are not worth tracking.
+data/splits/
+data/label_studio/
 # Don't blanket-ignore /data here. DVC writes precise
 # per-folder .gitignore entries on `dvc add` / `dvc repro`.
+
+# --- Model artifacts and training output ---
+# Ultralytics writes runs/<task>/<name>/weights/*.pt; weights are versioned as
+# model releases, never as git blobs.
+runs/
+*.pt
+*.onnx
 
 # --- ML noise not worth versioning at all ---
 mlruns/
