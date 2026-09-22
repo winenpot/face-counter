@@ -1,3 +1,5 @@
+Here is the revised version with Label Studio as the primary annotation tool and Roboflow/supervision as a complementary computer-vision tooling layer.
+
 ## Dataset Preparation
 
 The dataset preparation process can be organized as:
@@ -68,12 +70,14 @@ More substantial preprocessing and augmentation should be treated as a separate 
 
 Annotation converts the collected images into training targets and is likely to be one of the most significant manual components of the project.
 
-Possible tools:
+**Primary tool:**
 
-* **CVAT** — open-source, mature, and well suited to bounding-box and object-detection annotation.
-* **Label Studio** — flexible annotation platform with a modern interface.
-* **X-AnyLabeling** — useful when AI-assisted annotation is desired.
-* **Roboflow** — provides annotation, dataset management, and AI-assisted workflows, depending on deployment and licensing requirements.
+* **Label Studio** — flexible, open-source annotation platform with a modern interface and support for image/object-detection workflows.
+
+**Complementary tooling:**
+
+* **Roboflow** — useful for dataset inspection, annotation assistance, format conversion, dataset management, and model/data workflow experimentation.
+* **supervision** — a Python computer-vision toolkit that can be used alongside the annotation workflow for dataset manipulation, visualization, detection analysis, and evaluation.
 
 The annotation strategy should be determined according to the model architecture.
 
@@ -94,7 +98,7 @@ A standardized annotation format should be selected early.
 
 **COCO JSON** is a strong general-purpose choice because it supports images, bounding boxes, categories, and additional annotation metadata.
 
-Other formats can be used depending on the selected training framework, with conversion performed when necessary.
+Depending on the eventual training framework, Label Studio annotations can be exported and converted to formats such as COCO or YOLO. Roboflow can also be used as a convenient intermediate layer when dataset conversion, inspection, or augmentation becomes useful.
 
 A simple internal manifest can additionally maintain information such as:
 
@@ -128,6 +132,8 @@ Before training, automated and manual quality checks should be performed.
 * Images with zero annotations.
 * Annotation statistics.
 
+Python together with **supervision**, OpenCV, and other lightweight utilities can be used to build these checks without introducing a dedicated data-quality platform.
+
 **Visual checks:**
 
 Generate random samples with annotations rendered over the original images and inspect them manually.
@@ -137,14 +143,18 @@ For example:
 ```text
 Original Image
       ↓
-Render Annotations
+Load Label Studio Export
+      ↓
+Convert / Normalize Annotations
+      ↓
+Render Bounding Boxes
       ↓
 Random Sample Review
       ↓
 Correct / Reject / Re-annotate
 ```
 
-Simple Python tooling using Pillow, OpenCV, and Matplotlib can be sufficient for these checks initially.
+**supervision** is particularly useful here because it can provide reusable utilities for loading detection annotations, drawing detections, inspecting datasets, and producing visual diagnostics.
 
 The purpose is to catch annotation errors before they become model-training problems.
 
@@ -202,17 +212,38 @@ If the dataset becomes large, changes frequently, or needs reproducible ML exper
 
 ### Recommended Tooling
 
-A practical initial toolset could therefore be:
+| Task               | Primary Option                    | Complementary / Alternative          |
+| ------------------ | --------------------------------- | ------------------------------------ |
+| Collection         | Existing folders + Python scripts | Object storage / dedicated ingestion |
+| Image processing   | Pillow / OpenCV                   | —                                    |
+| Annotation         | **Label Studio**                  | Roboflow, X-AnyLabeling              |
+| Dataset inspection | **supervision**                   | Roboflow                             |
+| Quality checks     | Python + supervision              | Custom tooling                       |
+| Visualization      | supervision / Matplotlib / OpenCV | Roboflow                             |
+| Dataset format     | COCO JSON                         | YOLO / framework-specific formats    |
+| Splitting          | Python / scikit-learn             | Framework-specific tooling           |
+| Versioning         | Folders + manifests               | DVC                                  |
 
-| Task             | Initial Option                           | Alternatives                          |
-| ---------------- | ---------------------------------------- | ------------------------------------- |
-| Collection       | Existing folders + simple Python scripts | Object storage / dedicated ingestion  |
-| Image processing | Pillow / OpenCV                          | —                                     |
-| Annotation       | CVAT                                     | Label Studio, X-AnyLabeling, Roboflow |
-| Quality checks   | Python                                   | Great Expectations / custom tooling   |
-| Visualization    | Matplotlib / OpenCV                      | —                                     |
-| Dataset format   | COCO JSON                                | YOLO / custom JSON                    |
-| Splitting        | Python / scikit-learn                    | Framework-specific tooling            |
-| Versioning       | Folders + manifests                      | DVC                                   |
+The intended relationship between the tools is complementary rather than redundant:
 
-The guiding principle is to keep the initial data pipeline simple while preserving enough structure and metadata that the dataset can later become reproducible, auditable, and suitable for systematic model training.
+```text
+                 Label Studio
+                      │
+                Annotation
+                      │
+                      ▼
+              Exported Dataset
+                      │
+             ┌────────┴────────┐
+             ▼                 ▼
+       supervision          Roboflow
+             │                 │
+      Inspection /       Dataset tooling /
+      visualization      conversion / experimentation
+             │                 │
+             └────────┬────────┘
+                      ▼
+                Training Dataset
+```
+
+Label Studio should serve as the main human annotation environment, while **supervision** and **Roboflow** can be introduced around it for dataset inspection, visualization, conversion, experimentation, and later model-evaluation workflows. This keeps the annotation process independent from any particular model-training platform.
