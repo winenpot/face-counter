@@ -1,22 +1,48 @@
+# Label Studio — labeling web app, NOT the shelf-detector service.
+#
+# This compose file deploys the third-party annotation tool that labelers use in
+# the browser. The shelf-detector inference API (Phase 2) is a SEPARATE
+# deployment; nothing here serves or runs a model.
+#
+#   cp .env.example .env     # fill it in first — every value below is required
+#   docker compose up -d
+#
+# Reachability: ports published by Docker are inserted ahead of ufw's rules, so
+# a firewall will NOT protect this. Binding to one interface via LS_BIND_IP is
+# what actually restricts access.
+
 services:
   label-studio:
-    image: heartexlabs/label-studio:latest
-    container_name: label-studio
+    image: heartexlabs/label-studio:1.23.0
+    # No fixed container_name: a hardcoded name collides with an already-running
+    # Label Studio instance and blocks this stack from starting alongside it.
     restart: unless-stopped
     ports:
-      - "${LABEL_STUDIO_PORT:-8081}:8080"
+      # Bound to one interface, not 0.0.0.0. Use the LAN/VPN IP for office
+      # access, or 127.0.0.1 for SSH-tunnel-only.
+      - "${LS_BIND_IP:-127.0.0.1}:${LS_PORT:-8081}:8080"
     volumes:
-      - label-studio-data:/label-studio/data
+      - ls-data:/label-studio/data
+      # Photos, read-only. prepare_label_studio.py emits task URLs of the form
+      # /data/local-files/?d=raw/images/<file>, which resolve under the document
+      # root below — so this path must end at the directory CONTAINING raw/.
+      - ${SHELF_DATA_DIR:?set SHELF_DATA_DIR to the absolute path of the repo data/ dir}:/label-studio/files:ro
     environment:
-      - LABEL_STUDIO_USERNAME=${LABEL_STUDIO_USERNAME}
-      - LABEL_STUDIO_PASSWORD=${LABEL_STUDIO_PASSWORD}
-      - DJANGO_DB=default
-      - POSTGRE_NAME=${POSTGRES_DB}
-      - POSTGRE_USER=${POSTGRES_USER}
-      - POSTGRE_PASSWORD=${POSTGRES_PASSWORD}
+      # First-run admin. Label Studio creates this account on an empty database.
+      - LABEL_STUDIO_USERNAME=${LS_ADMIN_EMAIL:?set LS_ADMIN_EMAIL}
+      - LABEL_STUDIO_PASSWORD=${LS_ADMIN_PASSWORD:?set LS_ADMIN_PASSWORD}
+      # Day-1 hardening: nobody can self-register, invite links only.
       - LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK=true
+      # Serve the mounted photos. Without BOTH of these, every imported task
+      # renders a broken image.
+      - LABEL_STUDIO_LOCAL_FILES_SERVING_ENABLED=true
+      - LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT=/label-studio/files
+      - DJANGO_DB=default
       - POSTGRE_HOST=db
       - POSTGRE_PORT=5432
+      - POSTGRE_NAME=${POSTGRES_DB:-labelstudio}
+      - POSTGRE_USER=${POSTGRES_USER:-labelstudio}
+      - POSTGRE_PASSWORD=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
     mem_limit: 2g
     cpus: 2
     depends_on:
@@ -27,19 +53,33 @@ services:
     image: pgautoupgrade/pgautoupgrade:17-alpine
     restart: unless-stopped
     volumes:
-      - label-studio-db:/var/lib/postgresql/data
+      - ls-db:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-labelstudio}
+      - POSTGRES_USER=${POSTGRES_USER:-labelstudio}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    # Keep total backend memory under mem_limit. Postgres does not know about
+    # the cgroup cap: if a backend is OOM-killed the postmaster treats it as a
+    # crash and restarts the WHOLE cluster into recovery, dropping every
+    # connection and losing labelers' in-progress annotations. Ceiling here is
+    # roughly max_connections * work_mem + maintenance_work_mem + shared_buffers.
+    command: >
+      postgres
+      -c max_connections=50
+      -c shared_buffers=256MB
+      -c work_mem=8MB
+      -c maintenance_work_mem=128MB
+    # Docker's default /dev/shm is 64MB; parallel query workers fail with
+    # "could not resize shared memory segment" well before that is obvious.
+    shm_size: 256mb
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-labelstudio} -d ${POSTGRES_DB:-labelstudio}"]
       interval: 5s
       timeout: 5s
       retries: 10
-    mem_limit: 1g
+    mem_limit: 2g
     cpus: 1
 
 volumes:
-  label-studio-data:
-  label-studio-db:
+  ls-data:
+  ls-db:
