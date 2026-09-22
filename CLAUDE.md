@@ -4,29 +4,47 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-This is an early-stage project (no commits yet). The `face_counter` package is currently a stub (`src/face_counter/__init__.py` only prints a greeting from `main()`). The real substance right now is the planning docs (`docs/PROPOSAL.md`, `docs/DATASET_PREPARATION.md`) and the dataset-collection scaffolding (DVC, `data/raw/`).
+Early-stage. **Phase 0 (foundations) is implemented**; the API and inference layers are not.
 
-**Goal:** a computer-vision service that counts visible product faces in retail shelf photographs (see `docs/PROPOSAL.md` for the full design). Planned architecture: `Caddy (reverse proxy) → FastAPI → CV inference service → object-detection model (YOLO-based) → structured face-count JSON`. None of the API/inference layers exist yet — only the data pipeline is underway.
+**Goal:** a computer-vision service that counts visible product faces in retail shelf photographs and computes share of shelf. `docs/ROADMAP.md` is the operative plan (phases, architecture, MongoDB `predictions` schema, risks); `docs/PROPOSAL.md` is the earlier, broader proposal — where the two disagree, the roadmap wins.
+
+The approach is **two-stage**: a detector finds every product, then an identifier names each crop. A single 400-class detector would need ~90k hand-drawn boxes, which doesn't fit the timeline. Adding a SKU means adding reference images to the gallery, not retraining.
+
+What exists today is the data pipeline in `src/face_counter/`: export photos from MongoDB, build a manifest, split by store, prepare Label Studio. Phases 1–4 (detector, FastAPI `/count` + `/overlay`, pre-labeling loop, production) are not started.
 
 ## Commands
 
 Dependency management is via `uv` (Python 3.14, pinned in `.python-version`; `uv_build` backend).
 
-- Install dependencies: `uv sync`
-- Install the optional analytics group (notebook, pytorch): `uv sync --group analytics`
-- Run the package entry point: `uv run face-counter` (maps to `face_counter:main`)
-- Run the image-audit script: `uv run python scripts/scan_images.py [directory]` (defaults to `.`)
+- Install: `uv sync --group dev` (runtime + pytest/mongomock)
+- Optional analytics group (notebook, ultralytics): `uv sync --group analytics`
+- Run tests: `uv run pytest` — end-to-end against a fake MongoDB (mongomock + GridFS); no database or network needed
+- Phase 0 CLIs: `uv run shelf-export` → `uv run shelf-splits` → `uv run shelf-label-prep`
+- Image-audit helper: `uv run python scripts/scan_images.py [directory]`
 
-No test suite, linter, or formatter is configured yet — don't assume `pytest`/`ruff`/etc. exist until they're added to `pyproject.toml`.
+No linter or formatter is configured yet — don't assume `ruff`/etc. exists until it's in `pyproject.toml`.
+
+## Architecture notes
+
+- `src/face_counter/config.py` owns `PROJECT_ROOT` (resolved via `parents[2]` from inside `src/`) and the `DEFAULT_*` path constants. Use those constants for defaults rather than rebuilding paths, so the repo can be run from any cwd.
+- The export is **read-only and resumable** by design: it writes `.part` files and renames atomically, checkpoints the manifest every 100 photos, and skips anything already on disk. Preserve those properties — it runs against the live production MongoDB.
+- Use a read-only Mongo user. Never add a write path to the export.
+- `make_splits.py` assigns splits by a **stable hash of `store_id`** with a fixed `SALT`. Changing the salt reshuffles which stores are in test and invalidates every accuracy number ever reported; don't. Splitting by store (not by photo) is what stops near-duplicate shelf photos leaking across train/test.
+- `data/splits/test_labeling.txt` is the fixed test set and is never regenerated without `--force`.
 
 ## Data pipeline
 
-Raw images live in `data/raw/` and are **git-ignored**; DVC (`.dvc/`, `.dvcignore`) owns dataset versioning instead. `.dvc/config` currently has no remote configured — data is local-only for now.
+Raw images live in `data/raw/` and are **git-ignored**; DVC (`.dvc/`, `.dvcignore`) owns dataset versioning. `.dvc/config` has no remote configured — data is local-only for now.
 
-`docs/DATASET_PREPARATION.md` defines the intended pipeline: **Collect → Organize & Preprocess → Annotate → Validate → Split → Version**.
-- Preprocessing/QA tooling: Pillow / OpenCV.
-- Annotation format: COCO JSON, via CVAT (or Label Studio / X-AnyLabeling / Roboflow).
-- Splits should keep images from the same store/session together (no leaking near-duplicate shelf photos across train/test).
-- Dataset versions get their own manifest (image/annotation counts, split seed, class count) once versioning is formalized.
+`docs/DATASET_PREPARATION.md` defines the pipeline: **Collect → Organize & Preprocess → Annotate → Validate → Split → Version**.
+- Preprocessing/QA tooling: Pillow / OpenCV; dataset inspection via supervision.
+- Annotation: **Label Studio** is the primary tool (Roboflow/supervision are complementary). Annotation format: COCO JSON.
+- Labelers follow `docs/labeling_guide.md` — it defines what counts as a "face" (front row, label visible, ≥50% of the front face).
 
 When adding data-processing scripts, follow this doc's tool choices rather than introducing new ones (e.g. Pillow over adding a new imaging dependency).
+
+## Label Studio is a separate app
+
+`deploy/label-studio/` deploys the third-party **labeling web app** that labelers use in the browser. It is **not** this service's deployment — the shelf-detector inference API (Phase 2) will get its own. Don't conflate the two compose files.
+
+It holds company photos and is network-reachable, so: signup disabled, invite links only, port bound to one interface via `LS_BIND_IP`. Note that Docker publishes ports ahead of `ufw`, so a firewall does not restrict it. See `deploy/label-studio/README.md`.
