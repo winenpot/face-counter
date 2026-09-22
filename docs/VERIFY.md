@@ -109,10 +109,18 @@ In `mongosh`:
 After you create `shelf_reader` and point `.env` at it, this should return a
 single `read` role on `atpg`.
 
-Then prove it cannot write:
+Then prove it cannot write. Start a **new** mongosh as that user — `use`
+switches database, not user, so you cannot become `shelf_reader` from a session
+you opened as someone else:
 
-    use atpg
-    db['photos.files'].insertOne({x:1})      // must fail: not authorized
+    mongosh -u shelf_reader -p --authenticationDatabase admin
+    use atpg                              // the DATABASE, not the user
+    db.perm_test.insertOne({x: 1})        // must fail: not authorized
+
+Use a throwaway collection name, never `photos.files`. If you are still
+connected as an admin user the insert succeeds, and a document with no
+`length`/`chunkSize` sitting in the real GridFS collection can break clients
+that read it.
 
 If that insert succeeds, the new user did not get the role you meant.
 

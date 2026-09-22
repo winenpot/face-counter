@@ -51,12 +51,19 @@ server-wide incident rather than a bad export.
       no extra grants. The user lives in `admin`, so the connection string
       needs `?authSource=admin` (as in `.env.example`).
 
-      Then confirm it is actually read-only:
+      Then confirm it is actually read-only. Do this in a **new shell**,
+      logged in as the new user — `use` switches database, not user, so
+      there is no way to become `shelf_reader` from an existing session:
 
       mongosh -u shelf_reader -p --authenticationDatabase admin
-      use atpg
-      db['photos.files'].countDocuments({})    // works
-      db['photos.files'].insertOne({x: 1})     // must fail: not authorized
+      use atpg                                   // the DATABASE, not the user
+      db['photos.files'].countDocuments({})      // works
+      db.perm_test.insertOne({x: 1})             // must fail: not authorized
+
+      Write the test against a throwaway collection, never `photos.files`.
+      If you are still connected as an admin user the insert *succeeds*, and
+      a document with no `length`/`chunkSize` in the real GridFS collection
+      can break clients that read it.
 
 - [ ] **Rotate the `root` password.** It has been sitting in a `.env` on a
       developer workstation; treat it as exposed.
