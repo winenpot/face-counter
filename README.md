@@ -28,8 +28,7 @@ Studio for labelers.
 The Phase 0 tooling below runs, but it has not yet been pointed at the real
 database: `configs/export.yaml` still describes a schema the production data
 does not use, so no manifest and no fixed test set exist yet.
-`docs/PHASE0_REMAINING.md` has the actual schema and what is left, and
-`docs/VERIFY.md` has read-only commands to check every claim in it yourself.
+`docs/PHASE0_REMAINING.md` has the actual schema and what is left.
 
 ## Setup
 
