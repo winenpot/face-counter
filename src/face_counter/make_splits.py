@@ -6,10 +6,16 @@ If one lands in training and its twin in test, the accuracy numbers lie.
 Assignment is a stable hash of store_id, so re-running after new exports never moves
 an existing store to another split: the test set stays fixed forever.
 
+Labeling batches are numbered and cumulative: each run only pulls NEW train photos
+that have never appeared in any previous label_batch_*.txt. A photo already sent to
+labelers can never be re-picked into a later batch -- re-sending the same work is the
+one mistake this can't silently make, even if you re-run with different flags.
+
 Outputs (data/splits/):
-    splits.csv          photo_id, file_name, store_id, split
-    test_labeling.txt   the ~30 test photos to label first (never overwritten without --force)
-    label_batch_01.txt  ~250 diverse train photos for the first labeling round
+    splits.csv           photo_id, file_name, store_id, split
+    test_labeling.txt    the ~30 test photos to label first (never overwritten without --force)
+    label_batch_01.txt   ~250 diverse train photos for the first labeling round
+    label_batch_02.txt   the next ~250 NEW train photos (created on the next run, only if any exist)
 
 Usage:
     uv run shelf-splits
@@ -21,6 +27,7 @@ import argparse
 import hashlib
 import logging
 import random
+import re
 from collections import defaultdict
 from pathlib import Path
 
@@ -30,6 +37,7 @@ from face_counter.config import DEFAULT_MANIFEST, DEFAULT_SPLITS_DIR
 
 log = logging.getLogger("splits")
 SALT = "shelf-detector-v1"  # never change: it would reshuffle which stores are in test
+BATCH_PATTERN = re.compile(r"^label_batch_(\d+)\.txt$")
 
 
 def group_key(row) -> str:
@@ -127,14 +135,56 @@ def make_splits(manifest: Path, out_dir: Path, test_pct: int, val_pct: int,
         test_ids = diverse_sample(df[df.split == "test"], test_size, seed, max_per_group=2)
         _write_list(test_file, df, test_ids)
 
-    batch_ids = diverse_sample(df[df.split == "train"], batch_size, seed, max_per_group=3)
-    _write_list(out_dir / "label_batch_01.txt", df, batch_ids)
+    _write_next_batch(df, out_dir, batch_size, seed)
 
     summary = df.groupby("split").agg(photos=("photo_id", "count"), stores=("group", "nunique"))
     log.info("split summary:\n%s", summary.to_string())
     if (df.split == "test").sum() < test_size:
         log.warning("only %d test photos available; raise --test-pct", (df.split == "test").sum())
     return df
+
+
+def _already_sent(out_dir: Path) -> set[str]:
+    """File names that appear in any existing label_batch_*.txt.
+
+    Scanning every prior batch (not just the last one) means a photo can
+    never come back in a later batch even if an old batch file gets edited,
+    reordered, or a batch number is skipped -- the guarantee holds no matter
+    what state data/splits/ is in.
+    """
+    sent: set[str] = set()
+    for f in out_dir.glob("label_batch_*.txt"):
+        if BATCH_PATTERN.match(f.name):
+            sent.update(f.read_text(encoding="utf-8").split())
+    return sent
+
+
+def _write_next_batch(df: pd.DataFrame, out_dir: Path, batch_size: int, seed: int) -> None:
+    """Pick the next numbered label_batch_NN.txt from train photos never sent before.
+
+    Never overwrites an existing batch file, and never re-picks a photo that
+    already appears in any prior batch -- the two things that would let the
+    same photo reach a labeler twice. If nothing new is available, no file
+    is written at all rather than writing an empty or duplicate batch.
+    """
+    existing = sorted(
+        int(m.group(1))
+        for f in out_dir.glob("label_batch_*.txt")
+        if (m := BATCH_PATTERN.match(f.name))
+    )
+    next_n = (existing[-1] + 1) if existing else 1
+
+    sent = _already_sent(out_dir)
+    pool = df[(df.split == "train") & (~df.file_name.isin(sent))]
+    if pool.empty:
+        log.info(
+            "no new train photos to batch (%d already sent across %d batch file(s))",
+            len(sent), len(existing),
+        )
+        return
+
+    batch_ids = diverse_sample(pool, batch_size, seed, max_per_group=3)
+    _write_list(out_dir / f"label_batch_{next_n:02d}.txt", df, batch_ids)
 
 
 def _write_list(path: Path, df: pd.DataFrame, ids: list[str]) -> None:

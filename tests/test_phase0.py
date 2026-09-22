@@ -336,6 +336,35 @@ def test_splits_no_leakage_and_stable(fake_db, tmp_path):
     assert (out / "test_labeling.txt").read_text().split() == test_list
 
 
+def test_label_batches_never_repeat_a_photo(fake_db, tmp_path):
+    """The one mistake that can't happen: a photo already sent to labelers
+    (in any label_batch_*.txt) must never appear in a later batch, even
+    after new photos are exported and shelf-splits is re-run."""
+    cfg = _cfg(tmp_path)
+    manifest = export_photos.export(cfg, limit=60, db=fake_db)  # partial export
+    out = tmp_path / "splits"
+    make_splits.make_splits(manifest, out, 20, 10, 10, 25, seed=1, force=False)
+    batch_01 = set((out / "label_batch_01.txt").read_text().split())
+    assert len(batch_01) == 25
+
+    # new photos arrive: resume the export with no limit, pulling in the rest
+    export_photos.export(cfg, db=fake_db)
+    make_splits.make_splits(manifest, out, 20, 10, 10, 25, seed=1, force=False)
+
+    batch_files = sorted(out.glob("label_batch_*.txt"))
+    assert len(batch_files) == 2  # a real batch_02 was created from the new photos
+    # batch_01 itself must be byte-identical -- never rewritten
+    assert set(batch_files[0].read_text().split()) == batch_01
+
+    all_sent: list[str] = []
+    for f in batch_files:
+        all_sent.extend(f.read_text().split())
+    # the core guarantee: no filename appears in more than one batch file
+    assert len(all_sent) == len(set(all_sent))
+    batch_02 = set(batch_files[1].read_text().split())
+    assert batch_02.isdisjoint(batch_01)
+
+
 def test_label_studio_files(fake_db, tmp_path):
     manifest = export_photos.export(_cfg(tmp_path), db=fake_db)
     lst = tmp_path / "list.txt"

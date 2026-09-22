@@ -51,6 +51,21 @@ set), embedding matcher with an `other` threshold, evaluation script.
 
 ## Done
 
+- [x] **Labeling batches are numbered and cumulative — a photo can never be
+      sent to labelers twice.** Previously `label_batch_01.txt` was
+      unconditionally overwritten on every `shelf-splits` run, so a re-export
+      that pulled in new photos could silently swap in different photos
+      under the same filename, with no way to tell what labelers had already
+      seen. Fixed: `make_splits.py` now writes `label_batch_01.txt`,
+      `_02.txt`, ... — each run only pulls train photos that have never
+      appeared in *any* prior batch file, existing batch files are never
+      rewritten, and if nothing new is available no file is written at all.
+      Verified against the 295-photo live sample: re-running `shelf-splits`
+      with no new data correctly created `label_batch_02.txt` with the 44
+      train photos `label_batch_01.txt`'s per-group cap had left out, zero
+      overlap between the two files. Covered by
+      `test_label_batches_never_repeat_a_photo`.
+
 - [x] **`store_code` on a photo is a per-visit registration code, NOT the
       store's identity — corrected a bug in the two entries below.** Traced
       from a UI mismatch (field labeled "کد ثبت"/registration code shown next
