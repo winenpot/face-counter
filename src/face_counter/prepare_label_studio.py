@@ -6,8 +6,8 @@ The container must mount the export folder and set (see deploy/label-studio/dock
     LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT=/label-studio/files
 
 Usage:
-    python scripts/prepare_label_studio.py --list data/splits/test_labeling.txt --level sku
-    python scripts/prepare_label_studio.py --list data/splits/label_batch_01.txt --level brand
+    uv run shelf-label-prep --list data/splits/test_labeling.txt --level sku
+    uv run shelf-label-prep --list data/splits/label_batch_01.txt --level brand
 
 Then in Label Studio: create a project, paste labeling_config_<level>.xml under
 Settings > Labeling Interface > Code, and import the tasks JSON.
@@ -17,13 +17,15 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import sys
 from pathlib import Path
 from urllib.parse import quote
 from xml.sax.saxutils import quoteattr
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common import PROJECT_ROOT  # noqa: E402
+from face_counter.config import (
+    DEFAULT_CLASSES,
+    DEFAULT_LABEL_STUDIO_DIR,
+    DEFAULT_MANIFEST,
+)
 
 # Distinct, readable box colours; cycles for long class lists.
 PALETTE = ["#e6194b", "#3cb44b", "#4363d8", "#f58231", "#911eb4", "#42d4f4", "#f032e6",
@@ -86,12 +88,12 @@ def build_tasks(list_file: Path, manifest: Path, url_prefix: str) -> list[dict]:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--list", required=True, help="text file with one image file name per line")
-    ap.add_argument("--classes", default=str(PROJECT_ROOT / "configs/classes.csv"))
-    ap.add_argument("--manifest", default=str(PROJECT_ROOT / "data/raw/manifest.csv"))
+    ap.add_argument("--classes", default=str(DEFAULT_CLASSES))
+    ap.add_argument("--manifest", default=str(DEFAULT_MANIFEST))
     ap.add_argument("--level", choices=["brand", "sku"], default="sku")
     ap.add_argument("--url-prefix", default="raw/images",
                     help="image folder path relative to LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT")
-    ap.add_argument("--out-dir", default=str(PROJECT_ROOT / "data/label_studio"))
+    ap.add_argument("--out-dir", default=str(DEFAULT_LABEL_STUDIO_DIR))
     args = ap.parse_args()
 
     out = Path(args.out_dir)

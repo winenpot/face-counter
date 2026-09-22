@@ -2,7 +2,6 @@
 import csv
 import io
 import json
-import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -11,12 +10,9 @@ import mongomock.gridfs
 import pytest
 from PIL import Image
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
-
-import export_photos  # noqa: E402
-import make_splits  # noqa: E402
-import prepare_label_studio as pls  # noqa: E402
+from face_counter import export_photos, make_splits
+from face_counter import prepare_label_studio as pls
+from face_counter.config import DEFAULT_CLASSES
 
 mongomock.gridfs.enable_gridfs_integration()
 
@@ -106,12 +102,12 @@ def test_label_studio_files(fake_db, tmp_path):
     lst = tmp_path / "list.txt"
     names = [r["file_name"] for r in csv.DictReader(open(manifest))][:5]
     lst.write_text("\n".join(names))
-    classes = pls.read_classes(ROOT / "configs/classes.csv", "sku")
+    classes = pls.read_classes(DEFAULT_CLASSES, "sku")
     xml = pls.labeling_config(classes)
     from xml.dom import minidom
     xml_dom = minidom.parseString(xml)  # valid XML
     assert len(xml_dom.getElementsByTagName("Label")) == len(classes)
-    brands = [c["name"] for c in pls.read_classes(ROOT / "configs/classes.csv", "brand")]
+    brands = [c["name"] for c in pls.read_classes(DEFAULT_CLASSES, "brand")]
     assert brands == ["Kix-Max", "COMPETITOR_canned", "COMPETITOR_glass"]
     tasks = pls.build_tasks(lst, manifest, "raw/images")
     assert tasks[0]["data"]["image"].startswith("/data/local-files/?d=raw/images/")

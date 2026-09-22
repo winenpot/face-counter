@@ -1,4 +1,5 @@
 """Shared helpers: config loading, dotted-field access, Mongo connection."""
+
 from __future__ import annotations
 
 import os
@@ -7,7 +8,14 @@ from typing import Any
 
 import yaml
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+# src/face_counter/config.py -> src/face_counter -> src -> repo root
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+DEFAULT_CONFIG = PROJECT_ROOT / "configs" / "export.yaml"
+DEFAULT_CLASSES = PROJECT_ROOT / "configs" / "classes.csv"
+DEFAULT_MANIFEST = PROJECT_ROOT / "data" / "raw" / "manifest.csv"
+DEFAULT_SPLITS_DIR = PROJECT_ROOT / "data" / "splits"
+DEFAULT_LABEL_STUDIO_DIR = PROJECT_ROOT / "data" / "label_studio"
 
 
 def load_config(path: str | Path) -> dict:

@@ -4,8 +4,8 @@ Read-only and resumable: files already on disk are skipped, so the script can be
 stopped and re-run safely. Every later dataset is built from data/raw/manifest.csv.
 
 Usage:
-    python scripts/export_photos.py --config configs/export.yaml --limit 50   # dry run
-    python scripts/export_photos.py --config configs/export.yaml              # everything
+    uv run shelf-export --limit 50   # dry run
+    uv run shelf-export              # everything
 """
 from __future__ import annotations
 
@@ -14,15 +14,19 @@ import csv
 import hashlib
 import io
 import logging
-import sys
 import time
 from datetime import datetime
 from pathlib import Path
 
 from PIL import Image, ImageOps
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common import PROJECT_ROOT, get_path, load_config, mongo_client  # noqa: E402
+from face_counter.config import (
+    DEFAULT_CONFIG,
+    PROJECT_ROOT,
+    get_path,
+    load_config,
+    mongo_client,
+)
 
 log = logging.getLogger("export")
 
@@ -87,8 +91,8 @@ def load_existing(manifest_path: Path) -> dict[str, dict]:
 def export(cfg: dict, limit: int | None = None, db=None) -> Path:
     import gridfs
 
-    out_dir = PROJECT_ROOT / cfg["export"]["out_dir"] if not Path(cfg["export"]["out_dir"]).is_absolute() \
-        else Path(cfg["export"]["out_dir"])
+    configured = Path(cfg["export"]["out_dir"])
+    out_dir = configured if configured.is_absolute() else PROJECT_ROOT / configured
     img_dir = out_dir / "images"
     img_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = out_dir / "manifest.csv"
@@ -174,7 +178,7 @@ def _write_manifest(path: Path, rows: dict[str, dict]) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--config", default="configs/export.yaml")
+    ap.add_argument("--config", default=str(DEFAULT_CONFIG))
     ap.add_argument("--limit", type=int, default=None, help="export at most N new photos (for a test run)")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")

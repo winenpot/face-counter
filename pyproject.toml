@@ -1,25 +1,40 @@
 [project]
 name = "face-counter"
 version = "0.1.0"
-description = "Add your description here"
+description = "Counts visible product faces on retail shelf photos and computes share of shelf"
 readme = "README.md"
 authors = [
     { name = "Vincent Law", email = "winenpot@gmail.com" }
 ]
 requires-python = ">=3.14"
 dependencies = [
+    "pandas>=2.0",
     "pillow>=12.3.0",
+    "pymongo>=4.6",
+    "python-dotenv>=1.0",
+    "pyyaml>=6.0",
 ]
 
 [project.scripts]
 face-counter = "face_counter:main"
+shelf-export = "face_counter.export_photos:main"
+shelf-splits = "face_counter.make_splits:main"
+shelf-label-prep = "face_counter.prepare_label_studio:main"
 
 [build-system]
 requires = ["uv_build>=0.12.15,<0.13.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
+dev = [
+    "mongomock>=4.1",
+    "pytest>=8.0",
+]
 analytics = [
     "notebook>=7.6.2",
-    "pytorch>=1.0.2",
+    "ultralytics>=8.3",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

@@ -12,8 +12,8 @@ Outputs (data/splits/):
     label_batch_01.txt  ~250 diverse train photos for the first labeling round
 
 Usage:
-    python scripts/make_splits.py
-    python scripts/make_splits.py --test-pct 10 --val-pct 10 --test-size 30 --batch-size 250
+    uv run shelf-splits
+    uv run shelf-splits --test-pct 10 --val-pct 10 --test-size 30 --batch-size 250
 """
 from __future__ import annotations
 
@@ -21,14 +21,12 @@ import argparse
 import hashlib
 import logging
 import random
-import sys
 from collections import defaultdict
 from pathlib import Path
 
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common import PROJECT_ROOT  # noqa: E402
+from face_counter.config import DEFAULT_MANIFEST, DEFAULT_SPLITS_DIR
 
 log = logging.getLogger("splits")
 SALT = "shelf-detector-v1"  # never change: it would reshuffle which stores are in test
@@ -140,8 +138,8 @@ def _write_list(path: Path, df: pd.DataFrame, ids: list[str]) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--manifest", default=str(PROJECT_ROOT / "data/raw/manifest.csv"))
-    ap.add_argument("--out-dir", default=str(PROJECT_ROOT / "data/splits"))
+    ap.add_argument("--manifest", default=str(DEFAULT_MANIFEST))
+    ap.add_argument("--out-dir", default=str(DEFAULT_SPLITS_DIR))
     ap.add_argument("--test-pct", type=int, default=10, help="%% of stores held out for test")
     ap.add_argument("--val-pct", type=int, default=10, help="%% of stores held out for validation")
     ap.add_argument("--test-size", type=int, default=30, help="test photos to label first")
