@@ -1,0 +1,45 @@
+services:
+  label-studio:
+    image: heartexlabs/label-studio:latest
+    container_name: label-studio
+    restart: unless-stopped
+    ports:
+      - "${LABEL_STUDIO_PORT:-8081}:8080"
+    volumes:
+      - label-studio-data:/label-studio/data
+    environment:
+      - LABEL_STUDIO_USERNAME=${LABEL_STUDIO_USERNAME}
+      - LABEL_STUDIO_PASSWORD=${LABEL_STUDIO_PASSWORD}
+      - DJANGO_DB=default
+      - POSTGRE_NAME=${POSTGRES_DB}
+      - POSTGRE_USER=${POSTGRES_USER}
+      - POSTGRE_PASSWORD=${POSTGRES_PASSWORD}
+      - LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK=true
+      - POSTGRE_HOST=db
+      - POSTGRE_PORT=5432
+    mem_limit: 2g
+    cpus: 2
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: pgautoupgrade/pgautoupgrade:17-alpine
+    restart: unless-stopped
+    volumes:
+      - label-studio-db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    mem_limit: 1g
+    cpus: 1
+
+volumes:
+  label-studio-data:
+  label-studio-db:

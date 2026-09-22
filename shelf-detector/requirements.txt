@@ -1,0 +1,10 @@
+# Phase 0: export, splits, Label Studio prep
+pymongo>=4.6
+Pillow>=10.0
+PyYAML>=6.0
+pandas>=2.0
+python-dotenv>=1.0
+
+# dev / tests
+pytest>=8.0
+mongomock>=4.1

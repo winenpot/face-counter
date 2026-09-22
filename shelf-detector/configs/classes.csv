@@ -1,0 +1,6 @@
+class_name,brand,category,sku,is_ours
+Kix-Max_canned_blueberry,Kix-Max,canned,blueberry,1
+Kix-Max_canned_strawberry,Kix-Max,canned,strawberry,1
+Kix-Max_glass_blueberry,Kix-Max,glass,blueberry,1
+COMPETITOR_canned,COMPETITOR,canned,,0
+COMPETITOR_glass,COMPETITOR,glass,,0

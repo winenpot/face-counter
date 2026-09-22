@@ -1,0 +1,28 @@
+# How photos and their metadata are stored in MongoDB.
+# Adjust the field paths to match your schema (dot notation for nested fields).
+mongo:
+  uri_env: MONGO_URI        # env var holding the connection string
+  database: CHANGE_ME       # e.g. field_app
+  gridfs_bucket: fs         # GridFS bucket name -> collections fs.files / fs.chunks
+
+metadata:
+  # Where the store / visit / date info lives:
+  #   "collection" -> a separate collection whose documents reference the GridFS file id
+  #   "gridfs"     -> inside fs.files.metadata (fields below are then relative to the fs.files doc)
+  source: collection
+  collection: CHANGE_ME     # e.g. shelf_photos  (ignored when source: gridfs)
+  file_id_field: file_id    # field in that collection holding the GridFS ObjectId
+  fields:                   # manifest column -> path in the metadata document
+    store_id: store_id
+    visit_id: visit_id
+    taken_at: created_at
+    rep_id: user_id
+    city: city
+  query: {}                 # optional extra Mongo filter, e.g. {"deleted": false}
+
+export:
+  out_dir: data/raw
+  batch_size: 200           # docs per cursor batch
+  throttle_seconds: 0.05    # pause between files, protects the live DB during work hours
+  date_from: null           # "2026-01-01" to limit by taken_at
+  date_to: null
