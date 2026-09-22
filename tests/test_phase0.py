@@ -1,4 +1,5 @@
 """End-to-end check of Phase 0 on a fake MongoDB (mongomock + GridFS)."""
+
 import csv
 import io
 import json
@@ -32,14 +33,24 @@ def build_fake_db():
     t0 = datetime(2026, 6, 1)
     for i in range(120):
         store = f"S{i % 40:03d}"
-        fid = fs.put(_jpeg((i * 2 % 255, 100, 150)), filename=f"shelf_{i}.jpg", contentType="image/jpeg")
-        db.shelf_photos.insert_one({
-            "file_id": fid, "created_at": t0 + timedelta(days=i % 30),
-            "store": {"id": store, "city": ["Tehran", "Karaj", "Shiraz"][i % 3]},
-            "visit_id": f"{store}-v{i // 40}", "user_id": f"rep{i % 5}",
-        })
+        fid = fs.put(
+            _jpeg((i * 2 % 255, 100, 150)),
+            filename=f"shelf_{i}.jpg",
+            contentType="image/jpeg",
+        )
+        db.shelf_photos.insert_one(
+            {
+                "file_id": fid,
+                "created_at": t0 + timedelta(days=i % 30),
+                "store": {"id": store, "city": ["Tehran", "Karaj", "Shiraz"][i % 3]},
+                "visit_id": f"{store}-v{i // 40}",
+                "user_id": f"rep{i % 5}",
+            }
+        )
     # one broken upload and one dangling reference
-    db.shelf_photos.insert_one({"file_id": fs.put(b"not an image"), "store": {"id": "S999"}})
+    db.shelf_photos.insert_one(
+        {"file_id": fs.put(b"not an image"), "store": {"id": "S999"}}
+    )
     db.shelf_photos.insert_one({"file_id": None, "store": {"id": "S998"}})
     return db
 
@@ -52,10 +63,24 @@ def fake_db():
 def _cfg(tmp_path):
     return {
         "mongo": {"database": "field_app", "gridfs_bucket": "fs"},
-        "metadata": {"source": "collection", "collection": "shelf_photos", "file_id_field": "file_id",
-                     "fields": {"store_id": "store.id", "visit_id": "visit_id", "taken_at": "created_at",
-                                "rep_id": "user_id", "city": "store.city"}, "query": {}},
-        "export": {"out_dir": str(tmp_path / "raw"), "batch_size": 50, "throttle_seconds": 0},
+        "metadata": {
+            "source": "collection",
+            "collection": "shelf_photos",
+            "file_id_field": "file_id",
+            "fields": {
+                "store_id": "store.id",
+                "visit_id": "visit_id",
+                "taken_at": "created_at",
+                "rep_id": "user_id",
+                "city": "store.city",
+            },
+            "query": {},
+        },
+        "export": {
+            "out_dir": str(tmp_path / "raw"),
+            "batch_size": 50,
+            "throttle_seconds": 0,
+        },
     }
 
 
@@ -72,6 +97,31 @@ def test_export_is_complete_and_resumable(fake_db, tmp_path):
     assert not list((tmp_path / "raw/images").glob("*.part"))
 
 
+def test_heic_photo_is_exported_not_dropped(tmp_path):
+    """docs/PHASE0_REMAINING.md §2: 69 HEIC uploads were silently landing in
+    bad_image because Pillow can't decode HEIC without pillow-heif. The
+    opener is registered at import time (export_photos.py); confirm a HEIC
+    upload actually makes it into the manifest instead of being skipped."""
+    import gridfs
+    from PIL import Image
+
+    buf = io.BytesIO()
+    Image.new("RGB", (64, 48), (10, 20, 30)).save(buf, format="HEIF")
+    heic_bytes = buf.getvalue()
+
+    db = mongomock.MongoClient().field_app
+    fs = gridfs.GridFS(db)
+    fid = fs.put(heic_bytes, filename="iphone.heic", contentType="image/heic")
+    db.shelf_photos.insert_one({"file_id": fid, "store": {"id": "S001"}})
+
+    cfg = _cfg(tmp_path)
+    manifest = export_photos.export(cfg, db=db)
+    rows = list(csv.DictReader(open(manifest)))
+    assert len(rows) == 1
+    assert rows[0]["width"] == "64" and rows[0]["height"] == "48"
+    assert (tmp_path / "raw/images" / rows[0]["file_name"]).exists()
+
+
 def test_date_filter(fake_db, tmp_path):
     cfg = _cfg(tmp_path)
     cfg["export"]["date_from"] = "2026-06-21"
@@ -84,8 +134,13 @@ def test_unedited_config_refuses_to_run(tmp_path):
     export 0 photos and claim success."""
     cfg = {
         "mongo": {"database": "CHANGE_ME", "gridfs_bucket": "fs"},
-        "metadata": {"source": "collection", "collection": "CHANGE_ME",
-                     "file_id_field": "file_id", "fields": {}, "query": {}},
+        "metadata": {
+            "source": "collection",
+            "collection": "CHANGE_ME",
+            "file_id_field": "file_id",
+            "fields": {},
+            "query": {},
+        },
         "export": {"out_dir": str(tmp_path / "raw"), "batch_size": 50},
     }
     with pytest.raises(SystemExit, match="placeholder"):
@@ -109,7 +164,9 @@ def test_shipped_config_is_filled_in():
     # location.code -> store_code supplies the region photos don't have;
     # docs/PHASE0_REMAINING.md §1
     assert cfg["metadata"]["region_join"] == {
-        "collection": "location", "key_field": "code", "value_field": "region",
+        "collection": "location",
+        "key_field": "code",
+        "value_field": "region",
     }
 
 
@@ -137,13 +194,25 @@ def test_gridfs_source_respects_photo_type_query(tmp_path):
     db = mongomock.MongoClient().atpg
     fs = gridfs.GridFS(db, collection="photos")
     fs.put(_jpeg((1, 2, 3)), filename="a.jpg", photo_type="shelf", store_code="1")
-    fs.put(_jpeg((4, 5, 6)), filename="a_thumb.jpg", photo_type="shelf_thumb", store_code="1")
+    fs.put(
+        _jpeg((4, 5, 6)),
+        filename="a_thumb.jpg",
+        photo_type="shelf_thumb",
+        store_code="1",
+    )
     fs.put(_jpeg((7, 8, 9)), filename="b.jpg", photo_type="sardar", store_code="2")
     cfg = {
         "mongo": {"database": "atpg", "gridfs_bucket": "photos"},
-        "metadata": {"source": "gridfs", "fields": {"store_id": "store_code"},
-                     "query": {"photo_type": "shelf"}},
-        "export": {"out_dir": str(tmp_path / "raw"), "batch_size": 50, "throttle_seconds": 0},
+        "metadata": {
+            "source": "gridfs",
+            "fields": {"store_id": "store_code"},
+            "query": {"photo_type": "shelf"},
+        },
+        "export": {
+            "out_dir": str(tmp_path / "raw"),
+            "batch_size": 50,
+            "throttle_seconds": 0,
+        },
     }
     manifest = export_photos.export(cfg, db=db)
     rows = list(csv.DictReader(open(manifest)))
@@ -159,16 +228,33 @@ def test_region_join_fills_city(tmp_path):
 
     db = mongomock.MongoClient().atpg
     fs = gridfs.GridFS(db, collection="photos")
-    fs.put(_jpeg((1, 2, 3)), filename="matched.jpg", photo_type="shelf", store_code="1001")
-    fs.put(_jpeg((4, 5, 6)), filename="unmatched.jpg", photo_type="shelf", store_code="9999")
+    fs.put(
+        _jpeg((1, 2, 3)), filename="matched.jpg", photo_type="shelf", store_code="1001"
+    )
+    fs.put(
+        _jpeg((4, 5, 6)),
+        filename="unmatched.jpg",
+        photo_type="shelf",
+        store_code="9999",
+    )
     db.location.insert_one({"code": "1001", "region": "تهران منطقه 2"})
     cfg = {
         "mongo": {"database": "atpg", "gridfs_bucket": "photos"},
-        "metadata": {"source": "gridfs", "fields": {"store_id": "store_code"},
-                     "query": {"photo_type": "shelf"},
-                     "region_join": {"collection": "location", "key_field": "code",
-                                     "value_field": "region"}},
-        "export": {"out_dir": str(tmp_path / "raw"), "batch_size": 50, "throttle_seconds": 0},
+        "metadata": {
+            "source": "gridfs",
+            "fields": {"store_id": "store_code"},
+            "query": {"photo_type": "shelf"},
+            "region_join": {
+                "collection": "location",
+                "key_field": "code",
+                "value_field": "region",
+            },
+        },
+        "export": {
+            "out_dir": str(tmp_path / "raw"),
+            "batch_size": 50,
+            "throttle_seconds": 0,
+        },
     }
     manifest = export_photos.export(cfg, db=db)
     rows = {r["store_id"]: r for r in csv.DictReader(open(manifest))}
@@ -179,8 +265,16 @@ def test_region_join_fills_city(tmp_path):
 def test_splits_no_leakage_and_stable(fake_db, tmp_path):
     manifest = export_photos.export(_cfg(tmp_path), db=fake_db)
     out = tmp_path / "splits"
-    df = make_splits.make_splits(manifest, out, test_pct=20, val_pct=10, test_size=10,
-                                 batch_size=25, seed=1, force=False)
+    df = make_splits.make_splits(
+        manifest,
+        out,
+        test_pct=20,
+        val_pct=10,
+        test_size=10,
+        batch_size=25,
+        seed=1,
+        force=False,
+    )
     assert (df.groupby("store_id")["split"].nunique() == 1).all()
     test_list = (out / "test_labeling.txt").read_text().split()
     batch_list = (out / "label_batch_01.txt").read_text().split()
@@ -202,6 +296,7 @@ def test_label_studio_files(fake_db, tmp_path):
     classes = pls.read_classes(DEFAULT_CLASSES, "sku")
     xml = pls.labeling_config(classes)
     from xml.dom import minidom
+
     xml_dom = minidom.parseString(xml)  # valid XML
     assert len(xml_dom.getElementsByTagName("Label")) == len(classes)
     brands = [c["name"] for c in pls.read_classes(DEFAULT_CLASSES, "brand")]

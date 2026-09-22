@@ -17,8 +17,6 @@ data. Re-check them any time with:
 
 ## 2. Data quality
 
-- [ ] **69 HEIC files** — Pillow drops them silently into `bad_image`. Add
-      `pillow-heif` or log the loss explicitly.
 - [ ] **432 `(store_code, length)` collisions** — likely re-uploads; confirm the
       existing `sha256` dedupe catches them.
 - [ ] **1 photo at 7 KB** (vs 3,231 KB average) — almost certainly truncated.
@@ -51,6 +49,16 @@ set), embedding matcher with an `other` threshold, evaluation script.
 ---
 
 ## Done
+
+- [x] **HEIC files decode instead of dropping into `bad_image`.** `pillow-heif`
+      added as a core dependency (not `analytics` — `shelf-export` itself needs
+      it); `export_photos.py` calls `pillow_heif.register_heif_opener()` at
+      import time so `Image.open()` handles HEIC transparently, no extra code
+      path. Output extension is `.heif` (from the decoded `im.format`, same
+      mechanism as the existing `jpeg`→`jpg` rename). Verified against the live
+      `atpg` DB: 8 of 25 sampled photos were HEIC, all decoded, `bad_image: 0`
+      — previously these were silently dropped with no error. Covered by
+      `test_heic_photo_is_exported_not_dropped`.
 
 - [x] **Location joined for the region.** `configs/export.yaml` has
       `metadata.region_join` (`location.code -> store_code`, `region` field).

@@ -7,6 +7,7 @@ Usage:
     uv run shelf-export --limit 50   # dry run
     uv run shelf-export              # everything
 """
+
 from __future__ import annotations
 
 import argparse
@@ -19,6 +20,7 @@ from datetime import datetime
 from pathlib import Path
 
 from PIL import Image, ImageOps
+import pillow_heif
 
 from face_counter.config import (
     DEFAULT_CONFIG,
@@ -30,9 +32,25 @@ from face_counter.config import (
 
 log = logging.getLogger("export")
 
+# iPhone photos are HEIC/HEIF by default; Pillow can't read them on its own.
+# This registers a Pillow-compatible opener so Image.open() below just works
+# (docs/PHASE0_REMAINING.md §2: 69 files were silently dropped as bad_image
+# before this).
+pillow_heif.register_heif_opener()
+
 MANIFEST_COLUMNS = [
-    "photo_id", "file_name", "store_id", "visit_id", "taken_at", "rep_id", "city",
-    "width", "height", "bytes", "sha256", "exported_at",
+    "photo_id",
+    "file_name",
+    "store_id",
+    "visit_id",
+    "taken_at",
+    "rep_id",
+    "city",
+    "width",
+    "height",
+    "bytes",
+    "sha256",
+    "exported_at",
 ]
 
 
@@ -80,7 +98,10 @@ def iter_photo_records(db, cfg: dict):
     query = dict(meta.get("query") or {})
 
     date_field = fields.get("taken_at")
-    date_from, date_to = _parse_date(exp.get("date_from")), _parse_date(exp.get("date_to"))
+    date_from, date_to = (
+        _parse_date(exp.get("date_from")),
+        _parse_date(exp.get("date_to")),
+    )
     if date_field and (date_from or date_to):
         rng = {}
         if date_from:
@@ -121,7 +142,10 @@ def validate_config(cfg: dict) -> None:
     if str(cfg.get("mongo", {}).get("database", "")).strip() == "CHANGE_ME":
         placeholders.append("mongo.database")
     meta = cfg.get("metadata", {})
-    if meta.get("source", "collection") != "gridfs" and str(meta.get("collection", "")).strip() == "CHANGE_ME":
+    if (
+        meta.get("source", "collection") != "gridfs"
+        and str(meta.get("collection", "")).strip() == "CHANGE_ME"
+    ):
         placeholders.append("metadata.collection")
     if placeholders:
         raise SystemExit(
@@ -183,7 +207,7 @@ def export(cfg: dict, limit: int | None = None, db=None) -> Path:
 
         file_name = pid + _ext_for(fmt, getattr(grid_out, "filename", None))
         tmp = img_dir / (file_name + ".part")
-        tmp.write_bytes(data)          # original bytes, untouched (EXIF kept)
+        tmp.write_bytes(data)  # original bytes, untouched (EXIF kept)
         tmp.replace(img_dir / file_name)  # atomic: no half-written files after a crash
 
         taken_at = get_path(meta_doc, fields.get("taken_at"))
@@ -191,7 +215,9 @@ def export(cfg: dict, limit: int | None = None, db=None) -> Path:
         store_id = str(store_id).strip() if store_id != "" else ""
         # region_map is keyed by the same normalised store_id (§1: 30 of
         # 3,747 stores have no match and fall back to "").
-        city = get_path(meta_doc, fields.get("city"), "") or region_map.get(store_id, "")
+        city = get_path(meta_doc, fields.get("city"), "") or region_map.get(
+            store_id, ""
+        )
         rows[pid] = {
             "photo_id": pid,
             "file_name": file_name,
@@ -200,7 +226,9 @@ def export(cfg: dict, limit: int | None = None, db=None) -> Path:
             # step -- splitting, grouping, dedup -- sees one consistent type.
             "store_id": store_id,
             "visit_id": get_path(meta_doc, fields.get("visit_id"), ""),
-            "taken_at": taken_at.isoformat() if isinstance(taken_at, datetime) else (taken_at or ""),
+            "taken_at": taken_at.isoformat()
+            if isinstance(taken_at, datetime)
+            else (taken_at or ""),
             "rep_id": get_path(meta_doc, fields.get("rep_id"), ""),
             "city": city,
             "width": width,
@@ -232,11 +260,20 @@ def _write_manifest(path: Path, rows: dict[str, dict]) -> None:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     ap.add_argument("--config", default=str(DEFAULT_CONFIG))
-    ap.add_argument("--limit", type=int, default=None, help="export at most N new photos (for a test run)")
+    ap.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="export at most N new photos (for a test run)",
+    )
     args = ap.parse_args()
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s"
+    )
     export(load_config(args.config), limit=args.limit)
 
 
