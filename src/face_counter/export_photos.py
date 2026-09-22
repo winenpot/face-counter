@@ -88,8 +88,33 @@ def load_existing(manifest_path: Path) -> dict[str, dict]:
         return {row["photo_id"]: row for row in csv.DictReader(f)}
 
 
+def validate_config(cfg: dict) -> None:
+    """Fail loudly on unfilled placeholders.
+
+    Without this, an unedited configs/export.yaml queries a database and
+    collection literally named CHANGE_ME: Mongo happily returns zero documents
+    and the run reports success, leaving an empty manifest that looks like
+    "there were no photos" rather than "the config was never filled in".
+    """
+    placeholders = []
+    if str(cfg.get("mongo", {}).get("database", "")).strip() == "CHANGE_ME":
+        placeholders.append("mongo.database")
+    meta = cfg.get("metadata", {})
+    if meta.get("source", "collection") != "gridfs" and str(meta.get("collection", "")).strip() == "CHANGE_ME":
+        placeholders.append("metadata.collection")
+    if placeholders:
+        raise SystemExit(
+            "configs/export.yaml still has placeholder values for: "
+            + ", ".join(placeholders)
+            + "\nFill them in first (see README, 'Finding your field paths')."
+        )
+
+
 def export(cfg: dict, limit: int | None = None, db=None) -> Path:
     import gridfs
+
+    if db is None:
+        validate_config(cfg)
 
     configured = Path(cfg["export"]["out_dir"])
     out_dir = configured if configured.is_absolute() else PROJECT_ROOT / configured

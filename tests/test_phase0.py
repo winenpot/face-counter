@@ -12,7 +12,7 @@ from PIL import Image
 
 from face_counter import export_photos, make_splits
 from face_counter import prepare_label_studio as pls
-from face_counter.config import DEFAULT_CLASSES
+from face_counter.config import DEFAULT_CLASSES, DEFAULT_CONFIG
 
 mongomock.gridfs.enable_gridfs_integration()
 
@@ -77,6 +77,15 @@ def test_date_filter(fake_db, tmp_path):
     cfg["export"]["date_from"] = "2026-06-21"
     manifest = export_photos.export(cfg, db=fake_db)
     assert len(list(csv.DictReader(open(manifest)))) == 40  # days 20..29 x 4 photos/day
+
+
+def test_unedited_config_refuses_to_run(tmp_path):
+    """The shipped config must fail loudly, not export 0 photos and claim success."""
+    cfg = export_photos.load_config(DEFAULT_CONFIG)
+    cfg["export"]["out_dir"] = str(tmp_path / "raw")
+    with pytest.raises(SystemExit, match="placeholder"):
+        export_photos.export(cfg)
+    assert not (tmp_path / "raw" / "manifest.csv").exists()
 
 
 def test_splits_no_leakage_and_stable(fake_db, tmp_path):
