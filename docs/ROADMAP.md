@@ -84,13 +84,19 @@ Photos come in from the reps' app, results go back beside them, and corrections 
 
 By day 3: data is exportable, the test set is fixed, labeling is secured, and the business side is gathering classes and packshots.
 
-- [x] **Secure Label Studio.** Set `LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK=true`, remove unknown accounts, use strong passwords. It's on the public internet, so this comes first.
-- [ ] **Export script.** Pull photos plus metadata (store, date, rep, visit) out of MongoDB to disk, read-only, in batches.
-- [ ] **Manifest.** One CSV row per photo: id, store, visit, date, file path, image size. Every dataset later is built from it.
-- [ ] **Fixed test set.** 30 photos from stores held out of training entirely, split by store, never by random photo. Mix aisles, fridges, glare, and store types.
-- [ ] **Class list** requested from sales/analysts in `BRAND_CATEGORY_SKU` form; competitors may start as `COMPETITOR_<category>`.
+**Status (2026-09-22):** not finished. A read-only survey of the live `atpg` database
+found the export config mapping fields that do not exist there, so no manifest and no
+fixed test set exist yet. Remaining work, with the real schema and the numbers behind
+it, is in [`PHASE0_REMAINING.md`](PHASE0_REMAINING.md).
+Checkboxes below: `[x]` done · `[~]` partly done, see the note · `[ ]` not started.
+
+- [~] **Secure Label Studio.** Set `LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK=true`, remove unknown accounts, use strong passwords. It's on the public internet, so this comes first. — *the running instance was hardened by hand, but the committed `deploy/label-studio/` could not reproduce it (would not start; published on `0.0.0.0`; no photo mount). The compose file is fixed now; the live instance still needs to be migrated onto it, and its member list re-checked.*
+- [ ] **Export script.** Pull photos plus metadata (store, date, rep, visit) out of MongoDB to disk, read-only, in batches. — *written, but `configs/export.yaml` points at a schema this database does not have, and the credential in use is `root`, not a read-only user.*
+- [ ] **Manifest.** One CSV row per photo: id, store, visit, date, file path, image size. Every dataset later is built from it. — *blocked on the export; note `visit_id`, `rep_id` and `city` do not exist on the photos, so those columns will be empty or must come from the `location` join.*
+- [ ] **Fixed test set.** 30 photos from stores held out of training entirely, split by store, never by random photo. Mix aisles, fridges, glare, and store types. — *feasible: 3,292 stores in the usable `shelf` subset.*
+- [ ] **Class list** requested from sales/analysts in `BRAND_CATEGORY_SKU` form; competitors may start as `COMPETITOR_<category>`. — *`configs/classes.csv` is still the `Kix-Max` template.*
 - [ ] **Packshots** requested from marketing: 2–5 images per SKU, ours first, competitors where available.
-- [ ] **Labeling guide,** one page: what counts as a face (front row only, visible label), partly hidden products, fridge glass, and 3 annotated example photos.
+- [~] **Labeling guide,** one page: what counts as a face (front row only, visible label), partly hidden products, fridge glass, and 3 annotated example photos. — *written (`labeling_guide.md`); the 3 annotated examples are still a placeholder.*
 
 ## Phase 1 — Working pipeline (days 4–10)
 

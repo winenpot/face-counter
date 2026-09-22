@@ -1,11 +1,17 @@
-# Phase 1 TODO — from a read-only survey of `atpg`
+# Phase 0 — what is left, from a read-only survey of `atpg`
 
 Written after probing the live database on 2026-09-22. Every number here came
 from a read-only query; nothing was written. Supersedes the guesses in
 `configs/export.yaml`, which was authored before anyone had looked at the data.
 
-Phase 1 target (from `docs/ROADMAP.md`): a script that turns a photo into SKU
-counts end to end, with accuracy measured on a fixed test set.
+**Phase 0 is not finished.** Its exit criteria (`docs/ROADMAP.md`) are "data is
+exportable, the test set is fixed, labeling is secured, and the business side is
+gathering classes and packshots". None of the first three hold: the export
+config maps fields that do not exist in this database, no manifest has been
+built, and no test set has been fixed. Sections 0–5 below are the remaining
+Phase 0 work. Section 6 is the Phase 1 hand-off, listed only so the ordering is
+visible — do not start it until §1–§4 land, because every item in it depends on
+a manifest and a frozen test set.
 
 ---
 
@@ -44,6 +50,8 @@ do not want running as `root` against production.
 ---
 
 ## 1. Correct `configs/export.yaml` to the real schema
+
+_Roadmap Phase 0: **Export script**_
 
 The shipped config is wrong in every field — it assumes a separate metadata
 collection referencing GridFS by `file_id`. The reality:
@@ -89,6 +97,8 @@ filtering `{"store_code": "1939"}` silently misses the int-typed docs.
 
 ## 2. Export only `photo_type: shelf` — the thumbnails are the same photos
 
+_Roadmap Phase 0: **Export script**, **Manifest**_
+
 | photo_type | files | size | what it is |
 | --- | --- | --- | --- |
 | `shelf` | **9,207** | **28.4 GB** | full-size shelf photography ← train on this |
@@ -124,6 +134,8 @@ thumbnails and non-shelf types.
 
 ## 3. Enrich stores from `location` for diverse sampling
 
+_Roadmap Phase 0: **Manifest**, **Fixed test set**_
+
 `make_splits.diverse_sample()` round-robins across `city` to spread the test set
 — but `city` does not exist on the photo. It does exist one join away:
 
@@ -141,6 +153,8 @@ stores match (99.2%)**, codes are unique (0 map to multiple locations), covering
 
 ## 4. Fix the test set before any training
 
+_Roadmap Phase 0: **Fixed test set**_
+
 - [ ] Run the export, then `uv run shelf-splits`. With 3,292 stores in the
       `shelf` subset, a 10% store holdout gives ~329 test stores — far more than
       the 30 photos needed, so the fixed test set is comfortably feasible.
@@ -153,6 +167,8 @@ stores match (99.2%)**, codes are unique (0 map to multiple locations), covering
 ---
 
 ## 5. Data-quality issues to handle in the export
+
+_Roadmap Phase 0: **Export script**_
 
 - [ ] **HEIC (69 files).** Pillow cannot open HEIC without `pillow-heif`. Today
       `export_photos.py` catches the failure and counts it under `bad_image`, so
@@ -170,9 +186,34 @@ stores match (99.2%)**, codes are unique (0 map to multiple locations), covering
 
 ---
 
-## 6. Then the actual Phase 1 modelling work
+## 6. Blocked on the business — chase these in parallel
 
-Unchanged from the roadmap, unblocked once the above lands:
+_Roadmap Phase 0: **Class list**, **Packshots**, **Labeling guide**_
+
+These do not depend on any of the above and are on the critical path for stage 2
+(the identifier). `docs/requests.md` has the messages to send.
+
+- [ ] **Class list.** `configs/classes.csv` is still the `Kix-Max` placeholder
+      template. Stage 2 cannot be built against it, and
+      `prepare_label_studio.py` will happily generate a labeling config full of
+      fictional products if nobody notices.
+- [ ] **Packshots**, 2–5 per SKU, for the reference gallery.
+- [ ] **Labeling guide examples.** `docs/labeling_guide.md` is written, but its
+      "Examples" section is still a placeholder asking for three annotated
+      screenshots (an aisle, a fridge with glare, a crowded small shop). Labelers
+      calibrate on those, so the guide is not finished without them.
+
+The roadmap notes the fallback if these slip: start with a brand-level gallery
+and `COMPETITOR_<category>` classes.
+
+---
+
+## 7. Phase 1 hand-off — do not start until §1–§4 land
+
+_Roadmap Phase 1: **Working pipeline (days 4–10)**_
+
+Listed for ordering only. Every item depends on a manifest and a frozen test
+set:
 
 - [ ] Train YOLO on SKU-110K (or licensed published weights); eyeball recall on
       10 of our photos.
@@ -183,7 +224,3 @@ Unchanged from the roadmap, unblocked once the above lands:
 - [ ] Embedding matcher (DINOv2/CLIP) with an `other` threshold.
 - [ ] Evaluation script: per-brand count error, share-of-shelf error, detector
       recall.
-
-**Still missing from the business** (Phase 0 items never closed): the real
-`configs/classes.csv` — it is still the `Kix-Max` template — and the packshots.
-Stage 2 cannot be built without them. `docs/requests.md` has the messages to send.

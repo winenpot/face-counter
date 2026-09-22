@@ -20,10 +20,15 @@ Studio for labelers.
 
 | Phase | What | State |
 | --- | --- | --- |
-| 0 | Export, manifest, fixed test set, labeling setup | code here, see below |
+| 0 | Export, manifest, fixed test set, labeling setup | **in progress** — see `docs/PHASE0_REMAINING.md` |
 | 1 | SKU-110K detector, reference gallery, embedding matcher | not started |
 | 2 | FastAPI `/count`, `/overlay`, `/health` in Docker | not started |
 | 3 | Pre-labeling loop, fine-tuning, MLflow, DVC remote | not started |
+
+The Phase 0 tooling below runs, but it has not yet been pointed at the real
+database: `configs/export.yaml` still describes a schema the production data
+does not use, so no manifest and no fixed test set exist yet.
+`docs/PHASE0_REMAINING.md` has the actual schema and what is left.
 
 ## Setup
 

@@ -10,7 +10,7 @@ Early-stage. **Phase 0 (foundations) is implemented**; the API and inference lay
 
 The approach is **two-stage**: a detector finds every product, then an identifier names each crop. A single 400-class detector would need ~90k hand-drawn boxes, which doesn't fit the timeline. Adding a SKU means adding reference images to the gallery, not retraining.
 
-What exists today is the data pipeline in `src/face_counter/`: export photos from MongoDB, build a manifest, split by store, prepare Label Studio. Phases 1–4 (detector, FastAPI `/count` + `/overlay`, pre-labeling loop, production) are not started.
+What exists today is the data pipeline in `src/face_counter/`: export photos from MongoDB, build a manifest, split by store, prepare Label Studio. **Phase 0 is not yet complete** — the tooling runs, but `configs/export.yaml` still describes a schema the production database does not use, so no manifest and no fixed test set exist. `docs/PHASE0_REMAINING.md` records the real `atpg` schema (from a read-only survey) and the remaining work; read it before touching the export. Phases 1–4 (detector, FastAPI `/count` + `/overlay`, pre-labeling loop, production) are not started.
 
 ## Commands
 
