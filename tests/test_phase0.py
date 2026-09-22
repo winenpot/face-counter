@@ -13,7 +13,7 @@ from PIL import Image
 
 from face_counter import export_photos, make_splits
 from face_counter import prepare_label_studio as pls
-from face_counter.config import DEFAULT_CLASSES, DEFAULT_CONFIG
+from face_counter.config import DEFAULT_CONFIG
 
 mongomock.gridfs.enable_gridfs_integration()
 
@@ -370,13 +370,27 @@ def test_label_studio_files(fake_db, tmp_path):
     lst = tmp_path / "list.txt"
     names = [r["file_name"] for r in csv.DictReader(open(manifest))][:5]
     lst.write_text("\n".join(names))
-    classes = pls.read_classes(DEFAULT_CLASSES, "sku")
+
+    # Own fixture, independent of whatever real class list is currently
+    # shipped in configs/classes.csv -- that file is regenerated from a
+    # real (gitignored) sales invoice and its exact contents are not
+    # something this test should depend on.
+    classes_csv = tmp_path / "classes.csv"
+    classes_csv.write_text(
+        "class_name,brand,category,sku,is_ours\n"
+        "Kix-Max_canned_blueberry,Kix-Max,canned,blueberry,1\n"
+        "Kix-Max_canned_strawberry,Kix-Max,canned,strawberry,1\n"
+        "Kix-Max_glass_blueberry,Kix-Max,glass,blueberry,1\n"
+        "COMPETITOR_canned,COMPETITOR,canned,,0\n"
+        "COMPETITOR_glass,COMPETITOR,glass,,0\n"
+    )
+    classes = pls.read_classes(classes_csv, "sku")
     xml = pls.labeling_config(classes)
     from xml.dom import minidom
 
     xml_dom = minidom.parseString(xml)  # valid XML
     assert len(xml_dom.getElementsByTagName("Label")) == len(classes)
-    brands = [c["name"] for c in pls.read_classes(DEFAULT_CLASSES, "brand")]
+    brands = [c["name"] for c in pls.read_classes(classes_csv, "brand")]
     assert brands == ["Kix-Max", "COMPETITOR_canned", "COMPETITOR_glass"]
     tasks = pls.build_tasks(lst, manifest, "raw/images")
     assert tasks[0]["data"]["image"].startswith("/data/local-files/?d=raw/images/")

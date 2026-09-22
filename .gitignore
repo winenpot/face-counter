@@ -16,6 +16,16 @@ venv/
 .env.*
 !.env.example
 
+# --- Company-confidential source documents (never commit) ---
+# Sales/export invoices etc. used as input to build configs/classes.csv --
+# contain pricing and customer/buyer data. The derived classes.csv (product
+# names only) is fine to commit; the source spreadsheet never is.
+configs/*.xlsm
+configs/*.xlsx
+# Packshots: real product photography, and the set is incomplete/evolving.
+# Once complete, move to DVC like data/raw rather than committing to git.
+configs/Product/
+
 # --- DVC (belt-and-braces; dvc init already handles these) ---
 /.dvc/cache
 /.dvc/tmp

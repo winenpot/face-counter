@@ -33,10 +33,9 @@ data. Re-check them any time with:
       `photo_type` from `shelf`. If yes the corpus roughly doubles (add it to
       the export query); if it's storefront/banner photography it stays out.
       This is a business call, not a data one.
-- [ ] **Class list** — `configs/classes.csv` is still the `Kix-Max` template.
-      `prepare_label_studio.py` will generate a config full of fictional
-      products if nobody notices.
-- [ ] **Packshots**, 2–5 per SKU, for the reference gallery.
+- [~] **Packshots**, 2–5 per SKU, for the reference gallery. — *a first batch
+      landed in `configs/Product/` (Kixmax, Torsh-X); gitignored, not yet
+      complete — see the note under Done below.*
 - [ ] **Labeling guide examples** — `docs/labeling_guide.md` still asks for
       three annotated screenshots. Labelers calibrate on those.
 
@@ -50,6 +49,29 @@ set), embedding matcher with an `other` threshold, evaluation script.
 ---
 
 ## Done
+
+- [x] **Class list built from the real sales export invoice, not the
+      `Kix-Max` template.** `scripts/build_classes.py` reads only the
+      "Product Description" column of the company's proforma invoice
+      (`.xlsm`, never pricing/customer data, never committed — see the note
+      below) and collapses wholesale packaging variants (Middle Box, Card
+      board, Dispenser Box — B2B case types, invisible on a shelf) into one
+      class per shelf-visible product, while keeping real visual differences
+      (Can vs Glass, each flavor) as separate classes. `configs/classes.csv`
+      now has 103 real classes across 9 brands (Kix-Max, TorshX, Picola,
+      My-Milk, Kix, Biskett, Tommy-Joy, Bomb), all `is_ours=1` — this
+      invoice has no competitor rows. Heuristic text parsing on free-form
+      invoice descriptions; expect some rough edges (e.g. two rows fell back
+      to `..._unspecified` sku with no flavor word matched) — worth a human
+      skim before labelers rely on it. Re-run any time a newer invoice
+      arrives: `uv run python scripts/build_classes.py <path-to-.xlsm>`.
+      Covered by `tests/test_build_classes.py` (packaging collapse, Can/Glass
+      split, brand canonicalisation, flavor-order-independent dedup).
+
+      **The source `.xlsm` and `configs/Product/` (packshots) are gitignored
+      — company pricing, a real customer name/country, and product
+      photography.** Only the derived `classes.csv` (product names only) is
+      committed. See `.gitignore` for the exact rule.
 
 - [x] **Labeling batches are numbered and cumulative — a photo can never be
       sent to labelers twice.** Previously `label_batch_01.txt` was

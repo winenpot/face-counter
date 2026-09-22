@@ -59,6 +59,12 @@ refuses to run while it still holds `CHANGE_ME` placeholders.
     uv run shelf-label-prep --list data/splits/test_labeling.txt  --level sku
     uv run shelf-label-prep --list data/splits/label_batch_01.txt --level brand
 
+`configs/classes.csv` drives the labeling config; `shelf-label-prep` refuses
+to run meaningfully without a real one. Build it from a sales/export invoice
+(never committed -- see `.gitignore`) rather than hand-editing:
+
+    uv run python scripts/build_classes.py <path-to-invoice.xlsm>
+
 **Empty `store_id` values in the manifest mean the field mapping is wrong.**
 Fix it before splitting: without a store, photos of the same shelf can land on
 both sides of the train/test line and the accuracy numbers will lie. The split
