@@ -8,34 +8,7 @@ data. Re-check them any time with:
 
 ---
 
-## 1. Export only `photo_type: shelf`
-
-| photo_type | files | size | |
-| --- | --- | --- | --- |
-| `shelf` | **9,207** | **28.4 GB** | train on this |
-| `shelf_thumb` | 7,750 | 0.2 GB | same photos, downscaled |
-| `sardar` | 3,790 | 13.3 GB | different purpose — ask the business |
-| `sardar_thumb` / `contract*` | 3,406 | 0.1 GB | ignore |
-
-`shelf` and `shelf_thumb` **share `photo_id`**, so exporting both puts a photo
-and its own copy in the dataset — test-set leakage if they land in different
-splits. Confirm in mongosh:
-
-    db['photos.files'].aggregate([
-      {$group: {_id:'$photo_id', types:{$addToSet:'$photo_type'}}},
-      {$match: {types:{$all:['shelf','shelf_thumb']}}},
-      {$count: 'duplicated'}
-    ])
-
-- [ ] Add `query: {"photo_type": "shelf"}` to the export config.
-- [ ] Ask whether `sardar` is shelf photography. If yes the corpus roughly
-      doubles; if it is storefront/banner photography it stays out.
-
-Scale is smaller than the roadmap assumed (~20,000 photos, 60–100 GB): budget
-**~30 GB**, not 100. Uploads span 2026-07-08 → 09-22 only, so no seasonal
-variation — do not claim year-over-year drift.
-
-## 2. Join `location` for the region
+## 1. Join `location` for the region
 
 `make_splits.diverse_sample()` round-robins on `city`, which photos do not have.
 `atpg.location` has it: `code` matches `store_code`, **3,717/3,747 stores
@@ -44,14 +17,14 @@ variation — do not claim year-over-year drift.
 - [ ] Join `location.code → store_code` during export; write `region` into the
       manifest's `city` column. The 30 unmatched stores sample as `""`.
 
-## 3. Fix the test set
+## 2. Fix the test set
 
 - [ ] Run the export, then `uv run shelf-splits`. 3,292 stores in the `shelf`
       subset means a 10% holdout gives ~329 test stores — ample for 30 photos.
 - [ ] Label those 30 first, then freeze. Splits hash `store_code`, so
       re-exporting never moves a store.
 
-## 4. Data quality
+## 3. Data quality
 
 - [ ] **69 HEIC files** — Pillow drops them silently into `bad_image`. Add
       `pillow-heif` or log the loss explicitly.
@@ -62,10 +35,14 @@ variation — do not claim year-over-year drift.
       collection-scans 24k docs. Acceptable once; do not add an index to
       production without asking, and keep `throttle_seconds` on during work hours.
 
-## 5. Blocked on the business
+## 4. Blocked on the business
 
 `docs/requests.md` has the messages to send. On the critical path for stage 2.
 
+- [ ] **Is `sardar` shelf photography?** 3,790 files, 13.3 GB, a distinct
+      `photo_type` from `shelf`. If yes the corpus roughly doubles (add it to
+      the export query); if it's storefront/banner photography it stays out.
+      This is a business call, not a data one.
 - [ ] **Class list** — `configs/classes.csv` is still the `Kix-Max` template.
       `prepare_label_studio.py` will generate a config full of fictional
       products if nobody notices.
@@ -73,9 +50,9 @@ variation — do not claim year-over-year drift.
 - [ ] **Labeling guide examples** — `docs/labeling_guide.md` still asks for
       three annotated screenshots. Labelers calibrate on those.
 
-## 6. Then Phase 1
+## 5. Then Phase 1
 
-Do not start until §1–§3 land; every item needs a manifest and a frozen test set.
+Do not start until §1–§2 land; every item needs a manifest and a frozen test set.
 Full list in `docs/ROADMAP.md` — train YOLO on SKU-110K, 1280px or SAHI tiling,
 pre-fill boxes in Label Studio, build the gallery from packshots (never the test
 set), embedding matcher with an `other` threshold, evaluation script.
@@ -84,7 +61,29 @@ set), embedding matcher with an `other` threshold, evaluation script.
 
 ## Done
 
+- [x] **§2: export filtered to `photo_type: shelf`.** `configs/export.yaml`'s
+      `metadata.query` is now `{"photo_type": "shelf"}`. Verified against the
+      live `atpg` DB — a 5-doc sample returned only `shelf`. Covered by
+      `test_gridfs_source_respects_photo_type_query` and the query assertion in
+      `test_shipped_config_is_filled_in`.
+
+      `shelf` and `shelf_thumb` **share `photo_id`** — the thumb is a
+      downscaled copy of the same photo, not a separate one — so this filter
+      is what prevents a photo and its own copy landing in different splits
+      (test-set leakage). Scale is smaller than the roadmap assumed (~20,000
+      photos, 60–100 GB): budget **~30 GB**, not 100. Uploads span
+      2026-07-08 → 09-22 only, so no seasonal variation — do not claim
+      year-over-year drift.
+
+      Still open: whether `sardar` (13.3 GB, 3,790 photos) is shelf
+      photography — a business call, tracked in §4.
+
+      Also surfaced while testing: 8 of 13 candidate docs in one live sample
+      failed to decode as images. Overlaps §3 (data quality); not investigated
+      further here.
+
 - [x] **§1: `configs/export.yaml` rewritten to the real schema.**
+
       `source: gridfs`, `database: atpg`, `gridfs_bucket: photos`,
       `store_id: store_code`, `taken_at: uploadDate`. `visit_id`/`rep_id`/`city`
       left unmapped rather than invented. `export_photos.py` now normalises

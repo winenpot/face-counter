@@ -103,6 +103,9 @@ def test_shipped_config_is_filled_in():
     assert cfg["metadata"]["fields"]["store_id"] == "store_code"
     # visit_id/rep_id/city do not exist on the photo document; must stay unmapped
     assert set(cfg["metadata"]["fields"]) == {"store_id", "taken_at"}
+    # only "shelf" is trainable -- shelf_thumb duplicates it, sardar is a
+    # different subject; docs/PHASE0_REMAINING.md §2
+    assert cfg["metadata"]["query"] == {"photo_type": "shelf"}
 
 
 def test_int_store_code_normalised_to_string(tmp_path):
@@ -119,6 +122,28 @@ def test_int_store_code_normalised_to_string(tmp_path):
     manifest = export_photos.export(cfg, db=db)
     row = next(iter(csv.DictReader(open(manifest))))
     assert row["store_id"] == "1939"  # string, not "1939.0" or repr(1939)
+
+
+def test_gridfs_source_respects_photo_type_query(tmp_path):
+    """docs/PHASE0_REMAINING.md §2: exporting must only pull photo_type=shelf,
+    never shelf_thumb (a downscaled copy of the same photo) or other types."""
+    import gridfs
+
+    db = mongomock.MongoClient().atpg
+    fs = gridfs.GridFS(db, collection="photos")
+    fs.put(_jpeg((1, 2, 3)), filename="a.jpg", photo_type="shelf", store_code="1")
+    fs.put(_jpeg((4, 5, 6)), filename="a_thumb.jpg", photo_type="shelf_thumb", store_code="1")
+    fs.put(_jpeg((7, 8, 9)), filename="b.jpg", photo_type="sardar", store_code="2")
+    cfg = {
+        "mongo": {"database": "atpg", "gridfs_bucket": "photos"},
+        "metadata": {"source": "gridfs", "fields": {"store_id": "store_code"},
+                     "query": {"photo_type": "shelf"}},
+        "export": {"out_dir": str(tmp_path / "raw"), "batch_size": 50, "throttle_seconds": 0},
+    }
+    manifest = export_photos.export(cfg, db=db)
+    rows = list(csv.DictReader(open(manifest)))
+    assert len(rows) == 1
+    assert rows[0]["store_id"] == "1"
 
 
 def test_splits_no_leakage_and_stable(fake_db, tmp_path):
