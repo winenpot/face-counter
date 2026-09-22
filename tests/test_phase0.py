@@ -106,6 +106,11 @@ def test_shipped_config_is_filled_in():
     # only "shelf" is trainable -- shelf_thumb duplicates it, sardar is a
     # different subject; docs/PHASE0_REMAINING.md §2
     assert cfg["metadata"]["query"] == {"photo_type": "shelf"}
+    # location.code -> store_code supplies the region photos don't have;
+    # docs/PHASE0_REMAINING.md §1
+    assert cfg["metadata"]["region_join"] == {
+        "collection": "location", "key_field": "code", "value_field": "region",
+    }
 
 
 def test_int_store_code_normalised_to_string(tmp_path):
@@ -144,6 +149,31 @@ def test_gridfs_source_respects_photo_type_query(tmp_path):
     rows = list(csv.DictReader(open(manifest)))
     assert len(rows) == 1
     assert rows[0]["store_id"] == "1"
+
+
+def test_region_join_fills_city(tmp_path):
+    """docs/PHASE0_REMAINING.md §1: photos have no city/region field; it must
+    come from a location.code -> store_code join, with unmatched stores
+    falling back to '' rather than raising."""
+    import gridfs
+
+    db = mongomock.MongoClient().atpg
+    fs = gridfs.GridFS(db, collection="photos")
+    fs.put(_jpeg((1, 2, 3)), filename="matched.jpg", photo_type="shelf", store_code="1001")
+    fs.put(_jpeg((4, 5, 6)), filename="unmatched.jpg", photo_type="shelf", store_code="9999")
+    db.location.insert_one({"code": "1001", "region": "تهران منطقه 2"})
+    cfg = {
+        "mongo": {"database": "atpg", "gridfs_bucket": "photos"},
+        "metadata": {"source": "gridfs", "fields": {"store_id": "store_code"},
+                     "query": {"photo_type": "shelf"},
+                     "region_join": {"collection": "location", "key_field": "code",
+                                     "value_field": "region"}},
+        "export": {"out_dir": str(tmp_path / "raw"), "batch_size": 50, "throttle_seconds": 0},
+    }
+    manifest = export_photos.export(cfg, db=db)
+    rows = {r["store_id"]: r for r in csv.DictReader(open(manifest))}
+    assert rows["1001"]["city"] == "تهران منطقه 2"
+    assert rows["9999"]["city"] == ""  # unmatched store: falls back, doesn't raise
 
 
 def test_splits_no_leakage_and_stable(fake_db, tmp_path):

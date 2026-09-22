@@ -24,6 +24,13 @@ metadata:
     taken_at: uploadDate
     # visit_id, rep_id, city: intentionally unmapped, they do not exist on
     # this document. Do not invent paths for them.
+  # location.code matches store_code for 3,717/3,747 stores (99.2%); the
+  # unmatched 30 fall back to city: "" and split fine, just with no region
+  # to diversify against. docs/PHASE0_REMAINING.md §1.
+  region_join:
+    collection: location
+    key_field: code
+    value_field: region
   # Only "shelf" is trainable. "shelf_thumb" shares photo_id with "shelf" (it
   # is a downscaled copy of the same photo, not a separate one) -- exporting
   # both would put a photo and its own copy in the dataset, and if they land

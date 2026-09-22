@@ -8,23 +8,14 @@ data. Re-check them any time with:
 
 ---
 
-## 1. Join `location` for the region
-
-`make_splits.diverse_sample()` round-robins on `city`, which photos do not have.
-`atpg.location` has it: `code` matches `store_code`, **3,717/3,747 stores
-(99.2%)**, 16 regions.
-
-- [ ] Join `location.code → store_code` during export; write `region` into the
-      manifest's `city` column. The 30 unmatched stores sample as `""`.
-
-## 2. Fix the test set
+## 1. Fix the test set
 
 - [ ] Run the export, then `uv run shelf-splits`. 3,292 stores in the `shelf`
       subset means a 10% holdout gives ~329 test stores — ample for 30 photos.
 - [ ] Label those 30 first, then freeze. Splits hash `store_code`, so
       re-exporting never moves a store.
 
-## 3. Data quality
+## 2. Data quality
 
 - [ ] **69 HEIC files** — Pillow drops them silently into `bad_image`. Add
       `pillow-heif` or log the loss explicitly.
@@ -35,7 +26,7 @@ data. Re-check them any time with:
       collection-scans 24k docs. Acceptable once; do not add an index to
       production without asking, and keep `throttle_seconds` on during work hours.
 
-## 4. Blocked on the business
+## 3. Blocked on the business
 
 `docs/requests.md` has the messages to send. On the critical path for stage 2.
 
@@ -50,9 +41,9 @@ data. Re-check them any time with:
 - [ ] **Labeling guide examples** — `docs/labeling_guide.md` still asks for
       three annotated screenshots. Labelers calibrate on those.
 
-## 5. Then Phase 1
+## 4. Then Phase 1
 
-Do not start until §1–§2 land; every item needs a manifest and a frozen test set.
+Do not start until §1 lands; every item needs a manifest and a frozen test set.
 Full list in `docs/ROADMAP.md` — train YOLO on SKU-110K, 1280px or SAHI tiling,
 pre-fill boxes in Label Studio, build the gallery from packshots (never the test
 set), embedding matcher with an `other` threshold, evaluation script.
@@ -61,7 +52,16 @@ set), embedding matcher with an `other` threshold, evaluation script.
 
 ## Done
 
-- [x] **§2: export filtered to `photo_type: shelf`.** `configs/export.yaml`'s
+- [x] **Location joined for the region.** `configs/export.yaml` has
+      `metadata.region_join` (`location.code -> store_code`, `region` field).
+      `export_photos.load_region_map()` builds the lookup once per run;
+      `city` falls back to `""` for unmatched stores rather than raising.
+      Verified against the live `atpg` DB: 9 of 10 sampled photos got a region
+      (`تهران منطقه 5`, `تهران منطقه 6`), 1 fell back to `""` — consistent with
+      the ~99% match rate. Covered by `test_region_join_fills_city` and the
+      `region_join` assertion in `test_shipped_config_is_filled_in`.
+
+- [x] **Export filtered to `photo_type: shelf`.** `configs/export.yaml`'s
       `metadata.query` is now `{"photo_type": "shelf"}`. Verified against the
       live `atpg` DB — a 5-doc sample returned only `shelf`. Covered by
       `test_gridfs_source_respects_photo_type_query` and the query assertion in
@@ -76,13 +76,13 @@ set), embedding matcher with an `other` threshold, evaluation script.
       year-over-year drift.
 
       Still open: whether `sardar` (13.3 GB, 3,790 photos) is shelf
-      photography — a business call, tracked in §4.
+      photography — a business call, tracked in §3.
 
       Also surfaced while testing: 8 of 13 candidate docs in one live sample
-      failed to decode as images. Overlaps §3 (data quality); not investigated
+      failed to decode as images. Overlaps §2 (data quality); not investigated
       further here.
 
-- [x] **§1: `configs/export.yaml` rewritten to the real schema.**
+- [x] **`configs/export.yaml` rewritten to the real schema.**
 
       `source: gridfs`, `database: atpg`, `gridfs_bucket: photos`,
       `store_id: store_code`, `taken_at: uploadDate`. `visit_id`/`rep_id`/`city`

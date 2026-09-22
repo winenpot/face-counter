@@ -50,6 +50,27 @@ def _parse_date(value):
     return datetime.fromisoformat(str(value))
 
 
+def load_region_map(db, cfg: dict) -> dict[str, str]:
+    """store_id (normalised string) -> region, from the location join.
+
+    Optional: only built if metadata.region_join is set. The photo document
+    itself has no city/region (docs/PHASE0_REMAINING.md §1); atpg.location
+    supplies it via code -> store_code (§1 of that doc, ~99% match rate).
+    """
+    join = cfg.get("metadata", {}).get("region_join")
+    if not join:
+        return {}
+    coll = db[join["collection"]]
+    key_field = join.get("key_field", "code")
+    value_field = join.get("value_field", "region")
+    out: dict[str, str] = {}
+    for doc in coll.find({key_field: {"$ne": None}}, {key_field: 1, value_field: 1}):
+        key = str(get_path(doc, key_field, "")).strip()
+        if key:
+            out[key] = get_path(doc, value_field, "") or ""
+    return out
+
+
 def iter_photo_records(db, cfg: dict):
     """Yield (file_id, metadata_doc) pairs according to the metadata source in the config."""
     meta = cfg["metadata"]
@@ -127,6 +148,7 @@ def export(cfg: dict, limit: int | None = None, db=None) -> Path:
     fs = gridfs.GridFS(db, collection=cfg["mongo"].get("gridfs_bucket", "fs"))
     fields = cfg["metadata"].get("fields", {})
     throttle = float(cfg["export"].get("throttle_seconds", 0) or 0)
+    region_map = load_region_map(db, cfg)
 
     rows = load_existing(manifest_path)
     stats = {"new": 0, "skipped": 0, "missing": 0, "bad_image": 0}
@@ -166,17 +188,21 @@ def export(cfg: dict, limit: int | None = None, db=None) -> Path:
 
         taken_at = get_path(meta_doc, fields.get("taken_at"))
         store_id = get_path(meta_doc, fields.get("store_id"), "")
+        store_id = str(store_id).strip() if store_id != "" else ""
+        # region_map is keyed by the same normalised store_id (§1: 30 of
+        # 3,747 stores have no match and fall back to "").
+        city = get_path(meta_doc, fields.get("city"), "") or region_map.get(store_id, "")
         rows[pid] = {
             "photo_id": pid,
             "file_name": file_name,
             # store_code is a str in most atpg documents and an int in the
             # rest (docs/PHASE0_REMAINING.md §1); normalise so every later
             # step -- splitting, grouping, dedup -- sees one consistent type.
-            "store_id": str(store_id).strip() if store_id != "" else "",
+            "store_id": store_id,
             "visit_id": get_path(meta_doc, fields.get("visit_id"), ""),
             "taken_at": taken_at.isoformat() if isinstance(taken_at, datetime) else (taken_at or ""),
             "rep_id": get_path(meta_doc, fields.get("rep_id"), ""),
-            "city": get_path(meta_doc, fields.get("city"), ""),
+            "city": city,
             "width": width,
             "height": height,
             "bytes": len(data),
