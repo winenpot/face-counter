@@ -32,7 +32,12 @@ WHOLESALE_PACKAGING = [
 CONTAINER_CATEGORY = [
     (r"\bglass\b", "glass"),
     (r"\bcan\b", "canned"),
-    (r"carbonated (soft drink|energy drink)", "canned"),  # can, unless "Glass" matched above first
+    # NOTE: do not default bare "Carbonated Soft/Energy Drink" text to a
+    # container -- some brands' invoice rows never say Can/Glass at all
+    # (confirmed via the invoice's own embedded packshots: TorshX's
+    # "Carbonated Soft Drink" rows are glass bottles, no can variant
+    # exists in this invoice) and guessing wrong here silently mislabels
+    # the shelf-visible container, which the identifier stage depends on.
 ]
 
 BRAND_CANON = {
@@ -93,6 +98,13 @@ def guess_category(desc: str) -> str:
     for pattern, category in CONTAINER_CATEGORY:
         if re.search(pattern, low):
             return category
+    if "carbonated" in low and ("soft drink" in low or "energy drink" in low):
+        # Container not stated in the text (no Can/Glass word) -- confirmed
+        # via the invoice's own packshots these are glass bottles, but not
+        # every brand's bottle looks the same, so keep it a distinct
+        # category rather than merging into "glass" and asserting a shape
+        # we haven't actually looked at for every brand.
+        return "bottle"
     if "chewing gum" in low:
         return "gum"
     if "ice-pop" in low:

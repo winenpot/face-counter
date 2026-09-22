@@ -22,6 +22,7 @@ venv/
 # names only) is fine to commit; the source spreadsheet never is.
 configs/*.xlsm
 configs/*.xlsx
+configs/.~lock.*
 # Packshots: real product photography, and the set is incomplete/evolving.
 # Once complete, move to DVC like data/raw rather than committing to git.
 configs/Product/

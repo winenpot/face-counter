@@ -33,9 +33,17 @@ data. Re-check them any time with:
       `photo_type` from `shelf`. If yes the corpus roughly doubles (add it to
       the export query); if it's storefront/banner photography it stays out.
       This is a business call, not a data one.
-- [~] **Packshots**, 2–5 per SKU, for the reference gallery. — *a first batch
-      landed in `configs/Product/` (Kixmax, Torsh-X); gitignored, not yet
-      complete — see the note under Done below.*
+- [~] **Packshots**, 2–5 per SKU, for the reference gallery. — *242 images
+      extracted from the invoice's own embedded "Image" column into
+      `configs/Product/from_invoice/` (see `scripts/extract_invoice_packshots.py`),
+      one per class_name, matching the same brand/category/sku parsing as
+      `classes.csv` — so the two stay in lockstep. Gitignored like the rest
+      of `configs/Product/`. Not a substitute for real marketing packshots
+      (these are invoice thumbnails, small and inconsistent framing — one
+      spot-checked case showed a multi-flavor carton photo for a
+      single-flavor sku) but enough to unblock a first embedding-gallery
+      experiment in Phase 1. Still incomplete/first-batch — marketing's
+      proper packshots remain the ask in `docs/requests.md`.*
 - [ ] **Labeling guide examples** — `docs/labeling_guide.md` still asks for
       three annotated screenshots. Labelers calibrate on those.
 
