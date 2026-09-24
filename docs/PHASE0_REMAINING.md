@@ -29,10 +29,10 @@ data. Re-check them any time with:
 
 `docs/requests.md` has the messages to send. On the critical path for stage 2.
 
-- [ ] **Is `sardar` shelf photography?** 3,790 files, 13.3 GB, a distinct
-      `photo_type` from `shelf`. If yes the corpus roughly doubles (add it to
-      the export query); if it's storefront/banner photography it stays out.
-      This is a business call, not a data one.
+- [x] **Is `sardar` shelf photography? No — confirmed 2026-09-24.** Front-of-store
+      photos, not shelf photos. Stays excluded; `configs/export.yaml`'s existing
+      `photo_type: shelf` filter is already correct as shipped, no export change
+      needed. Corpus stays at ~9,200 photos / ~28 GB, not the ~doubled estimate.
 - [~] **Packshots**, 2–5 per SKU, for the reference gallery. — *242 images
       extracted from the invoice's own embedded "Image" column into
       `configs/Product/from_invoice/` (see `scripts/extract_invoice_packshots.py`),
@@ -44,8 +44,17 @@ data. Re-check them any time with:
       single-flavor sku) but enough to unblock a first embedding-gallery
       experiment in Phase 1. Still incomplete/first-batch — marketing's
       proper packshots remain the ask in `docs/requests.md`.*
-- [ ] **Labeling guide examples** — `docs/labeling_guide.md` still asks for
-      three annotated screenshots. Labelers calibrate on those.
+
+      *Checked 2026-09-24: `configs/Product/Kixmax/` and `configs/Product/Torsh-X/`
+      also hold real marketing photos (35 files), but they only cover 2 of 8
+      brands, are partial even there (no gum/sour-candy shots for Kix-Max, no
+      sour-candy for Torsh-X), and are named by flavor only — not `class_name`
+      — so nothing in the pipeline maps them to a class yet. Not a substitute
+      for `from_invoice/`; would need renaming/curation before use. Does not
+      close this item.*
+- [~] **Labeling guide examples** — `docs/labeling_guide.md` still asks for
+      three annotated screenshots. In progress (owner working on it 2026-09-24);
+      not blocking the rest of §1/§4.
 
 ## 4. Then Phase 1
 
@@ -198,4 +207,7 @@ set), embedding matcher with an `other` threshold, evaluation script.
       `photos.files`.
 
 - [ ] **Rotate the `root` password.** It sat in a workstation `.env`; treat it
-      as exposed.
+      as exposed. **Deferred by user decision, 2026-09-24** — not blocking
+      Phase 0 close-out; not forgotten. The read-only `read@atpg` user is
+      already in use for the export, so the exposed root credential is not
+      on the active path, just outstanding cleanup.

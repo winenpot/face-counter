@@ -46,7 +46,8 @@ metadata:
   # is a downscaled copy of the same photo, not a separate one) -- exporting
   # both would put a photo and its own copy in the dataset, and if they land
   # in different splits that's test-set leakage. "sardar" is a different
-  # photo_type entirely; ask the business before including it (§2).
+  # photo_type entirely -- confirmed 2026-09-24 it's front-of-store, not
+  # shelf, photography; stays excluded (docs/PHASE0_REMAINING.md §3).
   query: {"photo_type": "shelf"}
 
 export:
