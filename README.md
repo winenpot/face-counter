@@ -123,9 +123,19 @@ Allowed lowercase types: `feat`, `fix`, `refactor`, `docs`, `test`, `ci`,
 `chore`, `style`, `build`, `perf`, `security`, `wip`, `deps`, `config`,
 `revert`. The optional scope starts with a lowercase letter or digit and may
 also contain `.`, `_`, `/`, and `-`. A description is required; the body is
-unrestricted. No gitmoji prefix is required (unlike the sibling `merchant`
-repo's hook this one is adapted from) — this repo's own history is plain
-Conventional Commits, so the hook enforces what's already the convention here.
+unrestricted in content but capped in length (below). No gitmoji prefix is
+required (unlike the sibling `merchant` repo's hook this one is adapted
+from) — this repo's own history is plain Conventional Commits, so the hook
+enforces what's already the convention here.
+
+**Length caps, against AI-generated "slop" messages** (a multi-paragraph
+essay with a dozen bullet points for a one-line change): subject max 72
+chars (git's own convention — fits one line in `git log --oneline`), body
+max 20 non-blank lines, each body line max 100 chars. A commit message is a
+pointer for a human skimming `git log`, not a design doc — put real detail
+in code comments, `docs/`, or the PR description instead. The rare commit
+that genuinely needs more: `git commit --no-verify` bypasses the hook
+deliberately; don't loosen the caps for everyone to fit one long commit.
 
 The versioned `.githooks/commit-msg` hook rejects invalid subjects without
 changing them. It requires `python3` on PATH, no third-party packages. Enable

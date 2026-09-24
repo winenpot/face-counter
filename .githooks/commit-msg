@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
-"""Require Conventional Commit subjects (stdlib only).
+"""Require Conventional Commit subjects, and cap message length (stdlib only).
 
 No gitmoji requirement, unlike the sibling merchant repo's hook this is
 adapted from: this repo's actual history (see `git log`) is plain
 Conventional Commits, so the hook enforces what's already the convention
 here instead of retroactively imposing a different one.
+
+The length caps exist to push back on AI-generated "slop" commit messages:
+a multi-paragraph essay with a dozen bullet points for a one-line change.
+A commit message is a pointer for a human skimming `git log`, not a design
+doc -- put real detail in code comments, docs/, or the PR description
+instead. `git commit --no-verify` bypasses this deliberately, for the rare
+commit that really does need more (e.g. this repo's own migration commits
+with verification details) -- use it, don't loosen the cap for everyone.
 """
 
 import re
@@ -18,6 +26,11 @@ TYPES = (
 SUBJECT = re.compile(
     rf"(?:{'|'.join(TYPES)})(?:\([a-z0-9][a-z0-9._/-]*\))?!?: \S(?:.*\S)?"
 )
+
+SUBJECT_MAX_LEN = 72      # git's own convention: fits one terminal line in `git log --oneline`
+BODY_LINE_MAX_LEN = 100   # a wrapped paragraph, not an unwrapped essay line
+BODY_MAX_LINES = 20       # ~20 lines of body is already generous for "why", not "everything"
+
 HELP = (
     "Invalid commit subject: require a conventional type and a description.\n"
     "Format: <type>[(scope)][!]: <description>\n"
@@ -37,9 +50,49 @@ def main():
     except (OSError, UnicodeError):
         print("Cannot read UTF-8 commit message file.", file=sys.stderr)
         return 1
+
     if not lines or SUBJECT.fullmatch(lines[0]) is None:
         print(HELP, file=sys.stderr)
         return 1
+
+    if len(lines[0]) > SUBJECT_MAX_LEN:
+        print(
+            f"Commit subject is {len(lines[0])} chars, max is {SUBJECT_MAX_LEN}.\n"
+            "Keep the subject to one line, one thought; move detail to the body.\n"
+            "See README.md: Commit messages.",
+            file=sys.stderr,
+        )
+        return 1
+
+    # Body = everything after the mandatory blank line at lines[1], per git convention.
+    body = [l for l in lines[2:] if not l.startswith("#")]  # drop git's comment lines
+    if len(body) > 1 and lines[1].strip():
+        print(
+            "Line 2 must be blank -- git convention separates subject from body.",
+            file=sys.stderr,
+        )
+        return 1
+
+    non_blank_body = [l for l in body if l.strip()]
+    if len(non_blank_body) > BODY_MAX_LINES:
+        print(
+            f"Commit body is {len(non_blank_body)} lines, max is {BODY_MAX_LINES}.\n"
+            "This is a pointer for `git log`, not a design doc -- trim it, and put\n"
+            "real detail in code comments, docs/, or the PR description instead.\n"
+            "Use `git commit --no-verify` for the rare commit that genuinely needs more.",
+            file=sys.stderr,
+        )
+        return 1
+
+    too_long = [l for l in body if len(l) > BODY_LINE_MAX_LEN]
+    if too_long:
+        print(
+            f"{len(too_long)} body line(s) exceed {BODY_LINE_MAX_LEN} chars -- wrap them.\n"
+            "Longest: " + str(max(len(l) for l in too_long)) + " chars.",
+            file=sys.stderr,
+        )
+        return 1
+
     return 0
 
 
