@@ -21,7 +21,7 @@ from pathlib import Path
 from urllib.parse import quote
 from xml.sax.saxutils import quoteattr
 
-from face_counter.config import (
+from face_counter.utils.config import (
     DEFAULT_CLASSES,
     DEFAULT_LABEL_STUDIO_DIR,
     DEFAULT_MANIFEST,

@@ -33,7 +33,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from face_counter.config import DEFAULT_MANIFEST, DEFAULT_SPLITS_DIR
+from face_counter.utils.config import DEFAULT_MANIFEST, DEFAULT_SPLITS_DIR
 
 log = logging.getLogger("splits")
 SALT = "shelf-detector-v1"  # never change: it would reshuffle which stores are in test

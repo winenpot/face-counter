@@ -106,13 +106,14 @@ to send for the class list and packshots.
 
     configs/        export.yaml (EDIT FIRST), classes.csv (class list template)
     src/face_counter/
-      config.py             paths, config loading, Mongo connection
-      export_photos.py      GridFS -> data/raw/images + manifest.csv
-      make_splits.py        train/val/test by store + photo lists to label first
-      prepare_label_studio.py   labeling config XML + task JSON
+      utils/config.py               paths, config loading, Mongo connection
+      training/export_photos.py     GridFS -> data/raw/images + manifest.csv
+      label_studio/make_splits.py            train/val/test by store + photo lists to label first
+      label_studio/prepare_label_studio.py   labeling config XML + task JSON
+      serving/                      placeholder for the future inference API (Phase 2)
     deploy/label-studio/    Label Studio (third-party labeling app) deployment
     docs/           ROADMAP, PROPOSAL, DATASET_PREPARATION, labeling_guide, requests
-    scripts/        scan_images.py, a standalone image audit helper
+    scripts/        scan_images.py, a standalone image audit helper; sync_to_hemin.sh, sync_from_hemin.sh
     tests/          end-to-end tests on a fake MongoDB
     data/           git-ignored; DVC owns dataset versioning
 

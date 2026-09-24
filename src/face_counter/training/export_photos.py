@@ -22,7 +22,7 @@ from pathlib import Path
 from PIL import Image, ImageOps
 import pillow_heif
 
-from face_counter.config import (
+from face_counter.utils.config import (
     DEFAULT_CONFIG,
     PROJECT_ROOT,
     get_path,

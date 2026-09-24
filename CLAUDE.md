@@ -10,7 +10,7 @@ Early-stage. **Phase 0 (foundations) is implemented**; the API and inference lay
 
 The approach is **two-stage**: a detector finds every product, then an identifier names each crop. A single 400-class detector would need ~90k hand-drawn boxes, which doesn't fit the timeline. Adding a SKU means adding reference images to the gallery, not retraining.
 
-What exists today is the data pipeline in `src/face_counter/`: export photos from MongoDB, build a manifest, split by store, prepare Label Studio. **Phase 0 is not yet complete** — the tooling runs, but `configs/export.yaml` still describes a schema the production database does not use, so no manifest and no fixed test set exist. `docs/PHASE0_REMAINING.md` records the real `atpg` schema (from a read-only survey) and the remaining work; read it before touching the export. Phases 1–4 (detector, FastAPI `/count` + `/overlay`, pre-labeling loop, production) are not started.
+What exists today is the data pipeline in `src/face_counter/`: export photos from MongoDB, build a manifest, split by store, prepare Label Studio. The package is organized by deployment role — `training/` (export, run on the GPU box), `label_studio/` (splits + labeling prep, run here), `serving/` (placeholder for the future inference API), `utils/` (shared config/path helpers used by all of them) — so `scripts/sync_to_hemin.sh` / `scripts/sync_from_hemin.sh` can sync code one-way per direction without shipping the other side's concerns (code changes still belong in git, not rsync — see the comments in those scripts). **Phase 0 is not yet complete** — the tooling runs, but `configs/export.yaml` still describes a schema the production database does not use, so no manifest and no fixed test set exist. `docs/PHASE0_REMAINING.md` records the real `atpg` schema (from a read-only survey) and the remaining work; read it before touching the export. Phases 1–4 (detector, FastAPI `/count` + `/overlay`, pre-labeling loop, production) are not started.
 
 ## Commands
 
@@ -26,7 +26,7 @@ No linter or formatter is configured yet — don't assume `ruff`/etc. exists unt
 
 ## Architecture notes
 
-- `src/face_counter/config.py` owns `PROJECT_ROOT` (resolved via `parents[2]` from inside `src/`) and the `DEFAULT_*` path constants. Use those constants for defaults rather than rebuilding paths, so the repo can be run from any cwd.
+- `src/face_counter/utils/config.py` owns `PROJECT_ROOT` (resolved via `parents[3]` from inside `src/face_counter/utils/`) and the `DEFAULT_*` path constants. Use those constants for defaults rather than rebuilding paths, so the repo can be run from any cwd.
 - The export is **read-only and resumable** by design: it writes `.part` files and renames atomically, checkpoints the manifest every 100 photos, and skips anything already on disk. Preserve those properties — it runs against the live production MongoDB.
 - Use a read-only Mongo user. Never add a write path to the export.
 - `make_splits.py` assigns splits by a **stable hash of `store_id`** with a fixed `SALT`. Changing the salt reshuffles which stores are in test and invalidates every accuracy number ever reported; don't. Splitting by store (not by photo) is what stops near-duplicate shelf photos leaking across train/test.

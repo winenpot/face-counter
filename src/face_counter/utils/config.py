@@ -8,8 +8,8 @@ from typing import Any
 
 import yaml
 
-# src/face_counter/config.py -> src/face_counter -> src -> repo root
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+# src/face_counter/utils/config.py -> utils -> face_counter -> src -> repo root
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 DEFAULT_CONFIG = PROJECT_ROOT / "configs" / "export.yaml"
 DEFAULT_CLASSES = PROJECT_ROOT / "configs" / "classes.csv"

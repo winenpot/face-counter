@@ -11,9 +11,10 @@ import mongomock.gridfs
 import pytest
 from PIL import Image
 
-from face_counter import export_photos, make_splits
-from face_counter import prepare_label_studio as pls
-from face_counter.config import DEFAULT_CONFIG
+from face_counter.training import export_photos
+from face_counter.label_studio import make_splits
+from face_counter.label_studio import prepare_label_studio as pls
+from face_counter.utils.config import DEFAULT_CONFIG
 
 mongomock.gridfs.enable_gridfs_integration()
 
