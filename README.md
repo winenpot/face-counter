@@ -22,7 +22,7 @@ Studio for labelers.
 | --- | --- | --- |
 | 0 | Export, manifest, fixed test set, labeling setup | **in progress** — see `docs/PHASE0_REMAINING.md` |
 | 1 | SKU-110K detector, reference gallery, embedding matcher | not started |
-| 2 | FastAPI `/count`, `/overlay`, `/health` in Docker | not started |
+| 2 | FastAPI `/count`, `/overlay`, `/health` in Docker | not started — this repo will be its launchpad too, same as Label Studio: `deploy/serving/` (planned), compose-driven, `src/face_counter/serving/` already reserved |
 | 3 | Pre-labeling loop, fine-tuning, MLflow, DVC remote | not started |
 
 The Phase 0 tooling below runs, but it has not yet been pointed at the real
@@ -93,7 +93,11 @@ full run still belongs outside working hours.
 
 Label Studio is a **separate web app** used by labelers — not part of this
 service. Its deployment lives in `deploy/label-studio/` and is documented in
-`deploy/label-studio/README.md`.
+`deploy/label-studio/README.md`. This repo is the single source of truth for
+it: edit the compose file here, `rsync` to the server, `docker compose up -d`
+there — never hand-edit the live config without syncing the change back into
+git first. The same pattern is planned for the Phase 2 FastAPI inference
+service once it exists (`deploy/serving/`, not built yet).
 
 Label the **test set first** (`test_labeling.txt`, 30 photos); it must stay
 fixed. Splits are a stable hash of `store_id`, so re-running after new exports

@@ -38,11 +38,47 @@ MongoDB's data volume lives here, on a disk separate from apps server's root.
 
 ## Label Studio deployment
 
-`deploy/label-studio/docker-compose.yml` in this repo is a **hardened
-reference copy**, downloaded from upstream and edited here (pinned tag,
-`LS_BIND_IP`, photo mount, Postgres tuning). It is **not** connected to or
-overwriting the production instance on apps server — that instance was
-deployed independently, by hand, from its own copy of upstream's compose
-file, and is running fine with members addable. Treat this repo's copy as
-documentation of what "secured" should look like and a template for a
-future redeploy, not as the live config.
+**This repo is now the actual launchpad for Label Studio, confirmed live
+2026-09-24.** The old hand-deployed instance at `/home/data/label-studio/`
+(independent compose file, `:latest` image, exposed on `0.0.0.0:7071`, no
+photo mount, no Postgres tuning) was torn down entirely — `docker compose
+down -v`, all containers/volumes removed. It held only a demo project + 2
+demo users, explicitly disposable, so no backup/migration was needed.
+
+`/home/data/label-studio/` was replaced with an rsync of this repo's
+`deploy/label-studio/` (`docker-compose.yml` + `README.md`, `.env`
+excluded from the sync and hand-written on the server). Now running:
+image pinned to `heartexlabs/label-studio:1.23.0` (was `:latest`), same
+port `7071` on `0.0.0.0` (kept intentionally open — demo instance for
+supervisors, no real data, user's explicit call), Postgres tuning from
+the compose file applied, `LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK=true`
+confirmed active. Admin login `admin@atpg.local`, password in
+`/home/data/label-studio/.env` on the server (chmod 600), never passed
+through chat.
+
+**Known gap:** `SHELF_DATA_DIR` points at `/home/data/label-studio-photos/`,
+created empty — no exported photos exist on the apps server (the export
+runs on Hemin's GPU box, see below). Manual image upload / demo projects
+work fine; the `prepare_label_studio.py` local-files task-import workflow
+will show broken images until photos are synced to this path too.
+
+**Deploy workflow going forward:** edit `deploy/label-studio/docker-compose.yml`
+in git -> `rsync -av --exclude .env deploy/label-studio/ atpg:/home/data/label-studio/`
+-> `ssh atpg 'cd /home/data/label-studio && docker compose up -d'`. Volumes
+(`label-studio_ls-data`, `label-studio_ls-db`) persist across this; editing
+compose text does not touch them. `.env` on the server is the one thing
+never overwritten by the sync — hand-edit it there directly if it needs to
+change.
+
+## Future: FastAPI inference service (Phase 2)
+
+This repo will also be the launchpad for the model-inference FastAPI app
+once Phase 2 starts (`/count`, `/overlay`, `/health` per `docs/ROADMAP.md`).
+`src/face_counter/serving/` already exists as the placeholder package for
+it (see the 2026-09-24 role-based restructuring: `training/`,
+`label_studio/`, `utils/`, `serving/`). Expect a same-shaped deploy/ entry
+(e.g. `deploy/serving/`) with its own docker-compose and README when that
+phase starts, following the same pattern established for Label Studio:
+this repo's compose file as the single source of truth, deployed via
+rsync + `docker compose up -d`, never hand-edited live without syncing
+the change back into git first.
