@@ -12,13 +12,31 @@
 # machine only: this side never needs training/'s bulk data, just outputs.
 #
 # Usage:
-#   scripts/sync_from_hemin.sh              # pull runs/ (trained weights) only
-#   scripts/sync_from_hemin.sh --with-data  # also pull his data/raw/ export
-#                                            # (large; only when you actually
-#                                            # need his photos on this machine)
+#   scripts/sync_from_hemin.sh                  # runs/ (trained weights) only
+#   scripts/sync_from_hemin.sh --with-manifest  # also pull data/raw/manifest.csv
+#                                                # (~2 MB; this is what splits need)
+#   scripts/sync_from_hemin.sh --with-data      # also pull his whole data/raw/
+#                                                # export (~32 GB; only when you
+#                                                # actually need his photos here)
+#
+# --with-manifest is the common case: make_splits.py reads manifest.csv and
+# writes lists of paths, it never opens an image, so this side needs the CSV
+# and not the ~32 GB of photos behind it. Note the paths inside the manifest
+# refer to Hemin's disk -- the split files inherit that, which is intended
+# (labeling reads the photos from there, not from here).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."   # repo root, regardless of where this is invoked from
+
+MODE="${1:-}"
+case "${MODE}" in
+  ""|--with-manifest|--with-data) ;;
+  *)
+    echo "Unknown option: ${MODE}" >&2
+    echo "Usage: $0 [--with-manifest | --with-data]" >&2
+    exit 2
+    ;;
+esac
 
 HOST="hemin"                       # ~/.ssh/config alias for the 4060 Ti box
 REMOTE_DIR="~/code/face-counter/"
@@ -52,11 +70,27 @@ INCLUDES_ONLY=(
   --exclude 'data/label_studio/'
 )
 
-if [[ "${1:-}" != "--with-data" ]]; then
-  INCLUDES_ONLY+=(--exclude 'data/raw/')
-else
-  INCLUDES_ONLY+=(--include 'data/raw/' --include 'data/raw/**')
-fi
+case "${MODE}" in
+  --with-data)
+    # Everything under data/raw/: the ~32 GB of photos plus the manifest.
+    # 'data/' itself must be included or the trailing --exclude '*' stops
+    # rsync descending into it and nothing transfers at all.
+    INCLUDES_ONLY+=(--include 'data/' --include 'data/raw/' --include 'data/raw/**')
+    ;;
+  --with-manifest)
+    # Just the inventory CSV. Include the parent dirs so rsync can descend,
+    # but exclude everything else under data/raw/ so no image comes across.
+    INCLUDES_ONLY+=(
+      --include 'data/'
+      --include 'data/raw/'
+      --include 'data/raw/manifest.csv'
+      --exclude 'data/raw/**'
+    )
+    ;;
+  "")
+    INCLUDES_ONLY+=(--exclude 'data/raw/')
+    ;;
+esac
 INCLUDES_ONLY+=(--exclude '*')  # default-deny anything not explicitly included above
 
 echo "Pulling from ${HOST}:${REMOTE_DIR} ..."
