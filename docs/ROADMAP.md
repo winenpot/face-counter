@@ -102,7 +102,9 @@ Checkboxes below: `[x]` done · `[~]` partly done, see the note · `[ ]` not sta
 
 By day 10: a script turns a photo into SKU counts end to end, with accuracy measured on the test set.
 
-- [ ] **Detector.** Train a small YOLO on SKU-110K overnight on the 4060 Ti, or use published weights if their license allows. Check by eye that it finds most products on 10 of our photos.
+- [ ] **Detector, step zero — try published SKU-110K weights before training anything.** Several exist (a DETR-ResNet-50 reporting 58.9 mAP, trained on a 4060 Ti; a YOLO26l reporting 0.906 mAP50; the original CVPR19 RetinaNet). Evaluating them costs an afternoon; training costs a night. Licenses and domain shift to Iranian shops/fridges are both unverified — our frozen test set decides. See [`DETECTOR_ALTERNATIVES.md`](DETECTOR_ALTERNATIVES.md).
+- [ ] **Detector.** If step zero isn't enough, train a small YOLO on SKU-110K overnight on the 4060 Ti. Check by eye that it finds most products on 10 of our photos.
+- [ ] **Keep the detector swappable.** A `Detector` protocol with one `detect(image) -> boxes`, backend chosen in config, so everything downstream is detector-agnostic. YOLO is the starting point, not the conclusion — the DETR branch (RT-DETR, D-FINE, DEIM) now leads real-time detection, and DEIM is Apache-2.0, halves training cost, and gains most on small objects, which is exactly our weakness. Rationale and candidate table in [`DETECTOR_ALTERNATIVES.md`](DETECTOR_ALTERNATIVES.md).
 - [ ] **Small objects.** Use a larger input size (1280) or tiled inference (SAHI) for whole-aisle photos.
 - [ ] **Label the test set** in Label Studio with the detector's boxes pre-filled; correct boxes and assign classes. Brand level first if time is short.
 - [ ] **Reference gallery.** Packshots plus crops from the corrected test-adjacent photos (never from the test set itself), one folder per SKU.
