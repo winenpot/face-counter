@@ -84,18 +84,19 @@ Photos come in from the reps' app, results go back beside them, and corrections 
 
 By day 3: data is exportable, the test set is fixed, labeling is secured, and the business side is gathering classes and packshots.
 
-**Status (2026-09-22):** not finished. A read-only survey of the live `atpg` database
-found the export config mapping fields that do not exist there, so no manifest and no
-fixed test set exist yet. Remaining work, with the real schema and the numbers behind
-it, is in [`PHASE0_REMAINING.md`](PHASE0_REMAINING.md).
+**Status (2026-09-24):** nearly closed. The full export ran against production
+(9,704 photos, ~30 GB on the GPU box) and the manifest exists. What is left is
+re-cutting the fixed test set from 15 to 30 photos over the full manifest, one
+data-quality check, and the labeling-guide examples. Detail in
+[`PHASE0_REMAINING.md`](PHASE0_REMAINING.md).
 Checkboxes below: `[x]` done · `[~]` partly done, see the note · `[ ]` not started.
 
 - [x] **Secure Label Studio.** Set `LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK=true`, remove unknown accounts, use strong passwords. It's on the public internet, so this comes first. — *the running instance was hardened by hand, but the committed `deploy/label-studio/` could not reproduce it (would not start; published on `0.0.0.0`; no photo mount). The compose file is fixed now; the live instance still needs to be migrated onto it, and its member list re-checked.*
-- [ ] **Export script.** Pull photos plus metadata (store, date, rep, visit) out of MongoDB to disk, read-only, in batches. — *`configs/export.yaml` now points at the real `atpg` schema, the read-only user, filters to `photo_type: shelf`, and joins `location` twice (region, and the durable store id — the photo's own `store_code` is only a per-visit registration code). Code is ready; only a full run against production is left.*
-- [ ] **Manifest.** One CSV row per photo: id, store, visit, date, file path, image size. Every dataset later is built from it. — *blocked on running the full export; `city` and the durable `store_id` both come from the `location` join (~99% match rate) — the photo's own `store_code` turned out to be a per-visit registration code, not the store's identity, and now populates `visit_id` instead. `rep_id` stays empty, it doesn't exist on the photos.*
-- [ ] **Fixed test set.** 30 photos from stores held out of training entirely, split by store, never by random photo. Mix aisles, fridges, glare, and store types. — *feasible: 3,292 stores in the usable `shelf` subset.*
-- [ ] **Class list** requested from sales/analysts in `BRAND_CATEGORY_SKU` form; competitors may start as `COMPETITOR_<category>`. — *`configs/classes.csv` is still the `Kix-Max` template.*
-- [ ] **Packshots** requested from marketing: 2–5 images per SKU, ours first, competitors where available.
+- [x] **Export script.** Pull photos plus metadata (store, date, rep, visit) out of MongoDB to disk, read-only, in batches. — *full production run completed 2026-09-24: 9,409 new + 295 already on disk, `missing: 0`, `bad_image: 1` (the known truncated 7 KB photo). ~30 GB on the GPU box.*
+- [x] **Manifest.** One CSV row per photo: id, store, visit, date, file path, image size. Every dataset later is built from it. — *9,704 rows. `visit_id`/`taken_at`/`sha256` 100% filled; `store_id` 99.0%, `city` 98.2% (matches the surveyed ~99% join rate); `rep_id` empty, it doesn't exist on the photos. 2,230 distinct stores — below the surveyed 3,292, gap not yet explained, so don't quote store coverage.*
+- [ ] **Fixed test set.** 30 photos from stores held out of training entirely, split by store, never by random photo. Mix aisles, fridges, glare, and store types. — *currently 15, drawn from the old 295-photo sample. Needs re-cutting with `--force` over the full manifest, then freezing for good.*
+- [x] **Class list** requested from sales/analysts in `BRAND_CATEGORY_SKU` form; competitors may start as `COMPETITOR_<category>`. — *103 classes across 8 brands, built from the real sales invoice; see `PHASE0_REMAINING.md`.*
+- [x] **Packshots** requested from marketing: 2–5 images per SKU, ours first, competitors where available. — *enough to proceed: 242 invoice-embedded images named by `class_name` seed a first gallery. Studio packshots covering all 8 brands and named by `class_name` remain an open ask in `docs/requests.md`, no longer Phase 0-blocking.*
 - [~] **Labeling guide,** one page: what counts as a face (front row only, visible label), partly hidden products, fridge glass, and 3 annotated example photos. — *written (`labeling_guide.md`); the 3 annotated examples are still a placeholder.*
 
 ## Phase 1 — Working pipeline (days 4–10)

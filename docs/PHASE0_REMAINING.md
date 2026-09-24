@@ -10,17 +10,35 @@ data. Re-check them any time with:
 
 ## 1. Fix the test set
 
-- [ ] Run the export, then `uv run shelf-splits`. 3,292 stores in the `shelf`
-      subset means a 10% holdout gives ~329 test stores — ample for 30 photos.
-- [ ] Label those 30 first, then freeze. Splits hash the resolved `store_id`
-      (§1 of Done, below — NOT the raw `store_code`), so re-exporting never
-      moves a store.
+- [x] **Export run against production, 2026-09-24.** 9,409 new + 295 already on
+      disk = **9,704 manifest rows**, `missing: 0`, `bad_image: 1`. ~30 GB, on
+      the GPU box only — this workstation needs just the 2 MB manifest
+      (`scripts/sync_from_hemin.sh --with-manifest`).
+- [ ] Run `uv run shelf-splits` over the full manifest.
+- [ ] Re-cut the fixed test set to **30 photos** — it currently holds 15, drawn
+      from the old 295-photo sample. Needs `--force`, which should be its last
+      use ever. Eyeball the mix first: aisles, fridges, glare, store types.
+      Then freeze. Splits hash the resolved `store_id` (§1 of Done, below —
+      NOT the raw `store_code`), so re-exporting never moves a store.
+- [ ] **Unexplained: 2,230 distinct `store_id`, against the surveyed 3,292.**
+      The 1% join-failure rate (93 blank rows) does not account for a 32% gap.
+      Not blocking — median 3 photos/store, max 37, ample for a 30-photo test
+      set — but do not quote store coverage until someone explains it.
 
 ## 2. Data quality
 
-- [ ] **432 `(store_code, length)` collisions** — likely re-uploads; confirm the
-      existing `sha256` dedupe catches them.
-- [ ] **1 photo at 7 KB** (vs 3,231 KB average) — almost certainly truncated.
+- [x] **The `(store_code, length)` collisions resolve safely.** The full
+      manifest has 109 duplicate-`sha256` groups (131 extra rows), **19 of them
+      spanning more than one `store_id`** — exactly the cross-store leakage
+      worth worrying about. `make_splits.py:113` drops duplicates by `sha256`
+      before splitting, so byte-identical re-uploads cannot land on both sides
+      of the train/test boundary. That line is load-bearing, not decorative.
+- [x] **The 7 KB photo is confirmed and contained.** Exactly one file under
+      50 KB in the full manifest (7,253 bytes, 79x275) and exactly one
+      `bad_image` in the export — the same photo. Not a new failure mode.
+      Worth noting the earlier live sample's 8-of-13 decode failures collapsed
+      to 1 in 9,704 once `pillow-heif` landed: good evidence that diagnosis
+      was right.
 - [ ] **No index on `photo_type`/`store_code`** — a filtered export
       collection-scans 24k docs. Acceptable once; do not add an index to
       production without asking, and keep `throttle_seconds` on during work hours.
@@ -33,25 +51,36 @@ data. Re-check them any time with:
       photos, not shelf photos. Stays excluded; `configs/export.yaml`'s existing
       `photo_type: shelf` filter is already correct as shipped, no export change
       needed. Corpus stays at ~9,200 photos / ~28 GB, not the ~doubled estimate.
-- [~] **Packshots**, 2–5 per SKU, for the reference gallery. — *242 images
-      extracted from the invoice's own embedded "Image" column into
-      `configs/Product/from_invoice/` (see `scripts/extract_invoice_packshots.py`),
-      one per class_name, matching the same brand/category/sku parsing as
-      `classes.csv` — so the two stay in lockstep. Gitignored like the rest
-      of `configs/Product/`. Not a substitute for real marketing packshots
-      (these are invoice thumbnails, small and inconsistent framing — one
-      spot-checked case showed a multi-flavor carton photo for a
-      single-flavor sku) but enough to unblock a first embedding-gallery
-      experiment in Phase 1. Still incomplete/first-batch — marketing's
-      proper packshots remain the ask in `docs/requests.md`.*
+- [x] **Packshots — enough to proceed; the marketing ask stays open.**
+      Phase 0 is no longer blocked on this. *242 images extracted from the
+      invoice's own embedded "Image" column into `configs/Product/from_invoice/`
+      (see `scripts/extract_invoice_packshots.py`), one per class_name,
+      matching the same brand/category/sku parsing as `classes.csv` — so the
+      two stay in lockstep. Gitignored like the rest of `configs/Product/`.
+      All company material, nothing placeholder: the gap is **resolution,
+      coverage, and naming**, not authenticity. These are invoice thumbnails
+      (~42 KB average), small and inconsistently framed — one spot-checked
+      case showed a multi-flavor carton photo attached to a single-flavor
+      sku, which would teach an embedding matcher the wrong thing. Good
+      enough to seed a first gallery experiment in Phase 1; re-check that
+      mismatch before trusting gallery numbers.*
 
-      *Checked 2026-09-24: `configs/Product/Kixmax/` and `configs/Product/Torsh-X/`
-      also hold real marketing photos (35 files), but they only cover 2 of 8
-      brands, are partial even there (no gum/sour-candy shots for Kix-Max, no
-      sour-candy for Torsh-X), and are named by flavor only — not `class_name`
-      — so nothing in the pipeline maps them to a class yet. Not a substitute
-      for `from_invoice/`; would need renaming/curation before use. Does not
-      close this item.*
+      *Checked 2026-09-24: `configs/Product/Kixmax/` (2 subfolders) and
+      `configs/Product/Torsh-X/` (15 files, ~4 MB each) hold genuine studio
+      marketing photography — ~100x the resolution of the invoice thumbnails
+      — but they cover only 2 of 8 brands, are partial even there (no
+      gum/sour-candy shots for Kix-Max, no sour-candy for Torsh-X), and are
+      named by flavor or mockup (`Berlin.png`, `24_cans_mockup.png`) rather
+      than `class_name`, so nothing in the pipeline maps them to a class yet.
+      `24_cans_mockup.png` is a marketing composite, not a single product
+      face — wrong as a gallery reference. Would need renaming and curation
+      before use.*
+
+      **Outstanding ask (`docs/requests.md`), no longer Phase 0-blocking:**
+      studio packshots named by `class_name`, 2–5 per SKU, covering all 8
+      brands. Matters most for SKUs that are rare in our own corpus — Phase 1
+      also builds gallery crops from corrected photos, which may well beat
+      packshots anyway since they match the reps' real cameras and lighting.
 - [~] **Labeling guide examples** — `docs/labeling_guide.md` still asks for
       three annotated screenshots. In progress (owner working on it 2026-09-24);
       not blocking the rest of §1/§4.
