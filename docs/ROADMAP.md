@@ -123,13 +123,39 @@ By day 15: a deployed API, a visual overlay, honest numbers, and the plan for mo
 - [ ] **Run on the test set** and report results in business terms ("brand counts off by X faces per photo"), not just mAP.
 - [ ] **Demo:** the overlay, the JSON, the numbers, and Phases 3–4 as the path forward.
 
-## Phase 3 — Data flywheel (month 2)
+## Phase 3 — Error analysis and the data flywheel (month 2)
 
-The goal of month 2 is flavor-level accuracy, bought with corrected data rather than model tricks.
+The goal of month 2 is flavor-level accuracy, bought with **understanding** and
+corrected data rather than model tricks. This phase is where the project stops
+being "train a model and watch a metric" and becomes an engineering discipline.
+Method, taxonomies, and sources: [`ERROR_ANALYSIS.md`](ERROR_ANALYSIS.md).
 
-- [ ] **Pre-labeling loop.** The model labels batches of the 20k photos; 5–10 labelers correct them. Prioritize low-confidence photos, fridges, and SKUs with few examples.
-- [ ] **Fine-tune the detector** on our corrected boxes.
-- [ ] **Train a crop classifier** for the \~400 classes; keep the embedding matcher as a fallback for new SKUs.
+**Error analysis — first, before any retraining.** You cannot prioritize what
+you haven't diagnosed.
+
+- [ ] **Failure taxonomy.** Classify every error: miss, duplicate, ghost, bad box, back-row, wrong brand, wrong flavor, false `other`, missed `other`. Wrong-flavor is expected and tolerable; wrong-brand means something is broken. One mAP number cannot tell them apart.
+- [ ] **Sliced metrics,** never aggregate-only: fridge vs. aisle, crowding buckets, glare/blur/tilt, store type and region, head vs. tail classes. A model that improves overall while getting worse on fridges is a trade, not an improvement.
+- [ ] **Confusion matrix over the 103 classes.** The off-diagonal mass is the research agenda for the rest of the month.
+- [ ] **Worst-50 photo bank,** reviewed by eye every model version. Not automatable — this is where you find the upside-down store and the shelf-wobbler counted as a product.
+- [ ] **Report honestly:** business terms, plus confidence intervals — 30 test photos make small moves meaningless.
+
+**Active learning — choosing what gets labeled.** With 5–10 labelers, *which*
+photos they correct is the budget. (This is what "human-in-the-loop" actually
+means here; it is **not** RLHF — detection has ground truth, so corrections are
+training data directly. See `ERROR_ANALYSIS.md` §3.)
+
+- [ ] **Pre-labeling loop.** The model labels batches of the corpus; labelers correct pre-filled boxes.
+- [ ] **Sampling strategy,** in order of value-for-effort: uncertainty → ensemble disagreement (free, we hold two detectors from the Phase-1 bake-off) → diversity over **detected-object-region** features, not whole-image (NORIS: 20–30% labeling-cost cut) → class-balanced allocation for the long tail (ALMUS) → density. Seed each round with the previous model's worst-50.
+- [ ] **Labeling ROI curve** plotted every round — accuracy vs. photos labeled. When it flattens, change strategy or stop, instead of burning labeler-months on a flat line.
+- [ ] **Inter-annotator agreement:** 2 labelers, same 20 photos, monthly. Human agreement is the accuracy ceiling; disagreements are bug reports against `labeling_guide.md`.
+- [ ] **Active learning never touches the test set.** It systematically selects unusual photos; leakage would silently corrupt every number retroactively.
+- [ ] **Version corrections, never overwrite.**
+
+**Models and infrastructure.**
+
+- [ ] **Fine-tune the detector** on our corrected boxes; re-run the Phase-1 bake-off now that we have real labels — a DEIM-trained D-FINE is the leading alternative and fits one 4060 Ti overnight.
+- [ ] **Train a crop classifier** for the ~400 classes; keep the embedding matcher as a fallback for new SKUs.
+- [ ] **Hyperparameter tuning,** time-boxed and in the right order: data → resolution/tiling → confidence and NMS thresholds → the `other` similarity cutoff → LR schedule. Tune on validation, never on test.
 - [ ] **MLflow,** self-hosted: log every experiment and register models. A model is promoted only if it beats the current one on the fixed test set.
 - [ ] **Dataset versioning** with DVC on object storage. SeaweedFS or Garage go on a new disk on the db server; check MinIO's current licensing before choosing it.
 - [ ] **Disk:** budget an extra 500 GB–1 TB drive. The 100 GB free now won't hold exports, datasets, and model artifacts.
@@ -141,7 +167,7 @@ From month 3, the system runs on its own: new photos are processed automatically
 - [ ] **Background worker** processes new uploads automatically; the sync API stays available.
 - [ ] **Rep correction screen** in the field app; each fix flows back into training data.
 - [ ] **Analyst dashboard** built on `predictions.summary`: share of shelf by store, city, category, and over time.
-- [ ] **Monitoring:** confidence distributions, the share of `other` (rising = new products or packaging), per-store drift, latency.
+- [ ] **Monitoring:** confidence distributions, the share of `other` (rising = new products or packaging), per-store drift, latency. The `other` rate is the one error class that self-reports in production without a labeler — see `ERROR_ANALYSIS.md` §1.
 - [ ] **Monthly retraining,** gated by the fixed test set.
 - [ ] **Reverse proxy for all apps** (e.g. Caddy), proposed once the MVP has earned goodwill; it closes the open-ports gap for every app, not just this one.
 
