@@ -42,6 +42,21 @@ data. Re-check them any time with:
 - [ ] **No index on `photo_type`/`store_code`** — a filtered export
       collection-scans 24k docs. Acceptable once; do not add an index to
       production without asking, and keep `throttle_seconds` on during work hours.
+- [ ] **Manifest dimensions can disagree with decoded dimensions (EXIF
+      orientation).** Two of the 30 test photos are recorded `1836x4080`
+      (portrait) in the manifest but decode as `4080x1836` (landscape) — the
+      export stored the pre-rotation size while Pillow applies the EXIF
+      orientation flag. Harmless today, but anything in Phase 1 that trusts
+      manifest width/height over the decoded image will place boxes rotated
+      90°. Decide one source of truth before boxes are drawn.
+- [ ] **The field app recompresses uploads server-side.** 1,225 photos (12.6%)
+      sit within 2 KB of exactly 4 MiB, 950 at the identical byte count
+      4,194,868; further populations are downscaled to 810x1080 (221),
+      960x1280 (214), 1200x1600 (200). Confirmed by the app developer's own
+      account of fixing upload problems. Consequences: treat resolution tier as
+      a reporting slice (`ERROR_ANALYSIS.md`), and ask whether the originals
+      survive anywhere (`requests.md` §3). Low-resolution photos in the corpus
+      are **representative, not defective** — do not filter them out.
 
 ## 3. Blocked on the business
 

@@ -53,6 +53,17 @@ Aggregate numbers hide everything that matters. Report every metric split by:
   hard case.
 - **Crowding** — bucket photos by detected box count. SKU-110K's founding
   observation is that density is the difficulty axis.
+- **Resolution / recompression tier** — *not a hypothetical: the field app
+  recompresses server-side after upload.* 12.6% of the corpus (1,225 photos)
+  lands within 2 KB of exactly 4 MiB, 950 of them at the identical byte count
+  4,194,868 — a hard cap, not natural variation. A second population is
+  heavily downscaled: 221 photos at 810x1080, 214 at 960x1280, 200 at
+  1200x1600. JPEG recompression destroys fine detail first, which is precisely
+  what a small, densely packed product is. Expect the capped and downscaled
+  tiers to score worse, measure them separately, and never average them into
+  one number. Whether the app still holds the uncompressed originals is an
+  open question in `requests.md` — if it does, retraining on originals is free
+  accuracy.
 - **Glare / blur / tilt** — rep photo quality varies; the guideline ("stand
   back, shoot straight, one bay per photo") is an intervention we should be
   able to *measure the effect of*.
