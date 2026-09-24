@@ -109,24 +109,35 @@ to send for the class list and packshots.
 
 ## Commit messages
 
-Every commit subject must be a Conventional Commit:
+Every commit subject must carry one or more gitmoji, then a Conventional
+Commit:
 
 ```text
-<type>[(scope)][!]: <description>
+<gitmoji> [<gitmoji> ...] <type>[(scope)][!]: <description>
 
-feat(export): add HEIC decoding
-fix(splits)!: change the store hash salt
-docs(vault): record the Label Studio migration
+✨ feat(export): add HEIC decoding
+🐛 🔧 fix(splits)!: change the store hash salt
+📝 docs(vault): record the Label Studio migration
 ```
+
+Approved gitmojis (mirrors gitmoji.dev's common subset, extend in
+`.githooks/commit-msg`'s `GITMOJIS` list if you need another one):
+
+| | | | | |
+|---|---|---|---|---|
+| ✨ new feature | 🐛 bug fix | ♻️ refactor | 📝 docs | ✅ tests |
+| 👷 CI | 🔥 remove code/files | 🎨 style/format | ⚡ performance | 🔒 security |
+| 🚧 WIP | ⬆️ deps up | 🔧 config | ⏪ revert | 🎉 milestone |
+| 🚀 deploy | 💚 fix CI | 📦 build/deps | 🧪 experiments | 🛠️ tooling |
+| 💄 UI/style | 🌐 i18n | 🗑️ deprecate | 🩹 minor fix | 🔐 secrets |
 
 Allowed lowercase types: `feat`, `fix`, `refactor`, `docs`, `test`, `ci`,
 `chore`, `style`, `build`, `perf`, `security`, `wip`, `deps`, `config`,
 `revert`. The optional scope starts with a lowercase letter or digit and may
 also contain `.`, `_`, `/`, and `-`. A description is required; the body is
-unrestricted in content but capped in length (below). No gitmoji prefix is
-required (unlike the sibling `merchant` repo's hook this one is adapted
-from) — this repo's own history is plain Conventional Commits, so the hook
-enforces what's already the convention here.
+unrestricted in content but capped in length (below). Gitmoji is required
+going forward — the project's earlier history (before 2026-09-24) used
+plain Conventional Commits without it, is not revalidated or rewritten.
 
 **Length caps, against AI-generated "slop" messages** (a multi-paragraph
 essay with a dozen bullet points for a one-line change): subject max 72
