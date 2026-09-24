@@ -35,6 +35,7 @@ does not use, so no manifest and no fixed test set exist yet.
 Python 3.14, managed with [uv](https://docs.astral.sh/uv/).
 
     uv sync --group dev          # runtime + test dependencies
+    git config --local core.hooksPath .githooks   # enable the commit-msg hook
     uv run pytest                # end-to-end checks on a fake MongoDB, no server needed
 
 Copy `.env.example` to `.env` and set `MONGO_URI`. Use a **read-only** Mongo
@@ -105,6 +106,34 @@ never moves a store between train and test.
 
 Labelers follow `docs/labeling_guide.md`. `docs/requests.md` holds the messages
 to send for the class list and packshots.
+
+## Commit messages
+
+Every commit subject must be a Conventional Commit:
+
+```text
+<type>[(scope)][!]: <description>
+
+feat(export): add HEIC decoding
+fix(splits)!: change the store hash salt
+docs(vault): record the Label Studio migration
+```
+
+Allowed lowercase types: `feat`, `fix`, `refactor`, `docs`, `test`, `ci`,
+`chore`, `style`, `build`, `perf`, `security`, `wip`, `deps`, `config`,
+`revert`. The optional scope starts with a lowercase letter or digit and may
+also contain `.`, `_`, `/`, and `-`. A description is required; the body is
+unrestricted. No gitmoji prefix is required (unlike the sibling `merchant`
+repo's hook this one is adapted from) — this repo's own history is plain
+Conventional Commits, so the hook enforces what's already the convention here.
+
+The versioned `.githooks/commit-msg` hook rejects invalid subjects without
+changing them. It requires `python3` on PATH, no third-party packages. Enable
+it once per clone with the setup command above. If you already use a custom
+`core.hooksPath`, integrate this validator into your existing hook chain
+instead of replacing that setting. Git does not install hooks automatically
+on clone. Existing history (including the project's earlier gitmoji-prefixed
+commits) is not revalidated or rewritten.
 
 ## Layout
 
