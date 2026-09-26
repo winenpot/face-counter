@@ -114,25 +114,12 @@ bake-off of existing weights on our frozen test set.**
 | `Media-Smart/SKU110K-DenseDet` | — | mmdetection v1.0rc1 era; old stack |
 | `eg4000/SKU110K_CVPR19` | — | Original RetinaNet + Soft-IoU reference weights |
 
-**Do not treat those numbers as ours.** Two caveats, both load-bearing:
-
-1. **Licence and provenance.** *Checked 2026-09-26:* the SKU-110K dataset
-   README says it is "provided for the exclusive use by the recipient and
-   solely for academic and non-commercial purposes". Every checkpoint in the
-   table was trained on it, whatever licence its own model card declares
-   (the DETR card says Apache-2.0; the YOLO11 card says "other" and defers to
-   the dataset terms). **Decision:** SKU-110K weights are used for evaluation
-   and Label Studio pre-labeling only, and never reach the serving path until
-   the licence question is resolved with the business. This also applies to
-   the roadmap's fallback "train a YOLO on SKU-110K". The licence-clean route,
-   if it comes to that, is a COCO/Objects365-pretrained DEIM or D-FINE
-   fine-tuned on our own corrected boxes.
-2. **Domain shift is real and unmeasured.** These are trained on Western retail.
-   Our photos are Iranian shops and fridges, shot by field reps on phones, with
-   glare through fridge glass. A checkpoint reporting 0.906 mAP50 on SKU-110K
-   val may do considerably worse on ours. That gap is not a disappointment —
-   it *is* the measurement, and it tells us whether fine-tuning is needed at
-   all. Our frozen 30-photo test set is what decides.
+**Do not treat those numbers as ours.** Domain shift is real and unmeasured:
+these are trained on Western retail. Our photos are Iranian shops and fridges,
+shot by field reps on phones, with glare through fridge glass. A checkpoint
+reporting 0.906 mAP50 on SKU-110K val may do considerably worse on ours. That
+gap is not a disappointment — it *is* the measurement, and it tells us how much
+fine-tuning is needed. Our frozen 30-photo test set is what decides.
 
 ## Open-vocabulary detection: YOLOE-26 as a third candidate
 
