@@ -218,8 +218,9 @@ saves real time and its output is imported back.
 2. **Detector step zero.** Run published SKU-110K weights over the 30 test
    photos and look at the boxes (`DETECTOR_ALTERNATIVES.md`). This decides
    whether pre-labels are good enough to correct rather than draw.
-3. **Resolve EXIF orientation** (`PHASE0_REMAINING.md` §2) before any box is
-   imported — otherwise pre-labels land rotated 90°.
+3. **Load pixels through `ImageOps.exif_transpose`** (`PHASE0_REMAINING.md`
+   §2) in any script that produces pre-labels. 14 of the 30 test photos are
+   stored sideways; a bare `cv2.imread` puts their boxes 90° off.
 4. **Job A, geometry pass** on the test set in Label Studio, class `product`
    only. Two labelers on the first five photos to measure agreement.
 5. **Job A, identity pass** on the test set: our SKU,

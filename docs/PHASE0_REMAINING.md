@@ -57,13 +57,30 @@ data. Re-check them any time with:
 - [ ] **No index on `photo_type`/`store_code`** — a filtered export
       collection-scans 24k docs. Acceptable once; do not add an index to
       production without asking, and keep `throttle_seconds` on during work hours.
-- [ ] **Manifest dimensions can disagree with decoded dimensions (EXIF
-      orientation).** Two of the 30 test photos are recorded `1836x4080`
-      (portrait) in the manifest but decode as `4080x1836` (landscape) — the
-      export stored the pre-rotation size while Pillow applies the EXIF
-      orientation flag. Harmless today, but anything in Phase 1 that trusts
-      manifest width/height over the decoded image will place boxes rotated
-      90°. Decide one source of truth before boxes are drawn.
+- [x] **EXIF orientation: the manifest is right; load pixels with
+      `ImageOps.exif_transpose`.** *Corrected 2026-09-26.* An earlier note here
+      said two test photos disagree with the manifest. Rechecked across all 30:
+      they don't. `export_photos.py` records the size **after** applying the
+      EXIF orientation flag, and all 30 match what Pillow's `exif_transpose`
+      and Label Studio display. The real rule: **14 of the 30 test photos are
+      stored sideways with EXIF orientation 6.** Any code that reads raw pixels
+      without `exif_transpose` (a bare `cv2.imread` does not apply it) will put
+      boxes 90° off on nearly half the set. Label Studio stores boxes as
+      percentages of the displayed (rotated) image, which is consistent with
+      the manifest.
+- [ ] **Non-shelf uploads under `photo_type: shelf`.** The test-set review
+      found a neon-sign graphic (one of **9 PNGs** in the corpus, likely
+      screenshots or stock images) and a street-level storefront. Neither is
+      filterable from metadata alone. Expect a small share of the corpus to
+      be non-shelf: labeling needs a "not a shelf photo, skip" answer, and
+      cluster labeling will surface these as their own clusters. Not blocking.
+- [ ] **90 `store_id` values are written in Persian digits** (315 rows, e.g.
+      `۴۹۳۱`), straight from `location.permanent_id`. Checked 2026-09-26: after
+      normalising digits, no store spans two splits, so there is **no leak
+      today**. It is latent: anything that normalises digits (a join, a
+      dashboard, a re-export) could merge `۴۹۳۱` with `4931` and change a
+      store's hash. If normalising in the export is ever wanted, re-run the
+      leak check first.
 - [ ] **The field app recompresses uploads server-side.** 1,225 photos (12.6%)
       sit within 2 KB of exactly 4 MiB, 950 at the identical byte count
       4,194,868; further populations are downscaled to 810x1080 (221),
