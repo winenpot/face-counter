@@ -14,11 +14,19 @@ data. Re-check them any time with:
       disk = **9,704 manifest rows**, `missing: 0`, `bad_image: 1`. ~30 GB, on
       the GPU box only — this workstation needs just the 2 MB manifest
       (`scripts/sync_from_hemin.sh --with-manifest`).
-- [ ] Run `uv run shelf-splits` over the full manifest.
-- [ ] Re-cut the fixed test set to **30 photos** — it currently holds 15, drawn
-      from the old 295-photo sample. Needs `--force`, which should be its last
-      use ever. Eyeball the mix first: aisles, fridges, glare, store types.
-      Then freeze. Splits hash the resolved `store_id` (§1 of Done, below —
+- [x] Run `uv run shelf-splits` over the full manifest. — *ran 2026-09-24
+      13:02: 9,573 rows after sha256 dedupe (7,640 train / 1,076 val /
+      857 test), `test_labeling.txt` = 30 photos, `label_batch_01.txt` = 250.
+      Verified 2026-09-26: zero `store_id` overlap between every pair of
+      splits; all 30 test photos resolve to `test` and come from 30 distinct
+      stores; the batch is train-only with zero test overlap; 93 blank-store
+      rows (the known join failures).*
+- [~] **Test set cut at 30 photos — not yet frozen.** Eyeball the mix on the
+      GPU box first: aisles, fridges, glare, store types. Re-rolling is cheap
+      only until labeling starts. Then freeze: `data/splits/` is gitignored,
+      so `test_labeling.txt` currently has no versioned copy — add a
+      `.gitignore` exception for that one file (IDs only, no media) and commit
+      it. Splits hash the resolved `store_id` (§1 of Done, below —
       NOT the raw `store_code`), so re-exporting never moves a store.
 - [ ] **Unexplained: 2,230 distinct `store_id`, against the surveyed 3,292.**
       The 1% join-failure rate (93 blank rows) does not account for a 32% gap.
@@ -106,6 +114,13 @@ Do not start until §1 lands; every item needs a manifest and a frozen test set.
 Full list in `docs/ROADMAP.md` — train YOLO on SKU-110K, 1280px or SAHI tiling,
 pre-fill boxes in Label Studio, build the gallery from packshots (never the test
 set), embedding matcher with an `other` threshold, evaluation script.
+
+How the labeling itself starts — the two-pass test set, cluster labeling for
+identity, competitors at category level, and which free tools fit — is in
+`docs/LABELING_STRATEGY.md`. One business input is needed before competitor
+labeling: the **reporting categories** for share of shelf. `classes.csv`'s
+categories come from the invoice and describe our packaging (`canned`,
+`glass`, `milk-straw`), which may not be how analysts group the shelf.
 
 ---
 

@@ -14,8 +14,11 @@ it in the task's **Notes** box and ask. Don't guess differently from everyone el
 ## Class names
 
 - Format: `BRAND_CATEGORY_SKU`, for example `Kix-Max_canned_blueberry`.
-- Competitors: use their SKU class if it's in the list, otherwise `COMPETITOR_<category>`,
-  for example `COMPETITOR_canned`.
+- Competitors: `COMPETITOR_<category>`, for example `COMPETITOR_canned`. Use a named
+  competitor class only if it is in the list. Always box competitors — a missing
+  competitor box makes our share of shelf look bigger than it is.
+- Products in a category we don't sell at all (shampoo, detergent, …): box them
+  as `out_of_scope`. Don't label them as competitors.
 - Press **Shift+F** and type to search the class list.
 
 ## Edge cases

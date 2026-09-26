@@ -1,3 +1,5 @@
+**Tooling.** Label Studio is the primary, and only team, annotation tool. Which free tools (Roboflow, CVAT, Make Sense, X-AnyLabeling) fit around it, and why Roboflow's free plan is not used for company photos, is in `docs/LABELING_STRATEGY.md` §5 — that document also covers *what* gets labeled (two-pass test set, cluster labeling, competitors at category level).
+
 Here is the revised version with Label Studio as the primary annotation tool and Roboflow/supervision as a complementary computer-vision tooling layer.
 
 ## Dataset Preparation

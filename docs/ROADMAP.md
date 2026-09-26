@@ -36,6 +36,8 @@ Why this design:
 - **No training for stage 2.** A new SKU means adding reference images, not retraining.
 - **Unknown products fall out as "other"** instead of being forced into a wrong class.
 - **Faster labeling.** Labelers correct pre-drawn boxes and pick from top-5 suggestions instead of drawing from scratch.
+- **Competitors need a category, not a SKU.** Share of shelf is `our faces / all faces in the category`; the denominator only needs to know a face is *not ours*. Competitor products are boxed like any other and labeled `COMPETITOR_<category>`, which takes most of the "~400 classes" off the labeling bill. Clustering shows which competitor products recur; the top 20–30 get names only if the business will read brand-level competitor share, and the long tail stays at category level. Products outside every category we sell are `out_of_scope`, not competitors. Detail in [`LABELING_STRATEGY.md`](LABELING_STRATEGY.md) §4.
+- **Labeling is not "label every photo."** The only exhaustive job is the 30-photo test set. Identity for the training pool is labeled per *cluster* of near-identical crops, not per box. Plan in [`LABELING_STRATEGY.md`](LABELING_STRATEGY.md).
 
 ## Architecture
 
@@ -84,18 +86,20 @@ Photos come in from the reps' app, results go back beside them, and corrections 
 
 By day 3: data is exportable, the test set is fixed, labeling is secured, and the business side is gathering classes and packshots.
 
-**Status (2026-09-24):** nearly closed. The full export ran against production
-(9,704 photos, ~30 GB on the GPU box) and the manifest exists. What is left is
-re-cutting the fixed test set from 15 to 30 photos over the full manifest, one
-data-quality check, and the labeling-guide examples. Detail in
-[`PHASE0_REMAINING.md`](PHASE0_REMAINING.md).
+**Status (2026-09-26):** nearly closed. The full export ran against production
+(9,704 photos, ~30 GB on the GPU box), the manifest exists, and splits were cut
+over it on 2026-09-24 (9,573 rows after dedupe: 7,640 train / 1,076 val /
+857 test; a 30-photo test set; a 250-photo first labeling batch). What is left
+is a visual check of the test set's mix, **freezing it with a versioned home**
+(`data/splits/` is gitignored), the EXIF-orientation decision, and the
+labeling-guide examples. Detail in [`PHASE0_REMAINING.md`](PHASE0_REMAINING.md).
 Checkboxes below: `[x]` done · `[~]` partly done, see the note · `[ ]` not started.
 
 - [x] **Secure Label Studio.** Set `LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK=true`, remove unknown accounts, use strong passwords. It's on the public internet, so this comes first. — *the running instance was hardened by hand, but the committed `deploy/label-studio/` could not reproduce it (would not start; published on `0.0.0.0`; no photo mount). The compose file is fixed now; the live instance still needs to be migrated onto it, and its member list re-checked.*
 - [x] **Export script.** Pull photos plus metadata (store, date, rep, visit) out of MongoDB to disk, read-only, in batches. — *full production run completed 2026-09-24: 9,409 new + 295 already on disk, `missing: 0`, `bad_image: 1` (the known truncated 7 KB photo). ~30 GB on the GPU box.*
 - [x] **Manifest.** One CSV row per photo: id, store, visit, date, file path, image size. Every dataset later is built from it. — *9,704 rows. `visit_id`/`taken_at`/`sha256` 100% filled; `store_id` 99.0%, `city` 98.2% (matches the surveyed ~99% join rate); `rep_id` empty, it doesn't exist on the photos. 2,230 distinct stores — below the surveyed 3,292, gap not yet explained, so don't quote store coverage.*
-- [ ] **Fixed test set.** 30 photos from stores held out of training entirely, split by store, never by random photo. Mix aisles, fridges, glare, and store types. — *currently 15, drawn from the old 295-photo sample. Needs re-cutting with `--force` over the full manifest, then freezing for good.*
-- [x] **Class list** requested from sales/analysts in `BRAND_CATEGORY_SKU` form; competitors may start as `COMPETITOR_<category>`. — *103 classes across 8 brands, built from the real sales invoice; see `PHASE0_REMAINING.md`.*
+- [~] **Fixed test set.** 30 photos from stores held out of training entirely, split by store, never by random photo. Mix aisles, fridges, glare, and store types. — *cut over the full manifest 2026-09-24: 30 photos from 30 distinct stores, zero store overlap between any pair of splits (checked 2026-09-26). Still to do: eyeball the mix on the GPU box, then freeze with a versioned copy of `test_labeling.txt`.*
+- [x] **Class list** requested from sales/analysts in `BRAND_CATEGORY_SKU` form; competitors may start as `COMPETITOR_<category>`. — *103 classes across 8 brands, built from the real sales invoice; see `PHASE0_REMAINING.md`. Competitors stay at `COMPETITOR_<category>` by design, not as a stopgap (see Approach). Open: the business's reporting categories, which may not match the invoice's packaging-based ones.*
 - [x] **Packshots** requested from marketing: 2–5 images per SKU, ours first, competitors where available. — *enough to proceed: 242 invoice-embedded images named by `class_name` seed a first gallery. Studio packshots covering all 8 brands and named by `class_name` remain an open ask in `docs/requests.md`, no longer Phase 0-blocking.*
 - [~] **Labeling guide,** one page: what counts as a face (front row only, visible label), partly hidden products, fridge glass, and 3 annotated example photos. — *written (`labeling_guide.md`); the 3 annotated examples are still a placeholder.*
 
@@ -107,7 +111,8 @@ By day 10: a script turns a photo into SKU counts end to end, with accuracy meas
 - [ ] **Detector.** If step zero isn't enough, train a small YOLO on SKU-110K overnight on the 4060 Ti. Check by eye that it finds most products on 10 of our photos.
 - [ ] **Keep the detector swappable.** A `Detector` protocol with one `detect(image) -> boxes`, backend chosen in config, so everything downstream is detector-agnostic. YOLO is the starting point, not the conclusion — the DETR branch (RT-DETR, D-FINE, DEIM) now leads real-time detection, and DEIM is Apache-2.0, halves training cost, and gains most on small objects, which is exactly our weakness. Rationale and candidate table in [`DETECTOR_ALTERNATIVES.md`](DETECTOR_ALTERNATIVES.md).
 - [ ] **Small objects.** Use a larger input size (1280) or tiled inference (SAHI) for whole-aisle photos.
-- [ ] **Label the test set** in Label Studio with the detector's boxes pre-filled; correct boxes and assign classes. Brand level first if time is short.
+- [ ] **Label the test set** in Label Studio with the detector's boxes pre-filled, in two passes: geometry first (class `product` only), then identity (our SKU, `COMPETITOR_<category>`, or `out_of_scope`). Two labelers on the first five photos to measure agreement. Brand level first if time is short. See [`LABELING_STRATEGY.md`](LABELING_STRATEGY.md) §2, §7.
+- [ ] **Cluster labeling, first batch.** Crop `label_batch_01.txt` with the detector, embed with DINOv2, cluster, pre-suggest classes from the invoice packshots, and name whole clusters in Label Studio. Measure crops per cluster, seconds per decision, and the `mixed` rate. Never over test-store photos. See [`LABELING_STRATEGY.md`](LABELING_STRATEGY.md) §3.
 - [ ] **Reference gallery.** Packshots plus crops from the corrected test-adjacent photos (never from the test set itself), one folder per SKU.
 - [ ] **Embedding matcher.** Embed each crop, find the nearest gallery match, and label it `other` below a similarity threshold.
 - [ ] **Evaluation script.** Per-brand count error and share-of-shelf error on the test set, plus detector recall.
@@ -186,6 +191,9 @@ The biggest risk is flavor-level confusion; brand-level counts will be reliable 
 | Inference slows MongoDB | Slow apps | Container CPU/RAM limits; move to a dedicated box if needed |
 | Label Studio exposed publicly | Data exposure | Signup disabled day 1; reverse proxy in Phase 4 |
 | Class list or packshots arrive late | Stage 2 slips | Start with a brand-level gallery and `COMPETITOR_<category>` |
+| Our product misread as a competitor (or the reverse) | Share of shelf wrong in the direction that matters | Report the ours-vs-not confusion separately from flavor accuracy |
+| Non-category products counted as competitors | Share of shelf dragged down by framing | `out_of_scope` label; agree the reporting categories with the business |
+| Labeling volume looks unbounded | Team stalls | Only the test set is labeled exhaustively; identity by cluster; detector corrections metered by active learning |
 
 ## Resources and dependencies
 
@@ -199,6 +207,9 @@ The MVP needs no purchases; month 2 needs one extra disk and labeler time.
 | Docker deploy slot on db server | Engineering | Day 12 |
 | Extra 500 GB–1 TB disk on db server | Management | Month 2 |
 | 5–10 labelers, 3–4 h/day | Management | Month 2 |
+| Labeling platform with review + assignment (CVAT Community, free; or Label Studio Enterprise, paid) | Engineering / Management | Before month-2 labelers start |
 | Rep correction screen in field app | Engineering | Month 3 |
+
+**Labeling tools:** Label Studio is the one team tool for Phase 1. Its free Community edition has no reviewer role, task assignment, or agreement metrics, so re-decide before the month-2 labelers start: self-hosted CVAT Community has those for free, or pay for Label Studio Enterprise. Roboflow's free plan publishes the data, so it is not used for company photos; Make Sense and X-AnyLabeling are single-user helpers whose COCO output is imported back. Reasons in [`LABELING_STRATEGY.md`](LABELING_STRATEGY.md) §5.
 
 **Tools:** Ultralytics YOLO, SAHI, DINOv2 or CLIP, FastAPI, Label Studio, Docker, and later MLflow, DVC, and SeaweedFS or Garage. All free and open source; check each model's weights license before production use.
