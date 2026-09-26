@@ -14,8 +14,11 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_CONFIG = PROJECT_ROOT / "configs" / "export.yaml"
 DEFAULT_CLASSES = PROJECT_ROOT / "configs" / "classes.csv"
 DEFAULT_MANIFEST = PROJECT_ROOT / "data" / "raw" / "manifest.csv"
+DEFAULT_IMAGES_DIR = PROJECT_ROOT / "data" / "raw" / "images"
 DEFAULT_SPLITS_DIR = PROJECT_ROOT / "data" / "splits"
 DEFAULT_LABEL_STUDIO_DIR = PROJECT_ROOT / "data" / "label_studio"
+# Model outputs; gitignored, and what scripts/sync_from_hemin.sh pulls back.
+DEFAULT_RUNS_DIR = PROJECT_ROOT / "runs"
 
 
 def load_config(path: str | Path) -> dict:

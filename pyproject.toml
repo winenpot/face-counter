@@ -22,6 +22,7 @@ face-counter = "face_counter:main"
 shelf-export = "face_counter.training.export_photos:main"
 shelf-splits = "face_counter.label_studio.make_splits:main"
 shelf-label-prep = "face_counter.label_studio.prepare_label_studio:main"
+shelf-bakeoff = "face_counter.training.detector_bakeoff:main"
 
 [build-system]
 requires = ["uv_build>=0.12.15,<0.13.0"]
@@ -35,6 +36,7 @@ dev = [
 ]
 analytics = [
     "notebook>=7.6.2",
+    "transformers>=4.50",
     "ultralytics>=8.3",
 ]
 
