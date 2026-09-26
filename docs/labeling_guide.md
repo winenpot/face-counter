@@ -20,6 +20,9 @@ it in the task's **Notes** box and ask. Don't guess differently from everyone el
 - Products in a category we don't sell at all (shampoo, detergent, …): box them
   as `out_of_scope`. Don't label them as competitors.
 - Press **Shift+F** and type to search the class list.
+- Once per browser: open the **gear icon** (Settings) in the labeling screen and turn on
+  **Show labels inside the regions**, so every box shows its class on the photo.
+  It's off by default, which makes a wrong or missing class easy to miss.
 
 ## Edge cases
 
