@@ -39,6 +39,7 @@ data/raw/
 # reproducible from data/raw + configs, so they are not worth tracking.
 data/splits/
 data/label_studio/
+trial.txt
 # Don't blanket-ignore /data here. DVC writes precise
 # per-folder .gitignore entries on `dvc add` / `dvc repro`.
 
