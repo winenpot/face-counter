@@ -107,15 +107,26 @@ bake-off of existing weights on our frozen test set.**
 
 | Checkpoint | Reported | Note |
 | --- | --- | --- |
-| `isalia99/detr-resnet-50-sku110k` (HF) | **58.9 mAP** on SKU110K val | DETR, 400 queries — **trained on a 4060 Ti**, i.e. our exact hardware |
+| `chistopat/sku110k-yolo11-object-detector` (HF), YOLO11s 640 | **0.927 mAP50 / 0.577 mAP50-95 / 0.867 recall** on SKU-110K test | In the bake-off as `sku110k-yolo11s`. Single class `object`; `.pt` and ONNX |
+| `is36e/detr-resnet-50-sku110k` (HF, formerly `isalia99/…`) | **58.9 mAP** on SKU110K val | In the bake-off as `detr-r50-sku110k`. DETR, 400 queries (a hard cap of 400 boxes per photo) — **trained on a 4060 Ti**, i.e. our exact hardware |
+| `benjamintli/dfine-xl_sku110k` (HF) | 0.296 mAP after **1 epoch** | Not in the bake-off: undertrained |
 | Ultralytics platform, YOLO26l SKU-110K | **0.906 mAP50 / 0.548 mAP50-95** | Described by its author as the detect stage feeding an embedding gallery — literally our architecture |
 | `Media-Smart/SKU110K-DenseDet` | — | mmdetection v1.0rc1 era; old stack |
 | `eg4000/SKU110K_CVPR19` | — | Original RetinaNet + Soft-IoU reference weights |
 
 **Do not treat those numbers as ours.** Two caveats, both load-bearing:
 
-1. **Licence and provenance are unverified** for every one of them. Check before
-   anything reaches production.
+1. **Licence and provenance.** *Checked 2026-09-26:* the SKU-110K dataset
+   README says it is "provided for the exclusive use by the recipient and
+   solely for academic and non-commercial purposes". Every checkpoint in the
+   table was trained on it, whatever licence its own model card declares
+   (the DETR card says Apache-2.0; the YOLO11 card says "other" and defers to
+   the dataset terms). **Decision:** SKU-110K weights are used for evaluation
+   and Label Studio pre-labeling only, and never reach the serving path until
+   the licence question is resolved with the business. This also applies to
+   the roadmap's fallback "train a YOLO on SKU-110K". The licence-clean route,
+   if it comes to that, is a COCO/Objects365-pretrained DEIM or D-FINE
+   fine-tuned on our own corrected boxes.
 2. **Domain shift is real and unmeasured.** These are trained on Western retail.
    Our photos are Iranian shops and fridges, shot by field reps on phones, with
    glare through fridge glass. A checkpoint reporting 0.906 mAP50 on SKU-110K

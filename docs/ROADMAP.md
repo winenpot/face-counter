@@ -189,6 +189,7 @@ The biggest risk is flavor-level confusion; brand-level counts will be reliable 
 | Inference slows MongoDB | Slow apps | Container CPU/RAM limits; move to a dedicated box if needed |
 | Label Studio exposed publicly | Data exposure | Signup disabled day 1; reverse proxy in Phase 4 |
 | Class list or packshots arrive late | Stage 2 slips | Start with a brand-level gallery and `COMPETITOR_<category>` |
+| SKU-110K is licensed for academic, non-commercial use only | Every SKU-110K detector (published or self-trained) may be unusable in production | Use them for evaluation and pre-labeling only; resolve with the business before Phase 2. Licence-clean fallback: COCO/Objects365-pretrained DEIM or D-FINE fine-tuned on our own boxes |
 | Our product misread as a competitor (or the reverse) | Share of shelf wrong in the direction that matters | Report the ours-vs-not confusion separately from flavor accuracy |
 | Non-category products counted as competitors | Share of shelf dragged down by framing | `out_of_scope` label; agree the reporting categories with the business |
 | Labeling volume looks unbounded | Team stalls | Only the test set is labeled exhaustively; identity by cluster; detector corrections metered by active learning |
