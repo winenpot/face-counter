@@ -37,7 +37,12 @@ configs/Product/
 data/raw/
 # Generated from the manifest by shelf-splits / shelf-label-prep; both are
 # reproducible from data/raw + configs, so they are not worth tracking.
-data/splits/
+# Exception: test_labeling.txt is the FROZEN test set. It was hand-corrected
+# on 2026-09-26 (two non-shelf photos swapped out), so no seed regenerates it,
+# and every accuracy number is anchored to it. `data/splits/*` (not
+# `data/splits/`) is what lets git re-include one file inside the directory.
+data/splits/*
+!data/splits/test_labeling.txt
 data/label_studio/
 trial.txt
 # Don't blanket-ignore /data here. DVC writes precise

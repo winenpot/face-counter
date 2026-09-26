@@ -87,18 +87,16 @@ Photos come in from the reps' app, results go back beside them, and corrections 
 By day 3: data is exportable, the test set is fixed, labeling is secured, and the business side is gathering classes and packshots.
 
 **Status (2026-09-26):** nearly closed. The full export ran against production
-(9,704 photos, ~30 GB on the GPU box), the manifest exists, and splits were cut
-over it on 2026-09-24 (9,573 rows after dedupe: 7,640 train / 1,076 val /
-857 test; a 30-photo test set; a 250-photo first labeling batch). What is left
-is a visual check of the test set's mix, **freezing it with a versioned home**
-(`data/splits/` is gitignored), the EXIF-orientation decision, and the
+(9,704 photos, ~30 GB on the GPU box), the manifest exists, splits were cut
+over it (9,573 rows after dedupe: 7,640 train / 1,076 val / 857 test), and the
+30-photo test set is **frozen and tracked in git**. What is left is the
 labeling-guide examples. Detail in [`PHASE0_REMAINING.md`](PHASE0_REMAINING.md).
 Checkboxes below: `[x]` done · `[~]` partly done, see the note · `[ ]` not started.
 
 - [x] **Secure Label Studio.** Set `LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK=true`, remove unknown accounts, use strong passwords. It's on the public internet, so this comes first. — *the running instance was hardened by hand, but the committed `deploy/label-studio/` could not reproduce it (would not start; published on `0.0.0.0`; no photo mount). The compose file is fixed now; the live instance still needs to be migrated onto it, and its member list re-checked.*
 - [x] **Export script.** Pull photos plus metadata (store, date, rep, visit) out of MongoDB to disk, read-only, in batches. — *full production run completed 2026-09-24: 9,409 new + 295 already on disk, `missing: 0`, `bad_image: 1` (the known truncated 7 KB photo). ~30 GB on the GPU box.*
 - [x] **Manifest.** One CSV row per photo: id, store, visit, date, file path, image size. Every dataset later is built from it. — *9,704 rows. `visit_id`/`taken_at`/`sha256` 100% filled; `store_id` 99.0%, `city` 98.2% (matches the surveyed ~99% join rate); `rep_id` empty, it doesn't exist on the photos. 2,230 distinct stores — below the surveyed 3,292, gap not yet explained, so don't quote store coverage.*
-- [~] **Fixed test set.** 30 photos from stores held out of training entirely, split by store, never by random photo. Mix aisles, fridges, glare, and store types. — *cut over the full manifest 2026-09-24: 30 photos from 30 distinct stores, zero store overlap between any pair of splits (checked 2026-09-26). Still to do: eyeball the mix on the GPU box, then freeze with a versioned copy of `test_labeling.txt`.*
+- [x] **Fixed test set.** 30 photos from stores held out of training entirely, split by store, never by random photo. Mix aisles, fridges, glare, and store types. — *frozen 2026-09-26: 30 photos from 30 distinct stores, zero store overlap between any pair of splits. Reviewed by eye; two non-shelf photos were swapped for the next diverse picks. Hand-corrected, so `data/splits/test_labeling.txt` is tracked in git and is the authority. Never `--force` it again.*
 - [x] **Class list** requested from sales/analysts in `BRAND_CATEGORY_SKU` form; competitors may start as `COMPETITOR_<category>`. — *103 classes across 8 brands, built from the real sales invoice; see `PHASE0_REMAINING.md`. Competitors stay at `COMPETITOR_<category>` by design, not as a stopgap (see Approach). Open: the business's reporting categories, which may not match the invoice's packaging-based ones.*
 - [x] **Packshots** requested from marketing: 2–5 images per SKU, ours first, competitors where available. — *enough to proceed: 242 invoice-embedded images named by `class_name` seed a first gallery. Studio packshots covering all 8 brands and named by `class_name` remain an open ask in `docs/requests.md`, no longer Phase 0-blocking.*
 - [~] **Labeling guide,** one page: what counts as a face (front row only, visible label), partly hidden products, fridge glass, and 3 annotated example photos. — *written (`labeling_guide.md`); the 3 annotated examples are still a placeholder.*

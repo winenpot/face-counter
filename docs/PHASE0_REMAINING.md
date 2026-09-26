@@ -21,13 +21,20 @@ data. Re-check them any time with:
       splits; all 30 test photos resolve to `test` and come from 30 distinct
       stores; the batch is train-only with zero test overlap; 93 blank-store
       rows (the known join failures).*
-- [~] **Test set cut at 30 photos — not yet frozen.** Eyeball the mix on the
-      GPU box first: aisles, fridges, glare, store types. Re-rolling is cheap
-      only until labeling starts. Then freeze: `data/splits/` is gitignored,
-      so `test_labeling.txt` currently has no versioned copy — add a
-      `.gitignore` exception for that one file (IDs only, no media) and commit
-      it. Splits hash the resolved `store_id` (§1 of Done, below —
-      NOT the raw `store_code`), so re-exporting never moves a store.
+- [x] **Test set frozen, 2026-09-26: 30 photos, 30 distinct stores,
+      committed.** The 30 were reviewed as a contact sheet: ~16 fridges
+      (glass-door and open, including heavy glare), ~14 aisle, counter and
+      grocery shelves, ~18 Tehran districts, resolution tiers from 810x1080 up.
+      Two photos were swapped out by hand: a neon-sign PNG (not a shelf) and a
+      street-level storefront. Replacements were the next picks in
+      `diverse_sample`'s own order (seed 42) from unused test stores: a
+      low-resolution aisle and a glass-door fridge with glare. Because it is
+      hand-corrected, **no seed regenerates this list**:
+      `data/splits/test_labeling.txt` is tracked in git as the single
+      exception to the `data/splits/` ignore rule, and the git copy is the
+      authority. Never run `shelf-splits --force` again. Splits hash the
+      resolved `store_id` (§1 of Done, below — NOT the raw `store_code`), so
+      re-exporting never moves a store.
 - [ ] **Unexplained: 2,230 distinct `store_id`, against the surveyed 3,292.**
       The 1% join-failure rate (93 blank rows) does not account for a 32% gap.
       Not blocking — median 3 photos/store, max 37, ample for a 30-photo test
