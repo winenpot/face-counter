@@ -14,6 +14,111 @@ original record.
 
 ---
 
+## 1405/07/04 (2026-09-26) — test set frozen, labeling strategy written, and the first three detectors actually ran
+
+**Labeling strategy — how 9,500 photos get labeled by a small team.** New doc
+`LABELING_STRATEGY.md`. Three decisions carry it: only the **test set** is
+labeled exhaustively (two passes); identity is named per *cluster* of
+near-identical crops rather than per crop; and competitors are labeled at
+category level (`COMPETITOR_<category>`), because share of shelf only ever needs
+"ours vs. not ours" within a category. Also settled a tooling question with a
+licence answer: **Roboflow's free plan publishes your data**, so it is out for
+company photos — Label Studio stays the primary tool.
+
+**Label Studio operational guardrails.** The stack holds every annotation in
+named volumes, so `down -v` / `docker volume rm` / `prune --volumes` are
+unrecoverable there. Written into `deploy/label-studio/README.md` with the
+export + `pg_dump` procedure to run before any upgrade. Noted that the unrelated
+`ATPG-tagsystem` Label Studio on port 7071 is a different instance — don't
+import into it, don't touch its volumes.
+
+**The 30-photo test set is frozen (12:57).** Reviewed by eye, hand-corrected,
+and committed: `data/splits/test_labeling.txt` is now the one tracked file under
+`data/splits/`, via an explicit `.gitignore` exception. The **git copy is the
+authority** and no seed regenerates it — `shelf-splits --force` must never run
+again, or every accuracy number ever reported is measured against a different
+test set.
+
+**EXIF correction, worse than first recorded.** The 2026-09-24 entry said two of
+the 30 test photos disagreed with the manifest on orientation. The real number
+is **14 of 30 stored sideways**. The manifest's width/height are post-rotation;
+pixels must always be loaded through `ImageOps.exif_transpose`. Anything that
+skips it places boxes rotated 90° and it will look like a model bug.
+
+**`shelf-bakeoff` — step zero of Phase 1 (13:30).** New CLI
+(`src/face_counter/training/detector_bakeoff.py`): runs candidate detectors over
+the frozen test set and writes what a human needs to judge them —
+`detections.jsonl`, `counts.csv`, `overlays/<model>/*.jpg`, and
+`ls_predictions_<model>.json` to pre-fill the Label Studio geometry pass.
+Deliberately scores nothing: the test set has no boxes yet.
+
+**A transformers 5 break, fixed (14:13).** The DETR-SKU110K checkpoint's
+`config.json` was written by transformers 4.38 with `"dilation": null` (and three
+other nulls). transformers 5 type-checks config fields strictly and rejects
+`None` for a `bool`; dropping the null keys falls back to the class defaults,
+which is what 4.x did with `None` anyway.
+
+**First real run, on the GPU box (14:15–14:23), and what it showed.** 30 photos
+x 3 models, ~15 s total; steady state 0.04–0.07 s/photo with a slower first
+image per model (CUDA warm-up) — GPU, unambiguously. Box counts over the test
+set:
+
+| model | total | median | min | max |
+|---|---|---|---|---|
+| sku110k-yolo11s | 2,319 | 69.5 | 15 | 218 |
+| detr-r50-sku110k | 5,545 | 183.5 | 51 | 396 |
+| yoloe-26s | 1,466 | 40.5 | 1 | 134 |
+
+Three readings, none of them accuracy:
+- **DETR is structurally capped at 400 boxes** (400 queries) and one photo came
+  back with 396 — saturation, on shelves documented as reaching ~500 faces. Its
+  uniformly high counts are also what DETR does at conf 0.25 with no NMS, so
+  part of the gap is recall and part is duplicate queries. Only the overlays
+  separate the two.
+- **YOLOE collapses on two photos** (1 box each) while returning 134 elsewhere:
+  a failure, not a weak score. Generic text prompts are the suspect.
+- The three models disagree by 3–10x on the same photo, which is exactly why
+  step zero exists — the geometry pass can't be pre-filled from a model chosen
+  on vibes.
+
+**The pull had to be done by hand, and that is a real finding.**
+`sync_from_hemin.sh` gates on the remote tree being clean, but
+`~/code/face-counter` on the GPU box **is not a git repo** (it was rsynced, never
+cloned), so the gate fails closed and every results pull aborts. Pulled the 43 MB
+run directly with `rsync` instead. Two facts worth keeping: the box has **no
+revert safety net** for anything edited there, and the fix is to `git clone` it
+rather than to weaken the gate.
+
+**Also established: this workstation cannot be pushed to.** It runs no sshd —
+from the GPU box, `ssh winenpot@192.168.1.206` is refused. So "results are sent
+back" is not implementable as a push; results come back only because this side
+pulls them. Any future automation of that must be initiated here.
+
+**Reverted an over-engineered sync refactor.** Started building `.env`-driven
+sync config (`GPU_HOST` alias, `GPU_REMOTE_DIR`, `GPU_REMOTE_HAS_GIT`), a
+`report.json` per run, and a `--run <stamp>` pull mode — five files. The user
+called it too much machinery for the problem and reverted it all; the existing
+scripts work, and where things go is easier to remember than to configure.
+Recorded because the *underlying facts* (no sshd here, no git there) outlive the
+code that was deleted.
+
+**Still open, end of day:**
+- Eyeball the overlays in `runs/bakeoff/20260926-141557/overlays/` and decide
+  whether DETR's extra boxes are recall or duplicates — that single judgement
+  picks the model that pre-fills the geometry pass.
+- The 3 annotated examples for `labeling_guide.md` (last Phase 0 item, owner
+  working on it).
+- `git clone` the GPU box so sync stops needing manual rsync.
+- Carried over: the 2,230-vs-3,292 store gap, studio packshots, `root` rotation.
+
+**Lesson of the day:** a guard that fails closed on a condition nobody
+anticipated (no `.git` on the far side) is indistinguishable from a broken
+script, and gets worked around by hand instead of fixed. Same shape as
+2026-09-24's `--with-data` bug: the failure is silent-ish, the workaround is
+cheap, so the cause survives. Note the cause where it will be read again.
+
+---
+
 ## ۱۴۰۵/۰۷/۰۲ (۲۰۲۶-۰۹-۲۴) — the export finally ran; the model landscape moved; a user tip corrected a wrong call
 
 **Morning – Phase 0 audit.** Walked the roadmap checkbox by checkbox. The
