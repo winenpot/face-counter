@@ -169,6 +169,7 @@ commits) is not revalidated or rewritten.
     docs/           ROADMAP, PROPOSAL, DATASET_PREPARATION, labeling_guide, requests
     scripts/        scan_images.py, a standalone image audit helper; sync_to_hemin.sh, sync_from_hemin.sh
     tests/          end-to-end tests on a fake MongoDB
+    investigations/ one-off probes kept for the record; nothing depends on them
     data/           git-ignored; DVC owns dataset versioning
 
 ## Data

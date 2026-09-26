@@ -44,6 +44,8 @@ data/raw/
 data/splits/*
 !data/splits/test_labeling.txt
 data/label_studio/
+# One-off scratch list from an early classes.csv probe; the kept version of that
+# work lives in investigations/ (see its README).
 trial.txt
 # Don't blanket-ignore /data here. DVC writes precise
 # per-folder .gitignore entries on `dvc add` / `dvc repro`.
