@@ -48,6 +48,11 @@ def test_task_url_matches_prepare_label_studio(tmp_path):
     assert task["data"]["image"] == expected["data"]["image"]
 
 
+def test_clean_legacy_config_drops_nulls_only():
+    raw = {"dilation": None, "backbone": None, "num_queries": 400, "use_timm_backbone": False}
+    assert bk.clean_legacy_config(raw) == {"num_queries": 400, "use_timm_backbone": False}
+
+
 def test_run_writes_counts_jsonl_overlays_and_tasks(tmp_path):
     images = tmp_path / "images"
     images.mkdir()

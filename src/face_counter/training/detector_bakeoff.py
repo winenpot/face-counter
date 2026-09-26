@@ -20,10 +20,6 @@ Pixels are always loaded through ImageOps.exif_transpose: 14 of the 30 test phot
 are stored sideways, and every box, manifest width/height and Label Studio
 percentage refers to the rotated (displayed) image.
 
-Licence: the SKU-110K dataset is "solely for academic and non-commercial purposes",
-so both SKU-110K checkpoints are for evaluation and pre-labeling only, never for the
-serving path, until that is resolved (docs/DETECTOR_ALTERNATIVES.md).
-
 Usage (GPU box, analytics group installed):
     uv run shelf-bakeoff
     uv run shelf-bakeoff --models sku110k-yolo11s,yoloe-26s --imgsz 1280 --conf 0.25
@@ -105,7 +101,7 @@ def _ultralytics_detector(model, imgsz: int, conf: float) -> Detector:
 
 
 def build_sku110k_yolo11s(imgsz: int, conf: float) -> Detector:
-    """YOLO11s trained on SKU-110K at 640 (chistopat, HF). Licence: SKU-110K terms."""
+    """YOLO11s trained on SKU-110K at 640 (chistopat, HF)."""
     from huggingface_hub import hf_hub_download
     from ultralytics import YOLO
 
@@ -115,12 +111,31 @@ def build_sku110k_yolo11s(imgsz: int, conf: float) -> Detector:
 
 
 def build_yoloe_26s(imgsz: int, conf: float) -> Detector:
-    """YOLOE-26s, text-prompted with generic packaging nouns. Licence: AGPL-3.0."""
+    """YOLOE-26s, text-prompted with generic packaging nouns."""
     from ultralytics import YOLOE
 
     model = YOLOE("yoloe-26s-seg.pt")
     model.set_classes(YOLOE_PROMPTS)
     return _ultralytics_detector(model, imgsz, conf)
+
+
+def clean_legacy_config(raw: dict) -> dict:
+    """Drop null fields from a config saved by an older transformers.
+
+    This checkpoint's config.json was written by transformers 4.38 with
+    `"dilation": null` (and three other nulls). transformers 5 type-checks config
+    fields strictly and rejects None for a bool; omitting the key falls back to the
+    class default instead, which is what 4.x did with None anyway.
+    """
+    return {k: v for k, v in raw.items() if v is not None}
+
+
+def _detr_config(repo: str):
+    from huggingface_hub import hf_hub_download
+    from transformers import DetrConfig
+
+    with open(hf_hub_download(repo, "config.json"), encoding="utf-8") as f:
+        return DetrConfig.from_dict(clean_legacy_config(json.load(f)))
 
 
 def build_detr_r50_sku110k(imgsz: int, conf: float) -> Detector:
@@ -133,7 +148,8 @@ def build_detr_r50_sku110k(imgsz: int, conf: float) -> Detector:
     repo = "is36e/detr-resnet-50-sku110k"
     device = "cuda" if torch.cuda.is_available() else "cpu"
     processor = AutoImageProcessor.from_pretrained(repo)
-    model = DetrForObjectDetection.from_pretrained(repo).to(device).eval()
+    model = DetrForObjectDetection.from_pretrained(repo, config=_detr_config(repo))
+    model = model.to(device).eval()
 
     def detect(img: Image.Image) -> Detections:
         inputs = processor(images=img, return_tensors="pt").to(device)
