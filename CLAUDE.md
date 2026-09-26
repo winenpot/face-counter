@@ -48,3 +48,5 @@ When adding data-processing scripts, follow this doc's tool choices rather than 
 `deploy/label-studio/` deploys the third-party **labeling web app** that labelers use in the browser. It is **not** this service's deployment — the shelf-detector inference API (Phase 2) will get its own. Don't conflate the two compose files.
 
 It holds company photos and is network-reachable, so: signup disabled, invite links only, port bound to one interface via `LS_BIND_IP`. Note that Docker publishes ports ahead of `ufw`, so a firewall does not restrict it. See `deploy/label-studio/README.md`.
+
+**Never run `docker compose down -v`, `docker volume rm`, or any `prune --volumes` against a Label Studio stack.** Its named volumes hold every annotation, and deleting them is unrecoverable. `stop` or plain `down` keeps them. Before an upgrade or cleanup, export JSON and `pg_dump` first (README, "Stopping without losing labels"). This machine also runs an unrelated Label Studio from `~/code/ATPG-tagsystem` on port 7071; don't import into it or touch its volumes.

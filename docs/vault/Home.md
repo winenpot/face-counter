@@ -50,7 +50,9 @@ demo users, explicitly disposable, so no backup/migration was needed.
 excluded from the sync and hand-written on the server). Now running:
 image pinned to `heartexlabs/label-studio:1.23.0` (was `:latest`), same
 port `7071` on `0.0.0.0` (kept intentionally open — demo instance for
-supervisors, no real data, user's explicit call), Postgres tuning from
+supervisors, no real data, user's explicit call; **re-confirmed 2026-09-26 to
+stay public while real labeling batches are loaded**, see
+`deploy/label-studio/README.md` "Network exposure"), Postgres tuning from
 the compose file applied, `LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK=true`
 confirmed active. Admin login `admin@atpg.local`, password in
 `/home/data/label-studio/.env` on the server (chmod 600), never passed
@@ -60,7 +62,10 @@ through chat.
 created empty — no exported photos exist on the apps server (the export
 runs on Hemin's GPU box, see below). Manual image upload / demo projects
 work fine; the `prepare_label_studio.py` local-files task-import workflow
-will show broken images until photos are synced to this path too.
+will show broken images until photos are synced to this path too. Photos go
+there **per labeling batch, append-only**, never the whole corpus; the
+procedure is `deploy/label-studio/README.md`, "Labeling in batches on the
+server".
 
 **Deploy workflow going forward:** edit `deploy/label-studio/docker-compose.yml`
 in git -> `rsync -av --exclude .env deploy/label-studio/ atpg:/home/data/label-studio/`
@@ -69,6 +74,14 @@ in git -> `rsync -av --exclude .env deploy/label-studio/ atpg:/home/data/label-s
 compose text does not touch them. `.env` on the server is the one thing
 never overwritten by the sync — hand-edit it there directly if it needs to
 change.
+
+**Never `docker compose down -v` (or `docker volume rm` / `prune --volumes`)
+on the server's Label Studio.** The 2026-09-24 teardown of the old instance
+used `down -v` deliberately, because it held only demo data. On the current
+instance the same command deletes every real annotation, with no undo. `down`
+or `stop` keeps the volumes. Take a JSON export plus `pg_dump` before any
+upgrade or cleanup (`deploy/label-studio/README.md`, "Stopping without losing
+labels").
 
 ## Future: FastAPI inference service (Phase 2)
 

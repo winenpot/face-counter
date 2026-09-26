@@ -198,6 +198,11 @@ saves real time and its output is imported back.
   those 30 photos, regenerating them costs those hours.
 - **Version every export.** A Label Studio export is a snapshot; keep each one,
   dated, and never overwrite a previous round's labels.
+- **Never `docker compose down -v` on a Label Studio stack**, and never
+  `docker volume prune` / `docker system prune --volumes` on a machine hosting
+  one. Those delete the volumes holding every annotation; a plain `down` or
+  `stop` keeps them. Export JSON and `pg_dump` before any upgrade or cleanup.
+  Detail: `deploy/label-studio/README.md`, "Stopping without losing labels".
 - **Measure agreement on the geometry pass first.** Two labelers, the same five
   test photos. If they disagree on what counts as a face, fix
   `labeling_guide.md` before labeling the other 25.
