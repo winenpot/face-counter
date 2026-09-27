@@ -13,12 +13,17 @@ would have to lump a future category into `other` and it would need relabeling.
 from __future__ import annotations
 
 from collections import Counter
+from dataclasses import dataclass
 from pathlib import Path
 
 from face_counter.utils.config import load_config
 
 COMPETITOR = "COMPETITOR"
 OUT_OF_SCOPE = "out_of_scope"
+# Pass-one geometry label, and the label a scoped identity pass leaves on every
+# box it does not name: "not identified yet", NOT "irrelevant". A later scope
+# names these boxes; nothing already labeled has to change.
+PRODUCT = "product"
 SOURCES = {"invoice", "manual"}
 
 
@@ -88,3 +93,43 @@ def problems(rows: list[dict], reporting: dict[str, list[str]]) -> list[str]:
             if pack not in competitor_packs:
                 out.append(f"category {cat!r} reports on {pack!r} but there is no {COMPETITOR}_{pack}")
     return out
+
+
+# --- scope ------------------------------------------------------------------
+# The full taxonomy (classes.csv + reporting.yaml) describes everything the
+# system can know. A scope (configs/scope.yaml) is the slice being worked on
+# now: which categories get labeled and reported, and whose share is reported.
+# It filters; it never deletes or renames anything, so widening it later is a
+# config edit.
+
+
+@dataclass(frozen=True)
+class Scope:
+    brands: list[str]          # "ours" in the reported share
+    categories: list[str]      # reporting categories in play
+    pack_types: list[str]      # union of those categories' pack types
+
+
+def load_scope(path: str | Path, reporting: dict[str, list[str]]) -> Scope:
+    cfg = load_config(path) or {}
+    brands = list(cfg.get("brands") or [])
+    cats = list(cfg.get("categories") or [])
+    unknown = [c for c in cats if c not in reporting]
+    if unknown:
+        raise ValueError(f"scope names categories not in reporting.yaml: {unknown}")
+    if not brands or not cats:
+        raise ValueError("scope needs at least one brand and one category")
+    packs = [p for c in cats for p in reporting[c]]
+    return Scope(brands=brands, categories=cats, pack_types=packs)
+
+
+def scoped_label_names(rows: list[dict], scope: Scope) -> list[str]:
+    """Identity-pass labels for a scope: every one of OUR classes whose pack type
+    is in scope (any brand -- a third brand's can is still a can, and calling it
+    a competitor would corrupt the share), the competitor class per scoped pack
+    type, and PRODUCT for every box left unnamed."""
+    ours = sorted((r["class_name"].strip() for r in rows
+                   if str(r.get("is_ours", "")).strip() == "1"
+                   and (r.get("pack_type") or "").strip() in scope.pack_types))
+    comps = [f"{COMPETITOR}_{p}" for p in scope.pack_types]
+    return ours + comps + [PRODUCT]

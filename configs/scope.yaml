@@ -1,0 +1,20 @@
+# Active scope: the slice of the full taxonomy being labeled and reported now.
+#
+# The full picture stays in classes.csv (every product and competitor type) and
+# reporting.yaml (every category the business has named). This file only
+# narrows what labelers are asked to name and what gets reported. Widening it
+# is a config edit, and nothing already labeled changes: boxes outside the
+# scope keep the label `product` ("not identified yet") and get named when a
+# later scope reaches them.
+#
+# Pilot, decided 2026-09-27: our share among all cans and all glass bottles,
+# reported separately per category, for two brands. Every can and glass bottle
+# is still named, whoever makes it (a Bomb can is ours, not a competitor);
+# `brands` only limits whose share is reported.
+#
+# Extensibility check: adding Bomb, a category, or a competitor name must only
+# ever touch this file, classes.csv, reporting.yaml, and gallery images. If it
+# needs a code change or a relabel, the design failed; record where.
+
+brands: [Kix-Max, TorshX]
+categories: [canned_drinks, glass_drinks]
