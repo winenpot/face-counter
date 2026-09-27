@@ -1,7 +1,7 @@
 # Labeling strategy — how 9,500 photos get labeled by a small team
 
 2026-09-26. Companion to [`ROADMAP.md`](ROADMAP.md) (what and when),
-[`labeling_guide.md`](labeling_guide.md) (the rules a labeler follows per box),
+[`labeling-guide/README.md`](labeling-guide/README.md) (the rules a labeler follows per box),
 and [`ERROR_ANALYSIS.md`](ERROR_ANALYSIS.md) §3 (active learning — which photos
 go to labelers after the first model exists). This document answers the question
 in between: **what labeling work exists at all, and in what order it starts.**
@@ -37,7 +37,7 @@ labeling workflow keeps them apart:
 
 - **Geometry pass.** Boxes only, one class: `product`. The detector pre-draws;
   the labeler deletes ghosts, adds misses, fixes edges, and applies the
-  front-row and 50%-visible rules from `labeling_guide.md`. No class list to
+  front-row and 50%-visible rules from `labeling-guide/README.md`. No class list to
   search, so the pass is fast and inter-annotator agreement is measurable on
   geometry alone.
 - **Identity pass.** Every box from the geometry pass becomes a crop; crops are
@@ -207,7 +207,7 @@ saves real time and its output is imported back.
   Detail: `deploy/label-studio/README.md`, "Stopping without losing labels".
 - **Measure agreement on the geometry pass first.** Two labelers, the same five
   test photos. If they disagree on what counts as a face, fix
-  `labeling_guide.md` before labeling the other 25.
+  `labeling-guide/README.md` before labeling the other 25.
 - **Only the photos being labeled go to the Label Studio server**, not the
   30 GB corpus: the apps server's root disk has ~20 GB free.
 

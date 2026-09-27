@@ -69,6 +69,11 @@ ordered to-do list is `docs/PILOT.md`.
   only; same versions). No CI/CD on purpose: a pipeline would hold an SSH key
   to the shared production server and could run an irreversible database
   upgrade with nobody watching. A post-commit hook reminds instead.
+- **Phase 0 is complete.** The first 3 test photos were labeled (#04, #06,
+  #22) and their screenshots became the guide's examples; the guide moved to
+  `docs/labeling-guide/README.md` beside them. Correcting YOLO26l's boxes on
+  those photos meant deleting 12-24 and drawing 5-8 new ones per photo, out
+  of about 115.
 
 **Lesson of the day:** the invoice text said "Carbonated Soft Drink" and the
 code guessed a container; the invoice's own pictures said otherwise. When a

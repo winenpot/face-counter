@@ -99,7 +99,7 @@ Checkboxes below: `[x]` done · `[~]` partly done, see the note · `[ ]` not sta
 - [x] **Fixed test set.** 30 photos from stores held out of training entirely, split by store, never by random photo. Mix aisles, fridges, glare, and store types. — *frozen 2026-09-26: 30 photos from 30 distinct stores, zero store overlap between any pair of splits. Reviewed by eye; two non-shelf photos were swapped for the next diverse picks. Hand-corrected, so `data/splits/test_labeling.txt` is tracked in git and is the authority. Never `--force` it again.*
 - [x] **Class list** requested from sales/analysts in `BRAND_CATEGORY_SKU` form; competitors may start as `COMPETITOR_<category>`. — *103 classes across 8 brands, built from the real sales invoice; see `PHASE0_REMAINING.md`. Competitors stay at `COMPETITOR_<category>` by design, not as a stopgap (see Approach). Reporting categories decided 2026-09-27: canned drinks, glass drinks, oils, dressings, mapped from pack types in `configs/reporting.yaml` so labels never depend on them. 110 of our classes after the TorshX can/glass split; no oil or dressing products of ours yet; see `PHASE0_REMAINING.md` §4.*
 - [x] **Packshots** requested from marketing: 2–5 images per SKU, ours first, competitors where available. — *enough to proceed: 242 invoice-embedded images named by `class_name` seed a first gallery. Studio packshots are probably not coming within the timeline (business, 2026-09-27); the gallery relies on invoice images plus crops from corrected non-test photos.*
-- [~] **Labeling guide,** one page: what counts as a face (front row only, visible label), partly hidden products, fridge glass, and 3 annotated example photos. — *written (`labeling_guide.md`); the 3 annotated examples are still a placeholder.*
+- [x] **Labeling guide,** one page: what counts as a face (front row only, visible label), partly hidden products, fridge glass, and 3 annotated example photos. — *done 2026-09-27: `docs/labeling-guide/README.md`, with 3 annotated examples from the pilot's first labeled test photos (two drinks fridges, one crowded small shop). **Phase 0 is complete.***
 
 ## Phase 1 — Working pipeline (days 4–10)
 
@@ -158,7 +158,7 @@ training data directly. See `ERROR_ANALYSIS.md` §3.)
 - [ ] **Pre-labeling loop.** The model labels batches of the corpus; labelers correct pre-filled boxes.
 - [ ] **Sampling strategy,** in order of value-for-effort: uncertainty → ensemble disagreement (free, we hold two detectors from the Phase-1 bake-off) → diversity over **detected-object-region** features, not whole-image (NORIS: 20–30% labeling-cost cut) → class-balanced allocation for the long tail (ALMUS) → density. Seed each round with the previous model's worst-50.
 - [ ] **Labeling ROI curve** plotted every round — accuracy vs. photos labeled. When it flattens, change strategy or stop, instead of burning labeler-months on a flat line.
-- [ ] **Inter-annotator agreement:** 2 labelers, same 20 photos, monthly. Human agreement is the accuracy ceiling; disagreements are bug reports against `labeling_guide.md`.
+- [ ] **Inter-annotator agreement:** 2 labelers, same 20 photos, monthly. Human agreement is the accuracy ceiling; disagreements are bug reports against `labeling-guide/README.md`.
 - [ ] **Active learning never touches the test set.** It systematically selects unusual photos; leakage would silently corrupt every number retroactively.
 - [ ] **Version corrections, never overwrite.**
 

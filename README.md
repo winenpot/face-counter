@@ -12,7 +12,7 @@ Two stages, so that adding a product does not mean retraining a detector:
 See `docs/ROADMAP.md` for the full plan, `docs/PROPOSAL.md` for the original
 proposal, and `LOGS.md` for a human-readable timeline of what's happened.
 
-## Status: Phase 0 (foundations)
+## Status: Phase 0 done, Phase 1 under way
 
 The inference API does not exist yet. What works today is the data pipeline:
 export photos out of MongoDB, fix a leakage-free test set, and prepare Label
@@ -120,7 +120,7 @@ Label the **test set first** (`test_labeling.txt`, 30 photos); it must stay
 fixed. Splits are a stable hash of `store_id`, so re-running after new exports
 never moves a store between train and test.
 
-Labelers follow `docs/labeling_guide.md`. `docs/requests.md` holds the messages
+Labelers follow `docs/labeling-guide/README.md`. `docs/requests.md` holds the messages
 to send for the class list and packshots.
 
 ## Commit messages
@@ -183,7 +183,7 @@ commits) is not revalidated or rewritten.
       label_studio/setup_project.py          shelf-ls-setup: create/update the Label Studio project over the API
       serving/                      placeholder for the future inference API (Phase 2)
     deploy/label-studio/    Label Studio (third-party labeling app) deployment
-    docs/           ROADMAP, PROPOSAL, PILOT, PILOT_LABELING, DATASET_PREPARATION, labeling_guide, requests
+    docs/           ROADMAP, PROPOSAL, PILOT, PILOT_LABELING, DATASET_PREPARATION, labeling-guide/ (guide + examples), requests
     scripts/        deploy_label_studio.sh (deploy the app); build_classes.py; scan_images.py; sync_to_hemin.sh, sync_from_hemin.sh
     .githooks/      commit-msg (message format), post-commit (deploy reminder)
     tests/          end-to-end tests on a fake MongoDB

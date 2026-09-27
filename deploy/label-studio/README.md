@@ -124,7 +124,7 @@ Server layout (see `docs/vault/Home.md`):
    image means the file didn't arrive: repeat step 3 for the file.
 
 7. **Label.** Labelers need the **Show labels inside the regions** setting on
-   (`docs/labeling_guide.md`).
+   (`docs/labeling-guide/README.md`).
 
 8. **Export after each session:** project → Export → JSON, saved with a date in
    its name, e.g. `exports/<project>-2026-09-26.json`. Keep every export and

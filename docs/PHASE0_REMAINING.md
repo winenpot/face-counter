@@ -136,9 +136,9 @@ data. Re-check them any time with:
       plus crops from corrected, non-test photos. Crops may beat packshots
       anyway, since they match the reps' cameras and lighting. SKUs that are
       rare in our corpus are the ones this hurts.
-- [~] **Labeling guide examples** — `docs/labeling_guide.md` still asks for
-      three annotated screenshots. In progress (owner working on it 2026-09-24);
-      not blocking the rest of §1/§4.
+- [x] **Labeling guide examples** — done 2026-09-27: three annotated
+      screenshots in `docs/labeling-guide/` (test photos #06, #04, #22),
+      shown in the guide. This closed Phase 0.
 
 ## 4. Then Phase 1
 

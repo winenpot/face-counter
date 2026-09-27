@@ -222,7 +222,7 @@ visibly plateaus.
   month. If humans agree only 85% of the time on what counts as a face, **85% is
   the ceiling** — and you will otherwise spend weeks chasing a gap that is
   labelling noise, not model error. Disagreements are also the best possible
-  bug reports against `labeling_guide.md`.
+  bug reports against `labeling-guide/README.md`.
 - **Version corrections, never overwrite.** One labeler having a bad week must
   be revertible without rebuilding the dataset.
 - **Seed each round with the previous model's worst-50 bank** (§1). The photos a

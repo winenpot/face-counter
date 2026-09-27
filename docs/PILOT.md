@@ -53,7 +53,8 @@ Three rules keep the pilot from closing off the wider system:
       `docs/PILOT_LABELING.md`. Take the three labeling-guide screenshots on
       the way (the last Phase 0 item). **On the server since 2026-09-27:**
       project `pilot-test-cans-glass` (id 3), 30 tasks, 2,814 pre-drawn boxes,
-      created by `uv run shelf-ls-setup`. Labeling itself not started.
+      created by `uv run shelf-ls-setup`. 3 of 30 labeled (#04, #06, #22),
+      and their screenshots are the guide's examples: Phase 0 closed.
 - [ ] **4. Gallery for the in-scope classes.** Invoice images in
       `configs/Product/from_invoice/` (about 2 per SKU) plus crops from labeled
       non-test photos. Competitors need no gallery: not ours = competitor.

@@ -76,9 +76,12 @@ Every photo opens with boxes already drawn by a detector, all labeled `product`
    | 6 | `COMPETITOR_glass` | Any other glass bottle |
    | 7 | `product` | Everything else: plastic bottles, cartons, snacks, oil... |
 
-3. **Leave everything else as `product`.** Don't use `out_of_scope` or
-   `COMPETITOR_other` in the pilot. `product` means "not named yet", and a
-   later round names those boxes without redrawing them.
+3. **Leave everything else as `product`, but keep its box.** Don't use
+   `out_of_scope` or `COMPETITOR_other` in the pilot. `product` means "not
+   named yet": a later round names those boxes without redrawing them. Grey
+   boxes follow the same rules as named ones (front row, at least 50%
+   visible, no reflections), because they are the ground truth for how many
+   products the detector should find.
 
 Unsure whether a bottle is glass or plastic? Leave it `product` and write
 `glass?` in Notes. A can or glass bottle whose brand you can't read is a
@@ -86,21 +89,27 @@ competitor unless it's clearly ours.
 
 ## Examples
 
-Screenshots live in `docs/labeling_guide/` (company photos: private repo only).
-Take them from the Label Studio screen after the photo is finished, with **Show
-labels inside the regions** on.
+Three test photos, labeled for the pilot and screenshotted in Label Studio with
+**Show labels inside the regions** on (company photos: private repo only). The
+coloured boxes are named cans and glass bottles; the grey ones are `product`,
+boxed but not named. The numbers on the boxes are the detector's confidence;
+they don't matter for labeling.
 
-1. A supermarket aisle: `docs/labeling_guide/1_aisle.png`, from photo
-   `6a9eb3a923de307d656e13a7`
+1. **Drinks fridge behind glass**, mixed glass bottles and dairy (test photo
+   #06, `6a7ab0c0a3a62efeb49860b2`). Competitor glass bottles named; milk,
+   yoghurt and plastic bottles left as `product`.
 
-   ![Supermarket aisle](labeling_guide/1_aisle.png)
+   ![Drinks fridge behind glass](example-1.png)
 
-2. A fridge with glass and glare: `docs/labeling_guide/2_fridge_glare.png`, from
-   photo `6a817d5c3d53df2b4e45e836`
+2. **Glass-door fridge with glare**, cans and glass bottles (test photo #04,
+   `6a4e539bcec3ddcb586786a8`). TorshX glass bottles (orange) next to
+   competitor glass bottles (light blue); cans in the top row not ours or not
+   glass stay grey until named.
 
-   ![Fridge with glare](labeling_guide/2_fridge_glare.png)
+   ![Glass-door fridge with glare](example-2.png)
 
-3. A crowded small shop: `docs/labeling_guide/3_small_shop.png`, from photo
-   `6a708b39ddee25bd587e2e06`
+3. **Crowded small-shop fridge** next to a cleaning-products shelf (test photo
+   #22, `6a829a66d5ed3a8841ce4ca6`). Kix-Max cans (red), TorshX cans (blue) and
+   competitor cans (purple); detergent bottles stay `product`.
 
-   ![Crowded small shop](labeling_guide/3_small_shop.png)
+   ![Crowded small-shop fridge](example-3.png)

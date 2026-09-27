@@ -1,7 +1,7 @@
 # Labeling the test set for the pilot: step by step
 
 For the person labeling the 30 frozen test photos: from nothing to a saved
-export file. What to label is in `docs/labeling_guide.md`, section "Pilot";
+export file. What to label is in `docs/labeling-guide/README.md`, section "Pilot";
 this page is only about the tool.
 
 Decided 2026-09-27: one labeler, **one pass** (fix boxes and name drinks on the
@@ -110,7 +110,7 @@ either step 1 didn't copy it or step 3.1 is missing; see
 
 1. Once per browser: in the labeling screen, open the **gear icon** and turn on
    **Show labels inside the regions**.
-2. Follow `docs/labeling_guide.md`, "Pilot". In short: fix the boxes, then click
+2. Follow `docs/labeling-guide/README.md`, "Pilot". In short: fix the boxes, then click
    each can or glass bottle and press its number (1-6). Leave the rest as
    `product` (7).
 3. Useful controls:
@@ -125,29 +125,28 @@ either step 1 didn't copy it or step 3.1 is missing; see
 
 About 10 to 20 minutes per photo, so plan on a day.
 
-## 6. The three labeling-guide screenshots
+## 6. The three labeling-guide screenshots (done 2026-09-27)
 
-When each of these is finished, take a screenshot of the Label Studio screen
-(labels inside the regions on) and save it under the given name:
-
-| Photo | Save as |
-| --- | --- |
-| `6a9eb3a923de307d656e13a7` (supermarket aisle) | `docs/labeling_guide/1_aisle.png` |
-| `6a817d5c3d53df2b4e45e836` (fridge with glare) | `docs/labeling_guide/2_fridge_glare.png` |
-| `6a708b39ddee25bd587e2e06` (crowded small shop) | `docs/labeling_guide/3_small_shop.png` |
-
-Find a photo by typing its id in the task list's search or filter. They are
-committed to git with the guide (private repo).
+Done: test photos #06, #04 and #22, saved as
+`docs/labeling-guide/example-{1,2,3}.png` and shown in the guide's Examples
+section. To replace one later: finish the photo, turn on **Show labels inside
+the regions**, screenshot the labeling screen without the browser's address
+bar (it shows the server's address), and save it over the old file.
 
 ## 7. Export the annotations, after every session
 
-1. In the project's task list: **Export** > **JSON** (not "JSON-MIN", and not
-   COCO: both drop information) > **Export**.
+1. In the project's task list: **Export** > **JSON** > **Export**. Not
+   JSON-MIN, CSV or COCO: each of those drops something the evaluation needs
+   (who labeled, when, the notes, the prediction each box started from, or
+   the photo id).
 2. Save the downloaded file as
    `data/label_studio/exports/pilot-test-<date>.json`, e.g.
    `pilot-test-2026-09-28.json`. Keep every export and never overwrite one.
    The folder is outside git on purpose (company photos).
 3. Then tell Hermes the file is there; the evaluation script reads it.
+
+Any other format (COCO for training, YOLO text files) is made later from this
+JSON by a script, so it never has to be exported by hand.
 
 Also take a database dump now and then (all projects, all users):
 
