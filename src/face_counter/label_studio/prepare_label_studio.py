@@ -6,10 +6,16 @@ The container must mount the export folder and set (see deploy/label-studio/dock
     LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT=/label-studio/files
 
 Usage:
+    uv run shelf-label-prep --list data/splits/test_labeling.txt --level scope \\
+        --predictions runs/bakeoff/20260927-114232/ls_predictions_yolo26l-sku110k.json \\
+        --stage-images data/label_studio/images
     uv run shelf-label-prep --list data/splits/test_labeling.txt --level geometry
-    uv run shelf-label-prep --list data/splits/test_labeling.txt --level scope
-    uv run shelf-label-prep --list data/splits/test_labeling.txt --level sku
     uv run shelf-label-prep --list data/splits/label_batch_01.txt --level brand
+
+--predictions attaches a detector's boxes (label `product`) so every photo opens
+pre-drawn. --stage-images writes the photos into a folder in a form every browser
+displays upright: JPEGs are copied as-is, HEIF/MPO are converted to upright JPEGs.
+Upload that folder's contents to the server's raw/images.
 
 Then in Label Studio: create a project, paste labeling_config_<level>.xml under
 Settings > Labeling Interface > Code, and import the tasks JSON.
@@ -19,13 +25,17 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import shutil
 from pathlib import Path
 from urllib.parse import quote
 from xml.sax.saxutils import quoteattr
 
+from PIL import Image, ImageOps
+
 from face_counter.utils import taxonomy
 from face_counter.utils.config import (
     DEFAULT_CLASSES,
+    DEFAULT_IMAGES_DIR,
     DEFAULT_LABEL_STUDIO_DIR,
     DEFAULT_MANIFEST,
     DEFAULT_REPORTING,
@@ -35,6 +45,10 @@ from face_counter.utils.config import (
 # Distinct, readable box colours; cycles for long class lists.
 PALETTE = ["#e6194b", "#3cb44b", "#4363d8", "#f58231", "#911eb4", "#42d4f4", "#f032e6",
            "#bfef45", "#469990", "#9a6324", "#800000", "#808000", "#000075", "#a9a9a9"]
+# `product` = "boxed, not named yet". Grey, so every box still to be named stands out.
+UNNAMED_COLOUR = "#9e9e9e"
+# Short label lists get number-key shortcuts (1-9) instead of a search box.
+MAX_HOTKEYS = 9
 
 
 def read_classes(path: Path, level: str, scope: Path = DEFAULT_SCOPE,
@@ -61,16 +75,25 @@ def read_classes(path: Path, level: str, scope: Path = DEFAULT_SCOPE,
 
 
 def labeling_config(classes: list[dict]) -> str:
-    labels = "\n".join(
-        f'    <Label value={quoteattr(c["name"])} background="{PALETTE[i % len(PALETTE)]}"/>'
-        for i, c in enumerate(classes)
-    )
-    # Filter = search box over the labels (essential with ~400 classes).
+    short = len(classes) <= MAX_HOTKEYS
+    colours = iter(PALETTE * (len(classes) // len(PALETTE) + 1))
+    labels = []
+    for i, c in enumerate(classes):
+        colour = UNNAMED_COLOUR if c["name"] == taxonomy.PRODUCT else next(colours)
+        hotkey = f' hotkey="{i + 1}"' if short else ""
+        labels.append(f'    <Label value={quoteattr(c["name"])} background="{colour}"{hotkey}/>')
+    labels = "\n".join(labels)
+    # Long lists (~400 classes) need a search box; short ones use number keys.
     # Zoom is on because whole-aisle photos have small products.
+    search = ("" if short else
+              '  <Filter name="filter" toName="label" hotkey="shift+f" minlength="1" '
+              'placeholder="Search class..."/>\n')
+    header = ("Fix the boxes, then name every can and glass bottle: select a box, press its number."
+              if short else
+              "Box every visible product face (front row). Use the search box to find a class.")
     return f"""<View>
-  <Header value="Box every visible product face (front row). Use the search box to find a class."/>
-  <Filter name="filter" toName="label" hotkey="shift+f" minlength="1" placeholder="Search class..."/>
-  <RectangleLabels name="label" toName="image" strokeWidth="2" canRotate="false">
+  <Header value={quoteattr(header)}/>
+{search}  <RectangleLabels name="label" toName="image" strokeWidth="2" canRotate="false">
 {labels}
   </RectangleLabels>
   <Image name="image" value="$image" zoom="true" zoomControl="true" rotateControl="false"/>
@@ -79,7 +102,37 @@ def labeling_config(classes: list[dict]) -> str:
 """
 
 
-def build_tasks(list_file: Path, manifest: Path, url_prefix: str) -> list[dict]:
+def stage_images(names: list[str], src: Path, out: Path) -> dict[str, str]:
+    """Write the photos Label Studio will serve; returns {original name: served name}.
+
+    JPEGs are copied byte for byte (the browser applies their EXIF orientation, the
+    same rotation the detector used). HEIF and MPO are converted to plain JPEGs,
+    rotated upright with no orientation tag left, because browsers can't be trusted
+    to display those containers.
+    """
+    import pillow_heif
+
+    pillow_heif.register_heif_opener()
+    served: dict[str, str] = {}
+    for name in names:
+        p = Path(name)
+        target = name if p.suffix.lower() in {".jpg", ".jpeg"} else f"{p.stem}.jpg"
+        if target in served.values():
+            raise SystemExit(f"two photos would both be served as {target}")
+        served[name] = target
+    out.mkdir(parents=True, exist_ok=True)
+    for name, target in served.items():
+        if target == name:
+            shutil.copy2(src / name, out / target)
+            continue
+        with Image.open(src / name) as im:
+            upright = ImageOps.exif_transpose(im).convert("RGB")
+        upright.save(out / target, format="JPEG", quality=92)
+    return served
+
+
+def build_tasks(list_file: Path, manifest: Path, url_prefix: str,
+                served: dict[str, str] | None = None) -> list[dict]:
     meta = {}
     if manifest.exists():
         with open(manifest, newline="", encoding="utf-8") as f:
@@ -87,13 +140,32 @@ def build_tasks(list_file: Path, manifest: Path, url_prefix: str) -> list[dict]:
     tasks = []
     for name in list_file.read_text(encoding="utf-8").split():
         m = meta.get(name, {})
+        shown = (served or {}).get(name, name)
         tasks.append({"data": {
-            "image": f"/data/local-files/?d={quote(url_prefix.rstrip('/') + '/' + name)}",
+            "image": f"/data/local-files/?d={quote(url_prefix.rstrip('/') + '/' + shown)}",
             "photo_id": m.get("photo_id", Path(name).stem),
+            "file_name": name,
             "store_id": m.get("store_id", ""),
             "taken_at": m.get("taken_at", ""),
         }})
     return tasks
+
+
+def attach_predictions(tasks: list[dict], predictions: Path, labels: set[str]) -> list[dict]:
+    """Add a detector's boxes (shelf-bakeoff's ls_predictions_<model>.json) to the
+    tasks, matched by photo_id. Every photo must have its predictions, and every
+    predicted label must exist in the config: Label Studio drops unknown ones
+    without a word."""
+    by_photo = {t["data"]["photo_id"]: t["predictions"]
+                for t in json.loads(predictions.read_text(encoding="utf-8"))}
+    missing = [t["data"]["photo_id"] for t in tasks if t["data"]["photo_id"] not in by_photo]
+    if missing:
+        raise SystemExit(f"{predictions} has no predictions for: {missing}")
+    unknown = {lab for t in tasks for p in by_photo[t["data"]["photo_id"]]
+               for r in p["result"] for lab in r["value"].get("rectanglelabels", [])} - labels
+    if unknown:
+        raise SystemExit(f"predicted labels not in the labeling config: {sorted(unknown)}")
+    return [{**t, "predictions": by_photo[t["data"]["photo_id"]]} for t in tasks]
 
 
 def main() -> None:
@@ -106,6 +178,12 @@ def main() -> None:
                          "scope = only the active pilot's labels (configs/scope.yaml)")
     ap.add_argument("--url-prefix", default="raw/images",
                     help="image folder path relative to LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT")
+    ap.add_argument("--predictions", default=None,
+                    help="shelf-bakeoff ls_predictions_<model>.json to pre-draw boxes from")
+    ap.add_argument("--stage-images", default=None, metavar="DIR",
+                    help="write the photos, browser-safe, into DIR for upload")
+    ap.add_argument("--images-dir", default=str(DEFAULT_IMAGES_DIR),
+                    help="where the exported photos are (source for --stage-images)")
     ap.add_argument("--out-dir", default=str(DEFAULT_LABEL_STUDIO_DIR))
     args = ap.parse_args()
 
@@ -115,10 +193,19 @@ def main() -> None:
     cfg_path = out / f"labeling_config_{args.level}.xml"
     cfg_path.write_text(labeling_config(classes), encoding="utf-8")
 
-    tasks = build_tasks(Path(args.list), Path(args.manifest), args.url_prefix)
+    names = Path(args.list).read_text(encoding="utf-8").split()
+    served = None
+    if args.stage_images:
+        served = stage_images(names, Path(args.images_dir), Path(args.stage_images))
+    tasks = build_tasks(Path(args.list), Path(args.manifest), args.url_prefix, served)
+    if args.predictions:
+        tasks = attach_predictions(tasks, Path(args.predictions), {c["name"] for c in classes})
     tasks_path = out / f"tasks_{Path(args.list).stem}.json"
     tasks_path.write_text(json.dumps(tasks, indent=1, ensure_ascii=False), encoding="utf-8")
     print(f"{len(classes)} classes -> {cfg_path}\n{len(tasks)} tasks   -> {tasks_path}")
+    if served is not None:
+        converted = sum(1 for k, v in served.items() if k != v)
+        print(f"{len(served)} photos  -> {args.stage_images} ({converted} converted to JPEG)")
 
 
 if __name__ == "__main__":
