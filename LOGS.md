@@ -60,6 +60,15 @@ ordered to-do list is `docs/PILOT.md`.
   invoice that still lists it now adds nothing, because the brand is no longer
   in `BRAND_CANON`. 109 of our classes remain, 126 in total. The pilot has 7
   labels.
+- **Label Studio is driven from git.** `uv run shelf-ls-setup` creates or
+  updates a labeling project over Label Studio's API (through an SSH tunnel;
+  the token lives in the gitignored `deploy/label-studio/.env`). It put the
+  pilot project on the server: id 3, 30 tasks, 2,814 pre-drawn boxes.
+  `scripts/deploy_label_studio.sh` deploys the app itself: backup, diff,
+  confirm, sync, restart, health check. First real run deployed f87ad03 (docs
+  only; same versions). No CI/CD on purpose: a pipeline would hold an SSH key
+  to the shared production server and could run an irreversible database
+  upgrade with nobody watching. A post-commit hook reminds instead.
 
 **Lesson of the day:** the invoice text said "Carbonated Soft Drink" and the
 code guessed a container; the invoice's own pictures said otherwise. When a
