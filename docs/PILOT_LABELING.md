@@ -33,6 +33,31 @@ It writes three things into `data/label_studio/`:
 | `labeling_config_scope.xml` | The label list: 7 labels with number keys |
 | `tasks_test_labeling.json` | The 30 tasks, each with YOLO26l's boxes pre-drawn |
 
+## 1-4. Put it on the server: one command
+
+    uv run shelf-ls-setup --dry-run    # what would happen; changes nothing
+    uv run shelf-ls-setup              # do it
+
+This copies the photos to the server (adding only, never deleting), creates
+the project `pilot-test-cans-glass` with the label list and "Use predictions to
+prelabel tasks" on, adds the photo storage, imports the 30 tasks with their
+pre-drawn boxes, and checks that a photo loads. Running it again changes
+nothing; after a label-list change (`scope.yaml` + `shelf-label-prep`) it
+updates the project's config in place.
+
+It needs an API token in `deploy/label-studio/.env` as `LS_API_TOKEN=...`
+(Label Studio: account menu > Account & Settings > Personal Access Token). It
+connects through an SSH tunnel to the server's own 127.0.0.1, so the token
+never travels over the public port's plain HTTP. How it works, step by step:
+the header of `src/face_counter/label_studio/setup_project.py`.
+
+First run: 2026-09-27, project id 3, 30 tasks, 2,814 pre-drawn boxes.
+
+Before labeling starts, check **Organization > Members** in the browser and
+remove any account you don't recognize: the instance is public.
+
+The manual route, if the script can't be used (same result):
+
 ## 1. Upload the photos to the server
 
 Copies only; nothing on the server is deleted. Never add `--delete`.
