@@ -1,0 +1,20 @@
+# Share-of-shelf reporting categories. Owned by the business; edit freely.
+#
+# Each category lists the pack types (configs/classes.csv `pack_type`) whose
+# faces count toward it. Labels never mention these categories: a box is our
+# SKU, COMPETITOR_<pack_type>, or out_of_scope, so adding, renaming or
+# splitting a category here never invalidates an annotation. A pack type can
+# belong to at most one category; pack types in no category are counted and
+# stored but not reported on.
+#
+# Decided 2026-09-27. "Glass drinks" means glass bottles only, not plastic.
+
+categories:
+  canned_drinks:
+    pack_types: [canned]
+  glass_drinks:
+    pack_types: [glass]
+  oils:          # cooking and frying oils
+    pack_types: [oil]
+  dressings:     # dressings for food
+    pack_types: [dressing]

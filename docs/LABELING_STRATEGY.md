@@ -118,13 +118,15 @@ Three consequences follow, and each is a rule:
   unboxed competitor both teaches it that products are background and silently
   shrinks the share-of-shelf denominator. Only the *name* is coarse; the box is
   not optional.
-- **The category vocabulary is a business decision, and it has to exist before
-  competitor labeling starts.** Our categories come from the sales invoice
-  (`canned`, `glass`, `sour-candy`, `milk-straw`, …) and describe *our*
-  packaging, not shelf categories as an analyst reports them. Someone has to
-  decide the reporting categories (is `canned` + `glass` + `bottle` one
-  "soft drinks" category?) and map each of our classes into one. Until then,
-  `COMPETITOR_<category>` uses the categories already in `classes.csv`.
+- **The category vocabulary is a business decision, and labels must not depend
+  on it.** *Decided 2026-09-27:* four reporting categories, **canned drinks,
+  glass drinks (glass only), oils (cooking and frying) and dressings (for
+  food)**. Competitors are labeled by what they physically are,
+  `COMPETITOR_<pack_type>`, from a vocabulary that covers every pack type we
+  sell plus `oil`, `dressing`, `plastic-bottle` and `other`.
+  `configs/reporting.yaml` maps pack types to categories at report time, so a
+  new or renamed category is a config edit, never a relabel.
+  `tests/test_taxonomy.py` enforces the coverage.
 - **Products outside every category we sell get `out_of_scope`**, not a
   competitor label. A whole-aisle photo holds shampoo and detergent too;
   counting them as competitor faces would drag every share-of-shelf number

@@ -116,14 +116,20 @@ def main() -> None:
             continue
 
         clean = bc.strip_wholesale_packaging(desc)
-        guessed = bc.guess_brand(clean)
-        if not guessed:
+        classes = bc.classes_for(clean)
+        if not classes:
             skipped_no_brand += 1
             continue
-        brand, brand_raw = guessed
-        category = bc.guess_category(clean)
-        sku = bc.guess_sku(clean, brand_raw)
-        class_name = f"{brand}_{category}_{sku}"
+        # A row that stands for several containers (TorshX soft drinks: can AND
+        # glass bottle) cannot say which one its picture shows. Put those in
+        # _unsorted/ for a human to file, rather than guess.
+        if len(classes) == 1:
+            class_name, target = classes[0]["class_name"], out_dir
+        else:
+            first = classes[0]
+            class_name = f"{first['brand']}_{first['sku']}"
+            target = out_dir / "_unsorted"
+            target.mkdir(exist_ok=True)
 
         data = images_by_row.get(row_idx)
         if not data:
@@ -136,7 +142,7 @@ def main() -> None:
         suffix = "" if n == 0 else f"_{n + 1}"
         seen_classes.add(class_name)
         ext = guess_ext(data)
-        (out_dir / f"{class_name}{suffix}{ext}").write_bytes(data)
+        (target / f"{class_name}{suffix}{ext}").write_bytes(data)
         saved += 1
 
     print(f"saved {saved} images -> {out_dir}")

@@ -13,12 +13,17 @@ it in the task's **Notes** box and ask. Don't guess differently from everyone el
 
 ## Class names
 
-- Format: `BRAND_CATEGORY_SKU`, for example `Kix-Max_canned_blueberry`.
-- Competitors: `COMPETITOR_<category>`, for example `COMPETITOR_canned`. Use a named
+- Format: `BRAND_PACKTYPE_SKU`, for example `Kix-Max_canned_blue-berry`. The pack
+  type is what you see: `canned`, `glass` (glass bottle), `milk-straw`, and so on.
+- Competitors: `COMPETITOR_<pack type>`, by what the product physically is, for
+  example `COMPETITOR_canned`, `COMPETITOR_glass`, `COMPETITOR_oil`,
+  `COMPETITOR_dressing`, `COMPETITOR_plastic-bottle`. If none fits, use
+  `COMPETITOR_other` and write what it is in Notes. Use a named
   competitor class only if it is in the list. Always box competitors — a missing
   competitor box makes our share of shelf look bigger than it is.
-- Products in a category we don't sell at all (shampoo, detergent, …): box them
-  as `out_of_scope`. Don't label them as competitors.
+- Glass bottle and plastic bottle are different: `glass` is glass only.
+- Products that are nothing like anything we sell or report on (shampoo,
+  detergent, …): box them as `out_of_scope`. Don't label them as competitors.
 - Press **Shift+F** and type to search the class list.
 - Once per browser: open the **gear icon** (Settings) in the labeling screen and turn on
   **Show labels inside the regions**, so every box shows its class on the photo.

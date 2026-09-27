@@ -10,17 +10,29 @@ the "Product Description" column. It is not committed to git (company
 pricing + customer data); this script and its output (classes.csv,
 containing only product/brand/flavor names) are.
 
+classes.csv is MERGED, never overwritten: rows with `source=manual` (added
+by hand: competitors, out_of_scope, products no invoice lists) are always
+kept, and invoice rows that a newer invoice no longer lists are kept too
+unless --drop-missing is given. `pack_type` is what is physically on the
+shelf (the container for drinks, the product family otherwise); which pack
+types count toward which share-of-shelf category is configs/reporting.yaml's
+job, not this file's.
+
 Usage:
     uv run python scripts/build_classes.py configs/050217-\\ Proforma,Invoice,Packing.xlsm
+    uv run python scripts/build_classes.py <invoice.xlsm> --drop-missing
 """
 from __future__ import annotations
 
+import argparse
 import csv
+import os
 import re
-import sys
 from pathlib import Path
 
 import openpyxl
+
+FIELDS = ["class_name", "brand", "pack_type", "sku", "is_ours", "source"]
 
 # Wholesale case descriptors -- strip these, they're not a shelf-visible
 # difference. Longest-first so "Dispenser Box" doesn't get cut short.
@@ -28,17 +40,28 @@ WHOLESALE_PACKAGING = [
     "Dispenser Box", "Middle Box", "Card board", "Pillow pack",
 ]
 
-# Retail-visible container -> category. Order matters (checked in turn).
+# Retail-visible container -> pack type. Order matters (checked in turn).
 CONTAINER_CATEGORY = [
     (r"\bglass\b", "glass"),
     (r"\bcan\b", "canned"),
-    # NOTE: do not default bare "Carbonated Soft/Energy Drink" text to a
-    # container -- some brands' invoice rows never say Can/Glass at all
-    # (confirmed via the invoice's own embedded packshots: TorshX's
-    # "Carbonated Soft Drink" rows are glass bottles, no can variant
-    # exists in this invoice) and guessing wrong here silently mislabels
-    # the shelf-visible container, which the identifier stage depends on.
 ]
+
+# Drinks whose invoice rows never say Can or Glass. The container is a fact
+# about the product line, confirmed by the invoice's own embedded images and
+# by the business (2026-09-27): every TorshX soft-drink flavor is sold in
+# BOTH a glass bottle and a can, so one invoice row becomes two classes; the
+# TorshX and Bomb energy drinks are cans. A drink that is not listed here and
+# does not state its container raises UnknownContainer -- guessing wrong would
+# silently put a product in the wrong share-of-shelf category.
+DRINK_CONTAINERS = {
+    ("TorshX", "soft"): ["canned", "glass"],
+    ("TorshX", "energy"): ["canned"],
+    ("Bomb", "energy"): ["canned"],
+}
+
+
+class UnknownContainer(ValueError):
+    """A drink row states no container and its brand has none on record."""
 
 BRAND_CANON = {
     "kix max": "Kix-Max",
@@ -93,18 +116,25 @@ def guess_brand(desc: str) -> tuple[str, str] | None:
     return (canon, raw) if canon else None
 
 
-def guess_category(desc: str) -> str:
+def drink_kind(desc: str) -> str | None:
+    low = desc.lower()
+    if "carbonated" not in low:
+        return None
+    if "energy drink" in low:
+        return "energy"
+    if "soft drink" in low:
+        return "soft"
+    return None
+
+
+def guess_category(desc: str) -> str | None:
+    """Pack type stated by the text, or None for a drink that states no container."""
     low = desc.lower()
     for pattern, category in CONTAINER_CATEGORY:
         if re.search(pattern, low):
             return category
-    if "carbonated" in low and ("soft drink" in low or "energy drink" in low):
-        # Container not stated in the text (no Can/Glass word) -- confirmed
-        # via the invoice's own packshots these are glass bottles, but not
-        # every brand's bottle looks the same, so keep it a distinct
-        # category rather than merging into "glass" and asserting a shape
-        # we haven't actually looked at for every brand.
-        return "bottle"
+    if drink_kind(desc):
+        return None  # container not in the text; classes_for resolves it
     if "chewing gum" in low:
         return "gum"
     if "ice-pop" in low:
@@ -145,40 +175,122 @@ def guess_sku(desc: str, brand_raw: str) -> str:
     return rest or "unspecified"
 
 
+def pack_types_for(desc: str, brand: str) -> list[str]:
+    """Every shelf-visible pack type one invoice row stands for."""
+    stated = guess_category(desc)
+    if stated:
+        return [stated]
+    kind = drink_kind(desc) or ""
+    containers = DRINK_CONTAINERS.get((brand, kind))
+    if not containers:
+        raise UnknownContainer(
+            f"{desc!r}: a {kind} drink with no Can/Glass in the text, and no "
+            f"({brand!r}, {kind!r}) entry in DRINK_CONTAINERS. Find out how it is "
+            "sold and add it there; do not guess.")
+    return list(containers)
+
+
+def classes_for(desc: str) -> list[dict]:
+    """Class rows for one (wholesale-stripped) invoice description; [] if not our brand."""
+    clean = strip_wholesale_packaging(desc)
+    guessed = guess_brand(clean)
+    if not guessed:
+        return []  # not one of our recognised brands; skip rather than guess wrong
+    brand, brand_raw = guessed
+    sku = guess_sku(clean, brand_raw)
+    if sku == "unspecified" and drink_kind(clean) == "energy":
+        sku = "energy-drink"
+    return [
+        {"class_name": f"{brand}_{pack}_{sku}", "brand": brand, "pack_type": pack,
+         "sku": sku, "is_ours": 1, "source": "invoice"}
+        for pack in pack_types_for(clean, brand)
+    ]
+
+
 def build_classes(xlsm_path: Path) -> list[dict]:
-    seen: dict[tuple[str, str, str], dict] = {}
+    seen: dict[str, dict] = {}
     for desc in load_descriptions(xlsm_path):
-        clean = strip_wholesale_packaging(desc)
-        guessed = guess_brand(clean)
-        if not guessed:
-            continue  # not one of our recognised brands; skip rather than guess wrong
-        brand, brand_raw = guessed
-        category = guess_category(clean)
-        sku = guess_sku(clean, brand_raw)
-        class_name = f"{brand}_{category}_{sku}"
-        key = (brand, category, sku)
-        if key not in seen:
-            seen[key] = {
-                "class_name": class_name,
-                "brand": brand,
-                "category": category,
-                "sku": sku,
-                "is_ours": 1,
-            }
-    return sorted(seen.values(), key=lambda r: (r["brand"], r["category"], r["sku"]))
+        for row in classes_for(desc):
+            seen.setdefault(row["class_name"], row)
+    return sorted(seen.values(), key=lambda r: (r["brand"], r["pack_type"], r["sku"]))
+
+
+def read_existing(path: Path) -> list[dict]:
+    """Current classes.csv rows. Files from before `source`/`pack_type` existed
+    were fully invoice-generated and called the pack type `category`."""
+    if not path.exists():
+        return []
+    with open(path, newline="", encoding="utf-8") as f:
+        rows = [r for r in csv.DictReader(f) if (r.get("class_name") or "").strip()]
+    out = []
+    for r in rows:
+        r = {k: (v or "").strip() for k, v in r.items() if k}
+        if "pack_type" not in r:
+            r["pack_type"] = r.pop("category", "")
+        r.pop("category", None)
+        r.setdefault("source", "invoice")
+        out.append({k: r.get(k, "") for k in FIELDS})
+    return out
+
+
+def _sort_key(r: dict) -> tuple:
+    # Ours first (the labeling config lists classes in file order), then by name.
+    return (str(r["is_ours"]) != "1", r["brand"], r["pack_type"], r["sku"], r["class_name"])
+
+
+def merge(existing: list[dict], fresh: list[dict], drop_missing: bool) -> tuple[list[dict], dict]:
+    """Merge a new invoice into the current class list without losing anything by accident.
+
+    - `source=manual` rows are always kept, and win over an invoice row of the same name.
+    - invoice rows the new invoice no longer lists are kept unless drop_missing.
+    """
+    fresh_by_name = {r["class_name"]: r for r in fresh}
+    existing_names = {r["class_name"] for r in existing}
+    merged, kept, dropped = [], [], []
+    for r in existing:
+        name = r["class_name"]
+        if r["source"] == "manual" or name in fresh_by_name:
+            merged.append(r if r["source"] == "manual" else fresh_by_name[name])
+        elif drop_missing:
+            dropped.append(name)
+        else:
+            merged.append(r)
+            kept.append(name)
+    added = [r for r in fresh if r["class_name"] not in existing_names]
+    merged.extend(added)
+    report = {"added": [r["class_name"] for r in added], "kept_not_on_invoice": kept,
+              "dropped": dropped}
+    return sorted(merged, key=_sort_key), report
+
+
+def write_classes(path: Path, rows: list[dict]) -> None:
+    """Write via a temp file and rename, so a crash never leaves a half-written list."""
+    tmp = path.with_name(path.name + ".tmp")
+    with open(tmp, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=FIELDS, extrasaction="ignore")
+        w.writeheader()
+        w.writerows(rows)
+    os.replace(tmp, path)
 
 
 def main() -> None:
-    if len(sys.argv) != 2:
-        raise SystemExit(f"usage: {sys.argv[0]} <path to proforma .xlsm>")
-    xlsm_path = Path(sys.argv[1])
-    rows = build_classes(xlsm_path)
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("invoice", help="path to the proforma .xlsm")
+    ap.add_argument("--drop-missing", action="store_true",
+                    help="remove invoice-sourced classes this invoice no longer lists "
+                         "(manual rows are never removed)")
+    args = ap.parse_args()
+
     out_path = Path(__file__).resolve().parents[1] / "configs" / "classes.csv"
-    with open(out_path, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=["class_name", "brand", "category", "sku", "is_ours"])
-        w.writeheader()
-        w.writerows(rows)
+    try:
+        fresh = build_classes(Path(args.invoice))
+    except UnknownContainer as e:
+        raise SystemExit(f"classes.csv left unchanged: {e}")
+    rows, report = merge(read_existing(out_path), fresh, args.drop_missing)
+    write_classes(out_path, rows)
     print(f"wrote {len(rows)} classes -> {out_path}")
+    for key, names in report.items():
+        print(f"  {key}: {len(names)}" + "".join(f"\n    {n}" for n in names))
 
 
 if __name__ == "__main__":

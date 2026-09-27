@@ -154,7 +154,42 @@ identity, competitors at category level, and which free tools fit — is in
 **Reporting categories, decided by the business 2026-09-27:** share of shelf
 is reported for four categories: **canned drinks, glass drinks (glass bottles
 only, not plastic), oils (cooking and frying) and dressings (for food)**.
-`classes.csv` has no oil or dressing products of ours yet.
+
+*Done 2026-09-27, so the category list can grow without relabeling:*
+- **Labels never name a reporting category.** A box is our SKU,
+  `COMPETITOR_<pack_type>` (what the product physically is), or
+  `out_of_scope`. `configs/reporting.yaml` maps pack types to categories at
+  report time; adding, renaming or splitting a category is an edit to that
+  file and invalidates no annotation.
+- **`classes.csv` is merged, not regenerated.** Columns are now
+  `class_name,brand,pack_type,sku,is_ours,source`. `pack_type` replaces
+  `category`, same values. `source=manual` rows (competitors,
+  `out_of_scope`, products no invoice lists) survive every invoice re-import;
+  invoice rows a new invoice drops are kept unless `--drop-missing`.
+- **Competitor vocabulary covers every pack type we sell**, plus `oil`,
+  `dressing`, `plastic-bottle` and a catch-all `other`: 16 competitor classes.
+  `tests/test_taxonomy.py` fails if a pack type we sell or report on has no
+  competitor class, so this cannot silently regress.
+- **The `bottle` rows were wrong and are gone.** The invoice images show the
+  TorshX and Bomb energy drinks are cans, and the business confirmed every
+  TorshX soft-drink flavor is sold as both glass bottle and can. 9 `*_bottle_*`
+  classes became 16: `TorshX_{canned,glass}_<flavor>` x 7 and
+  `{TorshX,Bomb}_canned_energy-drink`. 110 of our classes, 127 in total.
+  A drink row that states no container and is not in
+  `build_classes.DRINK_CONTAINERS` now stops the import instead of guessing.
+
+Still open:
+- `classes.csv` has **no oil or dressing products of ours** (the only `sauce`
+  rows are Tommy-Joy dessert sauces). Either they are on another invoice, or
+  those two categories are competitor-only today. Adding them is now just
+  `source=manual` rows with `pack_type` `oil`/`dressing`.
+- `configs/Product/from_invoice/` re-extracted 2026-09-27. The 18 old
+  `*_bottle_*` images are in `_superseded/` (gitignored, kept rather than
+  deleted). The TorshX flavor images were filed by eye into
+  `TorshX_canned_*` / `TorshX_glass_*`; byte-identical repeats from duplicated
+  invoice rows were dropped. One is left in `_unsorted/`:
+  `TorshX_madrid_3.png`, a pink glass bottle that looks like Paris, not
+  Madrid (yellow), so it is probably a mis-attached picture in the invoice.
 
 ---
 

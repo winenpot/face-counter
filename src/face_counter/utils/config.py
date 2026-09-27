@@ -13,6 +13,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 DEFAULT_CONFIG = PROJECT_ROOT / "configs" / "export.yaml"
 DEFAULT_CLASSES = PROJECT_ROOT / "configs" / "classes.csv"
+# Which pack types count toward which share-of-shelf category (business-owned).
+DEFAULT_REPORTING = PROJECT_ROOT / "configs" / "reporting.yaml"
 DEFAULT_MANIFEST = PROJECT_ROOT / "data" / "raw" / "manifest.csv"
 DEFAULT_IMAGES_DIR = PROJECT_ROOT / "data" / "raw" / "images"
 DEFAULT_SPLITS_DIR = PROJECT_ROOT / "data" / "splits"

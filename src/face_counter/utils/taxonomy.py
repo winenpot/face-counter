@@ -1,0 +1,90 @@
+"""The class list and the reporting categories, and the rules that keep them apart.
+
+Labels record what is physically on the shelf: our SKU, or a competitor by
+pack type (`COMPETITOR_<pack_type>`), or `out_of_scope`. Which pack types count
+toward which share-of-shelf category lives in configs/reporting.yaml and is
+applied at report time. So when the business adds, renames or splits a
+category, that file changes and every existing annotation stays valid.
+
+`problems()` is what keeps that promise: the competitor vocabulary must cover
+every pack type we sell and every pack type a category reports on, or labelers
+would have to lump a future category into `other` and it would need relabeling.
+"""
+from __future__ import annotations
+
+from collections import Counter
+from pathlib import Path
+
+from face_counter.utils.config import load_config
+
+COMPETITOR = "COMPETITOR"
+OUT_OF_SCOPE = "out_of_scope"
+SOURCES = {"invoice", "manual"}
+
+
+def load_reporting(path: str | Path) -> dict[str, list[str]]:
+    """{category: [pack_type, ...]}. A pack type may belong to at most one category."""
+    cats = {name: list(spec.get("pack_types") or [])
+            for name, spec in (load_config(path).get("categories") or {}).items()}
+    owner: dict[str, str] = {}
+    for name, packs in cats.items():
+        for p in packs:
+            if p in owner:
+                raise ValueError(f"pack type {p!r} is in both {owner[p]!r} and {name!r}")
+            owner[p] = name
+    return cats
+
+
+def category_of(pack_type: str, reporting: dict[str, list[str]]) -> str | None:
+    """The reporting category a pack type counts toward, or None if none does."""
+    for name, packs in reporting.items():
+        if pack_type in packs:
+            return name
+    return None
+
+
+def problems(rows: list[dict], reporting: dict[str, list[str]]) -> list[str]:
+    """Everything wrong with a class list, as readable sentences. Empty means consistent."""
+    out: list[str] = []
+    names = Counter((r.get("class_name") or "").strip() for r in rows)
+    out += [f"duplicate class_name {n!r}" for n, c in names.items() if c > 1]
+
+    competitor_packs = set()
+    our_packs = set()
+    for r in rows:
+        name = (r.get("class_name") or "").strip()
+        brand = (r.get("brand") or "").strip()
+        pack = (r.get("pack_type") or "").strip()
+        ours = str(r.get("is_ours", "")).strip()
+        source = (r.get("source") or "").strip()
+        if source not in SOURCES:
+            out.append(f"{name}: source must be one of {sorted(SOURCES)}, got {source!r}")
+        if name == OUT_OF_SCOPE:
+            if ours != "0":
+                out.append(f"{name}: is_ours must be 0")
+            continue
+        if not pack:
+            out.append(f"{name}: empty pack_type")
+        if brand == COMPETITOR:
+            competitor_packs.add(pack)
+            if name != f"{COMPETITOR}_{pack}":
+                out.append(f"{name}: competitor rows must be named {COMPETITOR}_<pack_type>")
+            if ours != "0":
+                out.append(f"{name}: a competitor must have is_ours=0")
+        else:
+            our_packs.add(pack)
+            if ours != "1":
+                out.append(f"{name}: is_ours must be 1 (competitors use brand {COMPETITOR})")
+
+    if OUT_OF_SCOPE not in names:
+        out.append(f"missing {OUT_OF_SCOPE!r} class")
+    if "other" not in competitor_packs:
+        out.append(f"missing {COMPETITOR}_other (catch-all for a pack type nobody listed yet)")
+    for pack in sorted(our_packs):
+        if pack not in competitor_packs:
+            out.append(f"we sell pack type {pack!r} but there is no {COMPETITOR}_{pack}")
+    for cat, packs in reporting.items():
+        for pack in packs:
+            if pack not in competitor_packs:
+                out.append(f"category {cat!r} reports on {pack!r} but there is no {COMPETITOR}_{pack}")
+    return out

@@ -61,10 +61,17 @@ refuses to run while it still holds `CHANGE_ME` placeholders.
     uv run shelf-label-prep --list data/splits/label_batch_01.txt --level brand
 
 `configs/classes.csv` drives the labeling config; `shelf-label-prep` refuses
-to run meaningfully without a real one. Build it from a sales/export invoice
-(never committed -- see `.gitignore`) rather than hand-editing:
+to run meaningfully without a real one. Import products from a sales/export
+invoice (never committed -- see `.gitignore`):
 
     uv run python scripts/build_classes.py <path-to-invoice.xlsm>
+
+The import **merges**: rows marked `source=manual` (competitors,
+`out_of_scope`, products no invoice lists) are never touched, so add those by
+hand. Which pack types count toward which share-of-shelf category is
+`configs/reporting.yaml`, owned by the business; labels never name a category,
+so editing it never invalidates an annotation. `uv run pytest` checks the two
+files stay consistent.
 
 **Empty `store_id` values in the manifest mean the field mapping is wrong.**
 Fix it before splitting: without a store, photos of the same shelf can land on
@@ -158,7 +165,7 @@ commits) is not revalidated or rewritten.
 
 ## Layout
 
-    configs/        export.yaml (EDIT FIRST), classes.csv (class list template)
+    configs/        export.yaml (EDIT FIRST), classes.csv (class list), reporting.yaml (share-of-shelf categories)
     src/face_counter/
       utils/config.py               paths, config loading, Mongo connection
       training/export_photos.py     GridFS -> data/raw/images + manifest.csv
