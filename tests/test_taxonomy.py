@@ -178,3 +178,35 @@ def test_label_prep_geometry_level_is_the_single_product_label(tmp_path):
     got = pls.read_classes(classes, "geometry")
     # Must equal the label the bake-off writes into its predictions, or they won't load.
     assert [c["name"] for c in got] == [bk.GEOMETRY_LABEL] == ["product"]
+
+
+# --- scope detail: the pilot names brand + pack type, not flavours -----------
+
+def test_brand_detail_scope_names_brand_and_pack_type_not_skus(tmp_path):
+    scope = _scope(tmp_path, "brands: [Kix-Max, TorshX]\ncategories: [canned_drinks, glass_drinks]\n"
+                             "detail: brand\n")
+    names = taxonomy.scoped_label_names(SCOPE_ROWS, scope)
+    # Brand_packtype is the prefix of every SKU class name (Brand_packtype_sku), so a
+    # later SKU pass refines these labels rather than contradicting them.
+    assert names == ["Bomb_canned", "Kix-Max_canned", "TorshX_glass",
+                     "COMPETITOR_canned", "COMPETITOR_glass", "product"]
+
+
+def test_scope_detail_defaults_to_sku(tmp_path):
+    scope = _scope(tmp_path, "brands: [Kix-Max]\ncategories: [canned_drinks]\n")
+    assert scope.detail == "sku"
+
+
+def test_unknown_scope_detail_is_rejected(tmp_path):
+    with pytest.raises(ValueError, match="flavour"):
+        _scope(tmp_path, "brands: [Kix-Max]\ncategories: [canned_drinks]\ndetail: flavour\n")
+
+
+def test_shipped_pilot_labels_are_the_eight_brand_level_labels():
+    from face_counter.utils.config import DEFAULT_SCOPE
+
+    scope = taxonomy.load_scope(DEFAULT_SCOPE, taxonomy.load_reporting(DEFAULT_REPORTING))
+    with open(DEFAULT_CLASSES, newline="", encoding="utf-8") as f:
+        names = taxonomy.scoped_label_names(list(csv.DictReader(f)), scope)
+    assert names == ["Bomb_canned", "Kix-Max_canned", "Kix-Max_glass", "TorshX_canned",
+                     "TorshX_glass", "COMPETITOR_canned", "COMPETITOR_glass", "product"]

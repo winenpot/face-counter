@@ -103,33 +103,49 @@ def problems(rows: list[dict], reporting: dict[str, list[str]]) -> list[str]:
 # config edit.
 
 
+# How finely our own products are named. "brand" gives `<brand>_<pack_type>`,
+# which is the prefix of every SKU class name (`<brand>_<pack_type>_<sku>`), so
+# moving a scope from brand to sku later refines existing labels, never
+# contradicts them.
+DETAILS = ("sku", "brand")
+
+
 @dataclass(frozen=True)
 class Scope:
     brands: list[str]          # "ours" in the reported share
     categories: list[str]      # reporting categories in play
     pack_types: list[str]      # union of those categories' pack types
+    detail: str = "sku"        # one of DETAILS
 
 
 def load_scope(path: str | Path, reporting: dict[str, list[str]]) -> Scope:
     cfg = load_config(path) or {}
     brands = list(cfg.get("brands") or [])
     cats = list(cfg.get("categories") or [])
+    detail = str(cfg.get("detail") or "sku")
     unknown = [c for c in cats if c not in reporting]
     if unknown:
         raise ValueError(f"scope names categories not in reporting.yaml: {unknown}")
     if not brands or not cats:
         raise ValueError("scope needs at least one brand and one category")
+    if detail not in DETAILS:
+        raise ValueError(f"scope detail must be one of {DETAILS}, got {detail!r}")
     packs = [p for c in cats for p in reporting[c]]
-    return Scope(brands=brands, categories=cats, pack_types=packs)
+    return Scope(brands=brands, categories=cats, pack_types=packs, detail=detail)
 
 
 def scoped_label_names(rows: list[dict], scope: Scope) -> list[str]:
     """Identity-pass labels for a scope: every one of OUR classes whose pack type
     is in scope (any brand -- a third brand's can is still a can, and calling it
     a competitor would corrupt the share), the competitor class per scoped pack
-    type, and PRODUCT for every box left unnamed."""
-    ours = sorted((r["class_name"].strip() for r in rows
-                   if str(r.get("is_ours", "")).strip() == "1"
-                   and (r.get("pack_type") or "").strip() in scope.pack_types))
+    type, and PRODUCT for every box left unnamed. At detail "brand" our classes
+    collapse to `<brand>_<pack_type>`."""
+    ours = [r for r in rows
+            if str(r.get("is_ours", "")).strip() == "1"
+            and (r.get("pack_type") or "").strip() in scope.pack_types]
+    if scope.detail == "brand":
+        names = {f"{r['brand'].strip()}_{r['pack_type'].strip()}" for r in ours}
+    else:
+        names = {r["class_name"].strip() for r in ours}
     comps = [f"{COMPETITOR}_{p}" for p in scope.pack_types]
-    return ours + comps + [PRODUCT]
+    return sorted(names) + comps + [PRODUCT]

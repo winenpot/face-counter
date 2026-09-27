@@ -18,3 +18,9 @@
 
 brands: [Kix-Max, TorshX]
 categories: [canned_drinks, glass_drinks]
+
+# How finely our products are named: `sku` (Kix-Max_canned_blue-berry) or
+# `brand` (Kix-Max_canned). The pilot needs brand only, decided 2026-09-27:
+# share of shelf per category doesn't depend on the flavour. `brand` labels are
+# the prefix of the sku labels, so switching to `sku` later refines them.
+detail: brand
