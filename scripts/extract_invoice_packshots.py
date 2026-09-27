@@ -106,7 +106,7 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     saved, skipped_no_image, skipped_no_brand = 0, 0, 0
-    seen_classes: set[str] = set()
+    seen_classes: list[str] = []
     for row_idx, row in enumerate(ws.iter_rows(min_row=17, values_only=True), start=17):
         desc = row[6] if len(row) > 6 else None
         if not desc or not isinstance(desc, str):
@@ -140,7 +140,7 @@ def main() -> None:
         # variants) -- keep the first image found per class, number extras.
         n = sum(1 for c in seen_classes if c == class_name)
         suffix = "" if n == 0 else f"_{n + 1}"
-        seen_classes.add(class_name)
+        seen_classes.append(class_name)
         ext = guess_ext(data)
         (target / f"{class_name}{suffix}{ext}").write_bytes(data)
         saved += 1
