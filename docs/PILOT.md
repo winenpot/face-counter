@@ -51,8 +51,6 @@ Three rules keep the pilot from closing off the wider system:
 - [ ] **4. Gallery for the in-scope classes.** Invoice images in
       `configs/Product/from_invoice/` (about 2 per SKU) plus crops from labeled
       non-test photos. Competitors need no gallery: not ours = competitor.
-      Resolve `configs/Product/from_invoice/_unsorted/TorshX_madrid_3.png`
-      (a pink bottle, probably mis-attached in the invoice).
 - [ ] **5. Can vs glass for non-ours crops.** Nothing in the plan does this
       yet, and the per-category share needs it. Cheapest candidates:
       zero-shot text match ("a can" vs "a glass bottle"), or YOLOE's own

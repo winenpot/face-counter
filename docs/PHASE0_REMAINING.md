@@ -187,9 +187,10 @@ Still open:
   `*_bottle_*` images are in `_superseded/` (gitignored, kept rather than
   deleted). The TorshX flavor images were filed by eye into
   `TorshX_canned_*` / `TorshX_glass_*`; byte-identical repeats from duplicated
-  invoice rows were dropped. One is left in `_unsorted/`:
-  `TorshX_madrid_3.png`, a pink glass bottle that looks like Paris, not
-  Madrid (yellow), so it is probably a mis-attached picture in the invoice.
+  invoice rows were dropped. `TorshX_madrid_3.png` (a pink bottle on a
+  Madrid row) was confirmed Paris, pink being Paris and yellow Madrid, and was
+  byte-identical to `TorshX_glass_paris.png`, so it was deleted: a picture
+  attached to the wrong invoice row.
 
 ---
 
