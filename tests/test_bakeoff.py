@@ -78,3 +78,79 @@ def test_run_writes_counts_jsonl_overlays_and_tasks(tmp_path):
     assert len(tasks) == 2 and len(tasks[0]["predictions"][0]["result"]) == 2
     assert (out / "overlays" / "fake" / "p1.jpg").exists()
     assert (out / "overlays" / "fake" / "p2.jpg").exists()
+
+
+# --- YOLOE prompts: config file, CLI override, recorded per run ---------------
+
+def test_prompts_come_from_the_config_file(tmp_path):
+    cfg = tmp_path / "bakeoff.yaml"
+    cfg.write_text("yoloe:\n  prompts: [aluminum drink can, glass bottle]\n", encoding="utf-8")
+    assert bk.resolve_prompts(None, cfg) == ["aluminum drink can", "glass bottle"]
+
+
+def test_cli_prompts_override_the_config_file(tmp_path):
+    cfg = tmp_path / "bakeoff.yaml"
+    cfg.write_text("yoloe:\n  prompts: [can]\n", encoding="utf-8")
+    got = bk.resolve_prompts(" soda can , glass bottle,,", cfg)
+    assert got == ["soda can", "glass bottle"]
+
+
+def test_empty_or_duplicate_prompts_are_rejected(tmp_path):
+    import pytest
+
+    cfg = tmp_path / "bakeoff.yaml"
+    cfg.write_text("yoloe:\n  prompts: []\n", encoding="utf-8")
+    with pytest.raises(SystemExit, match="prompt"):
+        bk.resolve_prompts(None, cfg)
+    with pytest.raises(SystemExit, match="duplicate"):
+        bk.resolve_prompts("can, Can", cfg)
+
+
+def test_shipped_config_keeps_the_first_runs_prompts():
+    # The 2026-09-26 run used these; a changed default must be a deliberate edit.
+    assert bk.resolve_prompts(None, bk.DEFAULT_BAKEOFF_CONFIG) == [
+        "can", "bottle", "carton", "juice box", "jar", "box", "packet",
+        "candy bag", "product package"]
+
+
+def test_yoloe_builder_passes_the_prompts_to_the_model(monkeypatch):
+    import sys
+    import types
+
+    seen = {}
+
+    class FakeYOLOE:
+        def __init__(self, weights):
+            seen["weights"] = weights
+
+        def set_classes(self, names):
+            seen["classes"] = list(names)
+
+    monkeypatch.setitem(sys.modules, "ultralytics", types.SimpleNamespace(YOLOE=FakeYOLOE))
+    bk.build_yoloe_26s(1280, 0.25, {"prompts": ["aluminum drink can"]})
+    assert seen["classes"] == ["aluminum drink can"]
+
+
+def test_main_records_the_prompts_it_used(tmp_path, monkeypatch):
+    import sys
+
+    img = tmp_path / "a.jpg"
+    Image.new("RGB", (40, 30), "white").save(img)
+    lst = tmp_path / "list.txt"
+    lst.write_text("a.jpg", encoding="utf-8")
+    used = {}
+
+    def fake_builder(imgsz, conf, opts):
+        used.update(opts)
+        return lambda im: bk.Detections()
+
+    monkeypatch.setitem(bk.CANDIDATES, "yoloe-26s", fake_builder)
+    out = tmp_path / "run"
+    monkeypatch.setattr(sys, "argv", [
+        "shelf-bakeoff", "--list", str(lst), "--images-dir", str(tmp_path),
+        "--models", "yoloe-26s", "--out-dir", str(out),
+        "--yoloe-prompts", "aluminum drink can,glass bottle"])
+    bk.main()
+    assert used["prompts"] == ["aluminum drink can", "glass bottle"]
+    args = json.loads((out / "run_args.json").read_text(encoding="utf-8"))
+    assert args["yoloe_prompts_used"] == ["aluminum drink can", "glass bottle"]

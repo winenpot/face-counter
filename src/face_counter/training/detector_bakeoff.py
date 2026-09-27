@@ -23,6 +23,10 @@ percentage refers to the rotated (displayed) image.
 Usage (GPU box, analytics group installed):
     uv run shelf-bakeoff
     uv run shelf-bakeoff --models sku110k-yolo11s,yoloe-26s --imgsz 1280 --conf 0.25
+    uv run shelf-bakeoff --models yoloe-26s --yoloe-prompts "aluminum drink can,glass bottle"
+
+Model settings (the YOLOE prompts) live in configs/bakeoff.yaml; CLI flags override
+it, and run_args.json records exactly what each run used.
 """
 from __future__ import annotations
 
@@ -40,9 +44,11 @@ from urllib.parse import quote
 from PIL import Image, ImageDraw, ImageOps
 
 from face_counter.utils.config import (
+    DEFAULT_BAKEOFF_CONFIG,
     DEFAULT_IMAGES_DIR,
     DEFAULT_RUNS_DIR,
     DEFAULT_SPLITS_DIR,
+    load_config,
 )
 
 log = logging.getLogger("bakeoff")
@@ -51,11 +57,6 @@ GEOMETRY_LABEL = "product"
 # Must match prepare_label_studio.build_tasks, which the geometry project's other
 # tasks come from; tests/test_bakeoff.py checks the two stay in step.
 LS_URL_PREFIX = "raw/images"
-
-# Generic packaging nouns for the open-vocabulary candidate. Category words, never
-# SKU or brand names: stage 1 only has to find products.
-YOLOE_PROMPTS = ["can", "bottle", "carton", "juice box", "jar", "box", "packet",
-                 "candy bag", "product package"]
 
 # Ultralytics keeps at most 300 boxes per image by default; shelves hold up to ~500.
 MAX_DET = 1000
@@ -69,6 +70,31 @@ class Detections:
 
 
 Detector = Callable[[Image.Image], Detections]
+# (imgsz, conf, model-specific options from configs/bakeoff.yaml / the CLI)
+Builder = Callable[[int, float, dict], Detector]
+
+
+def resolve_prompts(cli: str | None, config_path: Path) -> list[str]:
+    """YOLOE prompts: --yoloe-prompts (comma-separated) if given, else configs/bakeoff.yaml.
+
+    Rejects an empty list and case-insensitive duplicates: two phrases that differ
+    only in case would split the same boxes between them and hide both counts.
+    """
+    if cli is not None:
+        prompts = [p.strip() for p in cli.split(",") if p.strip()]
+        source = "--yoloe-prompts"
+    else:
+        cfg = load_config(config_path) or {}
+        prompts = [str(p).strip() for p in ((cfg.get("yoloe") or {}).get("prompts") or [])
+                   if str(p).strip()]
+        source = str(config_path)
+    if not prompts:
+        raise SystemExit(f"no YOLOE prompts in {source}")
+    lowered = [p.lower() for p in prompts]
+    dupes = sorted({p for p in lowered if lowered.count(p) > 1})
+    if dupes:
+        raise SystemExit(f"duplicate YOLOE prompts in {source}: {dupes}")
+    return prompts
 
 
 def load_image(path: Path) -> Image.Image:
@@ -100,7 +126,7 @@ def _ultralytics_detector(model, imgsz: int, conf: float) -> Detector:
     return detect
 
 
-def build_sku110k_yolo11s(imgsz: int, conf: float) -> Detector:
+def build_sku110k_yolo11s(imgsz: int, conf: float, opts: dict) -> Detector:
     """YOLO11s trained on SKU-110K at 640 (chistopat, HF)."""
     from huggingface_hub import hf_hub_download
     from ultralytics import YOLO
@@ -110,12 +136,12 @@ def build_sku110k_yolo11s(imgsz: int, conf: float) -> Detector:
     return _ultralytics_detector(YOLO(weights), imgsz, conf)
 
 
-def build_yoloe_26s(imgsz: int, conf: float) -> Detector:
-    """YOLOE-26s, text-prompted with generic packaging nouns."""
+def build_yoloe_26s(imgsz: int, conf: float, opts: dict) -> Detector:
+    """YOLOE-26s, text-prompted with opts["prompts"] (see configs/bakeoff.yaml)."""
     from ultralytics import YOLOE
 
     model = YOLOE("yoloe-26s-seg.pt")
-    model.set_classes(YOLOE_PROMPTS)
+    model.set_classes(opts["prompts"])
     return _ultralytics_detector(model, imgsz, conf)
 
 
@@ -138,7 +164,7 @@ def _detr_config(repo: str):
         return DetrConfig.from_dict(clean_legacy_config(json.load(f)))
 
 
-def build_detr_r50_sku110k(imgsz: int, conf: float) -> Detector:
+def build_detr_r50_sku110k(imgsz: int, conf: float, opts: dict) -> Detector:
     """DETR-R50, 400 queries, trained on SKU-110K (is36e, HF). imgsz is ignored: the
     processor's own resize (shortest edge 800) applies. 400 queries caps it at 400
     boxes per photo, below our densest shelves."""
@@ -166,7 +192,7 @@ def build_detr_r50_sku110k(imgsz: int, conf: float) -> Detector:
     return detect
 
 
-CANDIDATES: dict[str, Callable[[int, float], Detector]] = {
+CANDIDATES: dict[str, Builder] = {
     "sku110k-yolo11s": build_sku110k_yolo11s,
     "detr-r50-sku110k": build_detr_r50_sku110k,
     "yoloe-26s": build_yoloe_26s,
@@ -257,6 +283,11 @@ def main() -> None:
     ap.add_argument("--imgsz", type=int, default=1280,
                     help="inference size for Ultralytics models (default 1280: whole-aisle photos)")
     ap.add_argument("--conf", type=float, default=0.25)
+    ap.add_argument("--config", default=str(DEFAULT_BAKEOFF_CONFIG),
+                    help="bakeoff settings, e.g. the YOLOE prompts (default: configs/bakeoff.yaml)")
+    ap.add_argument("--yoloe-prompts", default=None,
+                    help='comma-separated YOLOE prompts, overriding the config file, e.g. '
+                         '"aluminum drink can,glass bottle"')
     ap.add_argument("--out-dir", default=None, help="default: runs/bakeoff/<timestamp>")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -270,12 +301,16 @@ def main() -> None:
     missing = [n for n in names if not (images_dir / n).exists()]
     if missing:
         raise SystemExit(f"{len(missing)} photo(s) missing from {images_dir}, e.g. {missing[:3]}")
+    # Validated before any model loads, so a bad prompt fails in seconds, not after a download.
+    prompts = resolve_prompts(args.yoloe_prompts, Path(args.config))
+    opts = {"yoloe-26s": {"prompts": prompts}}
 
     out_dir = Path(args.out_dir) if args.out_dir else (
         DEFAULT_RUNS_DIR / "bakeoff" / datetime.now().astimezone().strftime("%Y%m%d-%H%M%S"))
-    models = {m: CANDIDATES[m](args.imgsz, args.conf) for m in wanted}
+    models = {m: CANDIDATES[m](args.imgsz, args.conf, opts.get(m, {})) for m in wanted}
     (out_dir / "run_args.json").parent.mkdir(parents=True, exist_ok=True)
-    (out_dir / "run_args.json").write_text(json.dumps(vars(args), indent=1), encoding="utf-8")
+    recorded = {**vars(args), "yoloe_prompts_used": prompts if "yoloe-26s" in wanted else None}
+    (out_dir / "run_args.json").write_text(json.dumps(recorded, indent=1), encoding="utf-8")
     run(names, images_dir, models, out_dir)
 
 

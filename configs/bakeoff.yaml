@@ -1,0 +1,30 @@
+# Settings for `shelf-bakeoff` (src/face_counter/training/detector_bakeoff.py).
+#
+# Every run copies the values it actually used into runs/bakeoff/<stamp>/run_args.json,
+# so a run can always be traced back to its prompts even after this file changes.
+
+yoloe:
+  # Text prompts for the open-vocabulary candidate (yoloe-26s). Each detected box
+  # is assigned the ONE prompt it matches best, and its confidence is how well it
+  # matches that phrase, so the prompts compete with each other.
+  #
+  # Rules:
+  # - Generic packaging words only, never brand or SKU names: stage 1 only has to
+  #   find products; naming them is the gallery's job.
+  # - A single ambiguous word can fail silently. The 2026-09-26 run labeled 0 of
+  #   1,466 boxes "can" (the word is also a verb) and 1,370 "bottle".
+  #
+  # Try a wording on the GPU box without editing this file:
+  #   uv run shelf-bakeoff --models yoloe-26s --yoloe-prompts "aluminum drink can,glass bottle"
+  #
+  # These are the prompts the 2026-09-26 run used; change them deliberately.
+  prompts:
+    - can
+    - bottle
+    - carton
+    - juice box
+    - jar
+    - box
+    - packet
+    - candy bag
+    - product package

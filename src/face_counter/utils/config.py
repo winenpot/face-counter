@@ -17,6 +17,8 @@ DEFAULT_CLASSES = PROJECT_ROOT / "configs" / "classes.csv"
 DEFAULT_REPORTING = PROJECT_ROOT / "configs" / "reporting.yaml"
 # The slice of the taxonomy being labeled and reported now (a filter, never a fork).
 DEFAULT_SCOPE = PROJECT_ROOT / "configs" / "scope.yaml"
+# shelf-bakeoff settings (e.g. YOLOE text prompts); CLI flags override it.
+DEFAULT_BAKEOFF_CONFIG = PROJECT_ROOT / "configs" / "bakeoff.yaml"
 DEFAULT_MANIFEST = PROJECT_ROOT / "data" / "raw" / "manifest.csv"
 DEFAULT_IMAGES_DIR = PROJECT_ROOT / "data" / "raw" / "images"
 DEFAULT_SPLITS_DIR = PROJECT_ROOT / "data" / "splits"
