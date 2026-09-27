@@ -6,6 +6,7 @@ The container must mount the export folder and set (see deploy/label-studio/dock
     LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT=/label-studio/files
 
 Usage:
+    uv run shelf-label-prep --list data/splits/test_labeling.txt --level geometry
     uv run shelf-label-prep --list data/splits/test_labeling.txt --level scope
     uv run shelf-label-prep --list data/splits/test_labeling.txt --level sku
     uv run shelf-label-prep --list data/splits/label_batch_01.txt --level brand
@@ -40,6 +41,8 @@ def read_classes(path: Path, level: str, scope: Path = DEFAULT_SCOPE,
                  reporting: Path = DEFAULT_REPORTING) -> list[dict]:
     with open(path, newline="", encoding="utf-8") as f:
         rows = [r for r in csv.DictReader(f) if r.get("class_name", "").strip()]
+    if level == "geometry":  # pass one: box every product, one label
+        return [{"name": taxonomy.PRODUCT}]
     if level == "scope":  # the active pilot's identity pass; see configs/scope.yaml
         s = taxonomy.load_scope(scope, taxonomy.load_reporting(reporting))
         return [{"name": n} for n in taxonomy.scoped_label_names(rows, s)]
@@ -98,8 +101,9 @@ def main() -> None:
     ap.add_argument("--list", required=True, help="text file with one image file name per line")
     ap.add_argument("--classes", default=str(DEFAULT_CLASSES))
     ap.add_argument("--manifest", default=str(DEFAULT_MANIFEST))
-    ap.add_argument("--level", choices=["brand", "sku", "scope"], default="sku",
-                    help="scope = only the active pilot's labels (configs/scope.yaml)")
+    ap.add_argument("--level", choices=["brand", "sku", "scope", "geometry"], default="sku",
+                    help="geometry = pass one, the single label 'product'; "
+                         "scope = only the active pilot's labels (configs/scope.yaml)")
     ap.add_argument("--url-prefix", default="raw/images",
                     help="image folder path relative to LABEL_STUDIO_LOCAL_FILES_DOCUMENT_ROOT")
     ap.add_argument("--out-dir", default=str(DEFAULT_LABEL_STUDIO_DIR))

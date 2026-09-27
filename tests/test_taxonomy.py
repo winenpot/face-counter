@@ -164,3 +164,17 @@ def test_label_prep_scope_level_emits_the_scoped_label_set(tmp_path):
                            reporting=tmp_path / "reporting.yaml")
     assert [c["name"] for c in got] == ["Bomb_canned_e", "Kix-Max_canned_x",
                                         "COMPETITOR_canned", "product"]
+
+
+def test_label_prep_geometry_level_is_the_single_product_label(tmp_path):
+    from face_counter.label_studio import prepare_label_studio as pls
+    from face_counter.training import detector_bakeoff as bk
+
+    classes = tmp_path / "classes.csv"
+    with open(classes, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(SCOPE_ROWS[0]))
+        w.writeheader()
+        w.writerows(SCOPE_ROWS)
+    got = pls.read_classes(classes, "geometry")
+    # Must equal the label the bake-off writes into its predictions, or they won't load.
+    assert [c["name"] for c in got] == [bk.GEOMETRY_LABEL] == ["product"]
