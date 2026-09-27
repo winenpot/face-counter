@@ -45,6 +45,7 @@ scope stay `product`, so widening the scope never relabels anything. The
 ordered to-do list is `docs/PILOT.md`.
 
 **Next:** pick the detector from the bakeoff overlays (`PILOT.md` step 1).
+*(Done later the same day: YOLO26l, see below.)*
 
 **Later the same day.**
 - **Detector:** YOLO26l (SKU-110K weights) now pre-draws boxes for labeling.
@@ -74,6 +75,31 @@ ordered to-do list is `docs/PILOT.md`.
   `docs/labeling-guide/README.md` beside them. Correcting YOLO26l's boxes on
   those photos meant deleting 12-24 and drawing 5-8 new ones per photo, out
   of about 115.
+- **First export saved.** Full JSON, the 3 labeled photos, at
+  `data/label_studio/exports/pilot-test-2026-09-27.json` (gitignored). It is
+  the first backup of real test-set labels and what the evaluation script
+  will read.
+- **Grey `product` boxes are kept on purpose.** Only the 6 named labels count
+  toward share of shelf, but the grey boxes are the ground truth for "did the
+  detector find every product", and a later scope names them without
+  redrawing. They follow the same rules as named boxes (added to the guide).
+- **Outside the code: labeling vendors.** The owner called 4-5 labeling
+  companies, sent them sample photos, and asked whether they could label
+  1,000-10,000 photos at a fair price. Two asked for a formal request for
+  proposal (RFP). Nothing is agreed yet.
+- **Paused by the owner:** tracking D-FINE ("DF-DETR") against YOLO26l.
+  D-FINE and DEIM-D-FINE are already in `DETECTOR_ALTERNATIVES.md` and on the
+  fine-tuning list (`PILOT.md` step 6b); a fair comparison needs the labeled
+  test set first.
+
+**Next:**
+1. Label the other 27 test photos, exporting JSON after each session.
+2. Write the RFP for the two vendors. It should cover: how many photos and
+   boxes per photo (about 100); our guide, labels and tool (Label Studio,
+   JSON export); a paid pilot batch scored against our own labels before any
+   large order; and data handling, since the photos are the company's (NDA,
+   no reuse or publishing, deletion after the job, where the data is stored).
+3. Evaluation script, once the test set is labeled (`PILOT.md` step 6).
 
 **Lesson of the day:** the invoice text said "Carbonated Soft Drink" and the
 code guessed a container; the invoice's own pictures said otherwise. When a
