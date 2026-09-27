@@ -153,6 +153,30 @@ needed. Not before then: it puts every image a labeler opens onto production
 MongoDB, and it is a new service to secure. Copying is cheap at a few thousand
 photos.
 
+## Deploying changes
+
+Two different things live on the server, and each has its own command. Both
+are run by hand from this machine.
+
+| What changed | Command | Where it's explained |
+| --- | --- | --- |
+| The app: `docker-compose.yml`, image versions, settings | `scripts/deploy_label_studio.sh` | its file header |
+| A labeling project: label list, photos, tasks | `uv run shelf-ls-setup` | header of `src/face_counter/label_studio/setup_project.py` |
+
+`scripts/deploy_label_studio.sh --dry-run` shows the difference between the
+server and git and changes nothing. Without `--dry-run` it backs the database
+up to `backups/label-studio/` on this machine (gitignored), asks, syncs the
+tracked files (never `.env`, never `--delete`), runs `docker compose up -d`,
+waits for the health check, and writes the live commit into `DEPLOYED` on the
+server. A change to an `image:` line makes it ask you to type `upgrade`: new
+versions migrate the database, and there is no way back except the backup.
+
+**Why not CI/CD.** A pipeline would put an SSH key to the shared production
+server in GitHub, and deploy on every push with nobody watching, including
+version upgrades that migrate the database irreversibly. The compose file
+changes a few times a year. Instead, `.githooks/post-commit` prints a reminder
+when a commit touches this folder; it never deploys by itself.
+
 ## Stopping without losing labels
 
 > **Never run `docker compose down -v` here.** `-v` deletes the named volumes

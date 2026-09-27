@@ -35,7 +35,7 @@ does not use, so no manifest and no fixed test set exist yet.
 Python 3.14, managed with [uv](https://docs.astral.sh/uv/).
 
     uv sync --group dev          # runtime + test dependencies
-    git config --local core.hooksPath .githooks   # enable the commit-msg hook
+    git config --local core.hooksPath .githooks   # commit-msg check + post-commit deploy reminder
     uv run pytest                # end-to-end checks on a fake MongoDB, no server needed
 
 Copy `.env.example` to `.env` and set `MONGO_URI`. Use a **read-only** Mongo
@@ -102,10 +102,19 @@ full run still belongs outside working hours.
 Label Studio is a **separate web app** used by labelers — not part of this
 service. Its deployment lives in `deploy/label-studio/` and is documented in
 `deploy/label-studio/README.md`. This repo is the single source of truth for
-it: edit the compose file here, `rsync` to the server, `docker compose up -d`
-there — never hand-edit the live config without syncing the change back into
-git first. The same pattern is planned for the Phase 2 FastAPI inference
-service once it exists (`deploy/serving/`, not built yet).
+it. Two commands keep the server in line with git, each explained step by step
+in its own file header:
+
+    scripts/deploy_label_studio.sh     # the APP: compose file, versions, settings
+    uv run shelf-ls-setup              # a PROJECT: label list, photos, tasks
+
+`deploy_label_studio.sh` backs the database up, shows the changes, asks, syncs,
+restarts and health-checks; `.githooks/post-commit` reminds you to run it when a
+commit touches `deploy/label-studio/`. `shelf-ls-setup` creates or updates the
+labeling project over Label Studio's API. Never hand-edit the live config
+without putting the change into git first. The same pattern is planned for the
+Phase 2 FastAPI inference service once it exists (`deploy/serving/`, not built
+yet).
 
 Label the **test set first** (`test_labeling.txt`, 30 photos); it must stay
 fixed. Splits are a stable hash of `store_id`, so re-running after new exports
@@ -170,11 +179,13 @@ commits) is not revalidated or rewritten.
       utils/config.py               paths, config loading, Mongo connection
       training/export_photos.py     GridFS -> data/raw/images + manifest.csv
       label_studio/make_splits.py            train/val/test by store + photo lists to label first
-      label_studio/prepare_label_studio.py   labeling config XML + task JSON
+      label_studio/prepare_label_studio.py   labeling config XML + task JSON (+ pre-drawn boxes, staged photos)
+      label_studio/setup_project.py          shelf-ls-setup: create/update the Label Studio project over the API
       serving/                      placeholder for the future inference API (Phase 2)
     deploy/label-studio/    Label Studio (third-party labeling app) deployment
-    docs/           ROADMAP, PROPOSAL, DATASET_PREPARATION, labeling_guide, requests
-    scripts/        scan_images.py, a standalone image audit helper; sync_to_hemin.sh, sync_from_hemin.sh
+    docs/           ROADMAP, PROPOSAL, PILOT, PILOT_LABELING, DATASET_PREPARATION, labeling_guide, requests
+    scripts/        deploy_label_studio.sh (deploy the app); build_classes.py; scan_images.py; sync_to_hemin.sh, sync_from_hemin.sh
+    .githooks/      commit-msg (message format), post-commit (deploy reminder)
     tests/          end-to-end tests on a fake MongoDB
     investigations/ one-off probes kept for the record; nothing depends on them
     data/           git-ignored; DVC owns dataset versioning
