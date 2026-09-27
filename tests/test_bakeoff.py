@@ -154,3 +154,62 @@ def test_main_records_the_prompts_it_used(tmp_path, monkeypatch):
     assert used["prompts"] == ["aluminum drink can", "glass bottle"]
     args = json.loads((out / "run_args.json").read_text(encoding="utf-8"))
     assert args["yoloe_prompts_used"] == ["aluminum drink can", "glass bottle"]
+
+
+# --- YOLO26 (SKU-110K weights from a local file) -----------------------------
+
+def _yolo26_cfg(tmp_path, weights):
+    cfg = tmp_path / "bakeoff.yaml"
+    cfg.write_text(f"yoloe:\n  prompts: [can]\nyolo26l-sku110k:\n  weights: {weights}\n",
+                   encoding="utf-8")
+    return cfg
+
+
+def test_weights_path_is_resolved_against_the_project_root(tmp_path):
+    cfg = _yolo26_cfg(tmp_path, "models/yolo26l-sku110k.pt")
+    got = bk.resolve_weights("yolo26l-sku110k", cfg)
+    assert got == bk.PROJECT_ROOT / "models" / "yolo26l-sku110k.pt"
+
+
+def test_missing_weights_fail_fast_with_download_instructions(tmp_path, monkeypatch):
+    import sys
+
+    import pytest
+
+    img = tmp_path / "a.jpg"
+    Image.new("RGB", (40, 30), "white").save(img)
+    lst = tmp_path / "list.txt"
+    lst.write_text("a.jpg", encoding="utf-8")
+    cfg = _yolo26_cfg(tmp_path, str(tmp_path / "nope.pt"))
+    loaded = []
+    monkeypatch.setitem(bk.CANDIDATES, "yolo26l-sku110k",
+                        lambda *a: loaded.append(a) or (lambda im: bk.Detections()))
+    monkeypatch.setattr(sys, "argv", [
+        "shelf-bakeoff", "--list", str(lst), "--images-dir", str(tmp_path),
+        "--models", "yolo26l-sku110k", "--config", str(cfg), "--out-dir", str(tmp_path / "run")])
+    with pytest.raises(SystemExit, match="platform.ultralytics.com"):
+        bk.main()
+    assert loaded == []                      # no model was built
+    assert not (tmp_path / "run").exists()   # no half-made run folder
+
+
+def test_yolo26_builder_loads_the_configured_weights(monkeypatch, tmp_path):
+    import sys
+    import types
+
+    seen = {}
+
+    class FakeYOLO:
+        def __init__(self, weights):
+            seen["weights"] = weights
+
+    monkeypatch.setitem(sys.modules, "ultralytics", types.SimpleNamespace(YOLO=FakeYOLO))
+    w = tmp_path / "y.pt"
+    bk.build_yolo26l_sku110k(1280, 0.25, {"weights": w})
+    assert seen["weights"] == str(w)
+
+
+def test_shipped_config_points_yolo26_at_a_gitignored_models_dir():
+    got = bk.resolve_weights("yolo26l-sku110k", bk.DEFAULT_BAKEOFF_CONFIG)
+    assert got.suffix == ".pt"                     # *.pt is gitignored: weights never enter git
+    assert got.parent == bk.PROJECT_ROOT / "models"

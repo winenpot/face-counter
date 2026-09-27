@@ -48,6 +48,7 @@ from face_counter.utils.config import (
     DEFAULT_IMAGES_DIR,
     DEFAULT_RUNS_DIR,
     DEFAULT_SPLITS_DIR,
+    PROJECT_ROOT,
     load_config,
 )
 
@@ -97,6 +98,24 @@ def resolve_prompts(cli: str | None, config_path: Path) -> list[str]:
     return prompts
 
 
+# Candidates whose weights are a manual download (no scriptable URL), with where to get them.
+LOCAL_WEIGHTS = {
+    "yolo26l-sku110k": "https://platform.ultralytics.com/fatih-enterprise/"
+                       "yolo26-sku-detection/yolo26l-sku-detector-sku-110k",
+}
+
+
+def resolve_weights(model: str, config_path: Path) -> Path:
+    """The weights file configured for `model` in configs/bakeoff.yaml; relative
+    paths are relative to the project root, so the run works from any cwd."""
+    cfg = load_config(config_path) or {}
+    raw = (cfg.get(model) or {}).get("weights")
+    if not raw:
+        raise SystemExit(f"no `{model}.weights` in {config_path}")
+    p = Path(raw).expanduser()
+    return p if p.is_absolute() else PROJECT_ROOT / p
+
+
 def load_image(path: Path) -> Image.Image:
     """Decode (HEIF/MPO included) and apply EXIF orientation, as Label Studio displays it."""
     import pillow_heif
@@ -134,6 +153,16 @@ def build_sku110k_yolo11s(imgsz: int, conf: float, opts: dict) -> Detector:
     weights = hf_hub_download("chistopat/sku110k-yolo11-object-detector",
                               "weights/sku110k-yolo11-s640.pt")
     return _ultralytics_detector(YOLO(weights), imgsz, conf)
+
+
+def build_yolo26l_sku110k(imgsz: int, conf: float, opts: dict) -> Detector:
+    """YOLO26l trained on SKU-110K (fatih-enterprise, Ultralytics platform): 0.906
+    mAP50 / 0.548 mAP50-95 on SKU-110K val, 100 epochs, trained with max_det=1000.
+    NMS-free by design, which targets the stacked duplicates YOLO11s and DETR showed.
+    Needs ultralytics>=8.4.156. The weights are a manual download; see configs/bakeoff.yaml."""
+    from ultralytics import YOLO
+
+    return _ultralytics_detector(YOLO(str(opts["weights"])), imgsz, conf)
 
 
 def build_yoloe_26s(imgsz: int, conf: float, opts: dict) -> Detector:
@@ -196,6 +225,7 @@ CANDIDATES: dict[str, Builder] = {
     "sku110k-yolo11s": build_sku110k_yolo11s,
     "detr-r50-sku110k": build_detr_r50_sku110k,
     "yoloe-26s": build_yoloe_26s,
+    "yolo26l-sku110k": build_yolo26l_sku110k,
 }
 
 
@@ -303,13 +333,22 @@ def main() -> None:
         raise SystemExit(f"{len(missing)} photo(s) missing from {images_dir}, e.g. {missing[:3]}")
     # Validated before any model loads, so a bad prompt fails in seconds, not after a download.
     prompts = resolve_prompts(args.yoloe_prompts, Path(args.config))
-    opts = {"yoloe-26s": {"prompts": prompts}}
+    opts: dict[str, dict] = {"yoloe-26s": {"prompts": prompts}}
+    for m in wanted:
+        if m in LOCAL_WEIGHTS:
+            w = resolve_weights(m, Path(args.config))
+            if not w.exists():
+                raise SystemExit(f"{m}: weights not found at {w}. Download them from "
+                                 f"{LOCAL_WEIGHTS[m]} (\"Download model\", .pt) and save "
+                                 f"them there, or point `{m}.weights` in {args.config} at them.")
+            opts[m] = {"weights": w}
 
     out_dir = Path(args.out_dir) if args.out_dir else (
         DEFAULT_RUNS_DIR / "bakeoff" / datetime.now().astimezone().strftime("%Y%m%d-%H%M%S"))
     models = {m: CANDIDATES[m](args.imgsz, args.conf, opts.get(m, {})) for m in wanted}
     (out_dir / "run_args.json").parent.mkdir(parents=True, exist_ok=True)
-    recorded = {**vars(args), "yoloe_prompts_used": prompts if "yoloe-26s" in wanted else None}
+    recorded = {**vars(args), "yoloe_prompts_used": prompts if "yoloe-26s" in wanted else None,
+                "weights_used": {m: str(o["weights"]) for m, o in opts.items() if "weights" in o}}
     (out_dir / "run_args.json").write_text(json.dumps(recorded, indent=1), encoding="utf-8")
     run(names, images_dir, models, out_dir)
 
