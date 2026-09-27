@@ -13,6 +13,11 @@ yoloe:
   #   find products; naming them is the gallery's job.
   # - A single ambiguous word can fail silently. The 2026-09-26 run labeled 0 of
   #   1,466 boxes "can" (the word is also a verb) and 1,370 "bottle".
+  # - More specific is NOT better. The 2026-09-27 run with only
+  #   [aluminum drink can, glass bottle, plastic bottle] found 98 boxes in total
+  #   across 30 photos (median 2.5 per photo, 0 on 12 photos), and lost bottles the
+  #   generic list had found. YOLOE is shelved as the detector; revisit only for
+  #   the can-vs-glass decision on crops (docs/PILOT.md step 5).
   #
   # Try a wording on the GPU box without editing this file:
   #   uv run shelf-bakeoff --models yoloe-26s --yoloe-prompts "aluminum drink can,glass bottle"

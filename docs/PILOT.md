@@ -33,21 +33,22 @@ Three rules keep the pilot from closing off the wider system:
       `uv run shelf-label-prep --list data/splits/test_labeling.txt --level scope`
       emits the 31-label identity-pass config (our 28 in-scope classes incl.
       Bomb, `COMPETITOR_canned`, `COMPETITOR_glass`, `product`).
-- [~] **1. Pick the detector that pre-draws boxes.** Zero-shot run and visual
-      review done 2026-09-27; report and metric plan in
-      `docs/reports/2026-09-27_detector_step_zero.md`. Working choice:
-      `sku110k-yolo11s`. Still to run on the GPU box before confirming:
-      `yolo26l-sku110k` (download its weights first, see `configs/bakeoff.yaml`)
-      and `yoloe-26s` with reworded can prompts (`--yoloe-prompts`). This picks
-      the labeling assistant only; every candidate is re-scored after
-      fine-tuning. **This blocks everything below.**
+- [x] **1. Pick the detector that pre-draws boxes: `yolo26l-sku110k`.**
+      Decided 2026-09-27 from run `runs/bakeoff/20260927-114232/`: more boxes
+      than YOLO11s (2,814 vs 2,319) at the same duplicate rate (~5%), and the
+      extra boxes checked by eye are real products YOLO11s missed. YOLOE with
+      specific prompts collapsed (98 boxes total) and is shelved as a
+      detector. This picks the labeling assistant only; every candidate is
+      re-scored after fine-tuning.
 - [ ] **2. Count the drink photos in the test set.** Some of the 30 are candy
       aisles. The frozen set must not change, so report the pilot on the
       subset that contains cans or glass bottles and say how many that is
       (expect 15-20, so noisier numbers).
-- [ ] **3. Label the test set, two passes.** Pass one: every product, one
-      label, pre-filled with the chosen detector's boxes (`shelf-bakeoff`
-      already writes `ls_predictions_<model>.json`). Pass two
+- [ ] **3. Label the test set, two passes.** Pass one (`--level geometry`,
+      the single label `product`): import
+      `runs/bakeoff/20260927-114232/ls_predictions_yolo26l-sku110k.json` so
+      every photo opens with boxes pre-drawn; labelers delete wrong boxes and
+      draw missed ones. Pass two
       (`--level scope`): name cans and glass bottles only. Take the three
       labeling-guide screenshots from a drinks fridge.
 - [ ] **4. Gallery for the in-scope classes.** Invoice images in
