@@ -1,5 +1,7 @@
 # face-counter — Vault Home
 
+**Resume here:** `docs/PILOT.md` (active scope + ordered to-do list, 2026-09-27). Full plan: `docs/ROADMAP.md`.
+
 Project-specific architecture, operations, and infrastructure knowledge for
 `face-counter`. Linked from the global Hermes vault's Projects index.
 

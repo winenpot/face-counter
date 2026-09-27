@@ -103,9 +103,16 @@ Checkboxes below: `[x]` done · `[~]` partly done, see the note · `[ ]` not sta
 
 ## Phase 1 — Working pipeline (days 4–10)
 
+> **Active slice (2026-09-27): the two-brand drinks pilot.** Kix-Max and
+> TorshX, our share of cans and of glass bottles, reported separately. The
+> ordered to-do list for it is [`PILOT.md`](PILOT.md); the items below still
+> describe the full system and are worked through that slice first.
+> `configs/scope.yaml` narrows labeling and reporting without removing
+> anything from the taxonomy, so widening it is a config edit.
+
 By day 10: a script turns a photo into SKU counts end to end, with accuracy measured on the test set.
 
-- [~] **Detector, step zero — try published SKU-110K weights before training anything.** *Script ready 2026-09-26: `uv run shelf-bakeoff` on the GPU box runs `sku110k-yolo11s`, `detr-r50-sku110k` and `yoloe-26s` over the frozen test set, and writes overlays, per-photo box counts and Label Studio prediction files. Not run yet.* Several exist (a DETR-ResNet-50 reporting 58.9 mAP, trained on a 4060 Ti; a YOLO26l reporting 0.906 mAP50; the original CVPR19 RetinaNet). Evaluating them costs an afternoon; training costs a night. Domain shift to Iranian shops/fridges is unmeasured — our frozen test set decides. Add **YOLOE-26** (open-vocabulary, text-prompted with generic packaging nouns) as a third entrant, scored by recall on the same test set; it may also pre-fill `COMPETITOR_<category>` labels. See [`DETECTOR_ALTERNATIVES.md`](DETECTOR_ALTERNATIVES.md).
+- [~] **Detector, step zero — try published SKU-110K weights before training anything.** *Ran 2026-09-26 on the GPU box over the frozen test set (box counts in `LOGS.md`); overlays in `runs/bakeoff/20260926-141557/`. Pick not made yet: `PILOT.md` step 1.* Several exist (a DETR-ResNet-50 reporting 58.9 mAP, trained on a 4060 Ti; a YOLO26l reporting 0.906 mAP50; the original CVPR19 RetinaNet). Evaluating them costs an afternoon; training costs a night. Domain shift to Iranian shops/fridges is unmeasured — our frozen test set decides. Add **YOLOE-26** (open-vocabulary, text-prompted with generic packaging nouns) as a third entrant, scored by recall on the same test set; it may also pre-fill `COMPETITOR_<category>` labels. See [`DETECTOR_ALTERNATIVES.md`](DETECTOR_ALTERNATIVES.md).
 - [ ] **Detector.** If step zero isn't enough, train a small YOLO on SKU-110K overnight on the 4060 Ti. Check by eye that it finds most products on 10 of our photos.
 - [ ] **Keep the detector swappable.** A `Detector` protocol with one `detect(image) -> boxes`, backend chosen in config, so everything downstream is detector-agnostic. YOLO is the starting point, not the conclusion — the DETR branch (RT-DETR, D-FINE, DEIM) now leads real-time detection, and DEIM is Apache-2.0, halves training cost, and gains most on small objects, which is exactly our weakness. Rationale and candidate table in [`DETECTOR_ALTERNATIVES.md`](DETECTOR_ALTERNATIVES.md).
 - [ ] **Small objects.** Use a larger input size (1280) or tiled inference (SAHI) for whole-aisle photos.

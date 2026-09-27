@@ -14,6 +14,45 @@ original record.
 
 ---
 
+## 1405/07/05 (2026-09-27) — business answers, a taxonomy that can grow, and a two-brand pilot
+
+**Business answers.** Reporting categories are canned drinks, glass drinks
+(glass only, not plastic), oils and dressings. Studio packshots are probably
+not coming in the remaining two weeks. The 2,230-vs-3,292 store gap is
+revisits: the survey counted per-visit codes. Poor field recording also
+splits some revisited stores into two IDs, so 2,230 is an upper bound and a
+small train/test leak is possible; accepted. The `root` rotation item was
+dropped by the user's decision.
+
+**Labels no longer name business categories.** A box is our SKU,
+`COMPETITOR_<pack_type>` or `out_of_scope`; `configs/reporting.yaml` maps pack
+types to categories at report time. `classes.csv` gained `pack_type` (was
+`category`) and `source`, and the invoice import now merges instead of
+overwriting, so hand-added rows survive. `tests/test_taxonomy.py` fails if a
+pack type we sell or report on has no competitor class.
+
+**The `bottle` rows were wrong.** The invoice's own pictures showed the TorshX
+and Bomb energy drinks are cans, and the business confirmed each TorshX flavor
+ships as both can and glass bottle. 9 classes became 16. Invoice images were
+re-extracted and the TorshX ones filed by eye; one (`TorshX_madrid_3.png`, a
+pink bottle) looks mis-attached in the invoice and sits in `_unsorted/`.
+
+**Pilot scope.** Kix-Max + TorshX, share of cans and of glass bottles,
+reported separately. `configs/scope.yaml` filters the taxonomy without
+changing it; `shelf-label-prep --level scope` gives labelers 31 labels instead
+of 127. Every can and bottle is still named whoever makes it, and boxes outside
+scope stay `product`, so widening the scope never relabels anything. The
+ordered to-do list is `docs/PILOT.md`.
+
+**Next:** pick the detector from the bakeoff overlays (`PILOT.md` step 1).
+
+**Lesson of the day:** the invoice text said "Carbonated Soft Drink" and the
+code guessed a container; the invoice's own pictures said otherwise. When a
+source carries both text and images, check one against the other before
+trusting a parse.
+
+---
+
 ## 1405/07/04 (2026-09-26) — test set frozen, labeling strategy written, and the first three detectors actually ran
 
 **Labeling strategy — how 9,500 photos get labeled by a small team.** New doc
