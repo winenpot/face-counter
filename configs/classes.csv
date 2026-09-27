@@ -2,7 +2,6 @@ class_name,brand,pack_type,sku,is_ours,source
 Biskett_biscuit_biscuit,Biskett,biscuit,biscuit,1,invoice
 Biskett_biscuit_cookie-butter-spread-biscuit-spread,Biskett,biscuit,cookie-butter-spread-biscuit-spread,1,invoice
 Biskett_biscuit_sandwich-caramelize-biscuit,Biskett,biscuit,sandwich-caramelize-biscuit,1,invoice
-Bomb_canned_energy-drink,Bomb,canned,energy-drink,1,invoice
 Kix_ice-pop_cherry,Kix,ice-pop,cherry,1,invoice
 Kix_ice-pop_mango-passion-fruit,Kix,ice-pop,mango-passion-fruit,1,invoice
 Kix_ice-pop_mix-cherry-mango-passion-fruit-mohito-pinacolada-pomegranate,Kix,ice-pop,mix-cherry-mango-passion-fruit-mohito-pinacolada-pomegranate,1,invoice

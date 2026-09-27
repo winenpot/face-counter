@@ -1,7 +1,6 @@
 Biskett_biscuit_biscuit
 Biskett_biscuit_cookie-butter-spread-biscuit-spread
 Biskett_biscuit_sandwich-caramelize-biscuit
-Bomb_bottle_unspecified
 Kix_ice-pop_cherry
 Kix_ice-pop_mango-passion-fruit
 Kix_ice-pop_mix-cherry-mango-passion-fruit-mohito-pinacolada-pomegranate

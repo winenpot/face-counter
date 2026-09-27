@@ -51,8 +51,6 @@ def test_drink_with_known_containers_expands_to_one_class_per_container():
 
 
 def test_energy_drinks_are_cans_named_energy_drink():
-    assert [r["class_name"] for r in bc.classes_for('"Bomb" Carbonated Energy drink (250 ml)')] \
-        == ["Bomb_canned_energy-drink"]
     assert [r["class_name"] for r in bc.classes_for('"TorhX" Carbonated Energy drink (250 ml)')] \
         == ["TorshX_canned_energy-drink"]
 
@@ -60,6 +58,14 @@ def test_energy_drinks_are_cans_named_energy_drink():
 def test_stated_container_wins_over_known_containers():
     rows = bc.classes_for('"Kix max" Blue berry Carbonated Soft Drink (250ml) Can')
     assert [r["class_name"] for r in rows] == ["Kix-Max_canned_blue-berry"]
+
+
+def test_brands_we_no_longer_sell_are_not_imported():
+    # Only brands in BRAND_CANON are ours; a discontinued brand is removed from
+    # it, so an old invoice that still lists the brand adds nothing.
+    assert set(bc.BRAND_CANON.values()) == {
+        "Kix-Max", "TorshX", "My-Milk", "Picola", "Kix", "Biskett", "Tommy-Joy"}
+    assert {brand for brand, _ in bc.DRINK_CONTAINERS} <= set(bc.BRAND_CANON.values())
 
 
 def test_drink_with_unstated_unknown_container_fails_instead_of_guessing():
@@ -135,7 +141,7 @@ def test_legacy_file_without_source_or_pack_type_is_read_as_invoice_rows(tmp_pat
 
 def test_write_is_atomic_and_keeps_column_order(tmp_path):
     p = tmp_path / "classes.csv"
-    bc.write_classes(p, bc.classes_for('"Bomb" Carbonated Energy drink (250 ml)'))
+    bc.write_classes(p, bc.classes_for('"TorhX" Carbonated Energy drink (250 ml)'))
     header = p.read_text(encoding="utf-8").splitlines()[0]
     assert header == "class_name,brand,pack_type,sku,is_ours,source"
     assert not list(tmp_path.glob("*.tmp"))

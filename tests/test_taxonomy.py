@@ -95,7 +95,7 @@ SCOPE_ROWS = [
     _row("Kix-Max_canned_x", "Kix-Max", "canned", 1, "invoice", "x"),
     _row("Kix-Max_gum_y", "Kix-Max", "gum", 1, "invoice", "y"),
     _row("TorshX_glass_z", "TorshX", "glass", 1, "invoice", "z"),
-    _row("Bomb_canned_e", "Bomb", "canned", 1, "invoice", "e"),
+    _row("Kix_canned_e", "Kix", "canned", 1, "invoice", "e"),
     _row("COMPETITOR_canned", "COMPETITOR", "canned", 0),
     _row("COMPETITOR_glass", "COMPETITOR", "glass", 0),
     _row("COMPETITOR_gum", "COMPETITOR", "gum", 0),
@@ -117,11 +117,11 @@ def _scope(tmp_path, text):
 
 
 def test_scope_labels_every_product_of_a_scoped_pack_type_even_other_brands(tmp_path):
-    # A Bomb can is a can: calling it a competitor, or leaving it out, would make
+    # A can of another brand of ours is still a can: calling it a competitor, or leaving it out, would make
     # the denominator wrong. Brand scope limits reporting, never what gets named.
     scope = _scope(tmp_path, "brands: [Kix-Max, TorshX]\ncategories: [canned_drinks, glass_drinks]\n")
     names = taxonomy.scoped_label_names(SCOPE_ROWS, scope)
-    assert names == ["Bomb_canned_e", "Kix-Max_canned_x", "TorshX_glass_z",
+    assert names == ["Kix-Max_canned_x", "Kix_canned_e", "TorshX_glass_z",
                      "COMPETITOR_canned", "COMPETITOR_glass", "product"]
 
 
@@ -162,7 +162,7 @@ def test_label_prep_scope_level_emits_the_scoped_label_set(tmp_path):
         "brands: [Kix-Max, TorshX]\ncategories: [canned_drinks]\n", encoding="utf-8")
     got = pls.read_classes(classes, "scope", scope=tmp_path / "scope.yaml",
                            reporting=tmp_path / "reporting.yaml")
-    assert [c["name"] for c in got] == ["Bomb_canned_e", "Kix-Max_canned_x",
+    assert [c["name"] for c in got] == ["Kix-Max_canned_x", "Kix_canned_e",
                                         "COMPETITOR_canned", "product"]
 
 
@@ -188,7 +188,7 @@ def test_brand_detail_scope_names_brand_and_pack_type_not_skus(tmp_path):
     names = taxonomy.scoped_label_names(SCOPE_ROWS, scope)
     # Brand_packtype is the prefix of every SKU class name (Brand_packtype_sku), so a
     # later SKU pass refines these labels rather than contradicting them.
-    assert names == ["Bomb_canned", "Kix-Max_canned", "TorshX_glass",
+    assert names == ["Kix-Max_canned", "Kix_canned", "TorshX_glass",
                      "COMPETITOR_canned", "COMPETITOR_glass", "product"]
 
 
@@ -202,11 +202,11 @@ def test_unknown_scope_detail_is_rejected(tmp_path):
         _scope(tmp_path, "brands: [Kix-Max]\ncategories: [canned_drinks]\ndetail: flavour\n")
 
 
-def test_shipped_pilot_labels_are_the_eight_brand_level_labels():
+def test_shipped_pilot_labels_are_the_seven_brand_level_labels():
     from face_counter.utils.config import DEFAULT_SCOPE
 
     scope = taxonomy.load_scope(DEFAULT_SCOPE, taxonomy.load_reporting(DEFAULT_REPORTING))
     with open(DEFAULT_CLASSES, newline="", encoding="utf-8") as f:
         names = taxonomy.scoped_label_names(list(csv.DictReader(f)), scope)
-    assert names == ["Bomb_canned", "Kix-Max_canned", "Kix-Max_glass", "TorshX_canned",
-                     "TorshX_glass", "COMPETITOR_canned", "COMPETITOR_glass", "product"]
+    assert names == ["Kix-Max_canned", "Kix-Max_glass", "TorshX_canned", "TorshX_glass",
+                     "COMPETITOR_canned", "COMPETITOR_glass", "product"]

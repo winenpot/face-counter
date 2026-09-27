@@ -8,8 +8,8 @@ from PIL import Image
 
 from face_counter.label_studio import prepare_label_studio as pls
 
-PILOT = ["Bomb_canned", "Kix-Max_canned", "Kix-Max_glass", "TorshX_canned",
-         "TorshX_glass", "COMPETITOR_canned", "COMPETITOR_glass", "product"]
+PILOT = ["Kix-Max_canned", "Kix-Max_glass", "TorshX_canned", "TorshX_glass",
+         "COMPETITOR_canned", "COMPETITOR_glass", "product"]
 
 
 def _labels(xml):
@@ -19,7 +19,7 @@ def _labels(xml):
 def test_short_label_list_gets_number_hotkeys_and_no_search_box():
     xml = pls.labeling_config([{"name": n} for n in PILOT])
     labels = _labels(xml)
-    assert [labels[n].getAttribute("hotkey") for n in PILOT] == [str(i) for i in range(1, 9)]
+    assert [labels[n].getAttribute("hotkey") for n in PILOT] == [str(i) for i in range(1, 8)]
     assert "<Filter" not in xml
 
 

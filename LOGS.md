@@ -32,8 +32,8 @@ overwriting, so hand-added rows survive. `tests/test_taxonomy.py` fails if a
 pack type we sell or report on has no competitor class.
 
 **The `bottle` rows were wrong.** The invoice's own pictures showed the TorshX
-and Bomb energy drinks are cans, and the business confirmed each TorshX flavor
-ships as both can and glass bottle. 9 classes became 16. Invoice images were
+energy drink is a can, and the business confirmed each TorshX flavor
+ships as both can and glass bottle. 8 classes became 15. Invoice images were
 re-extracted and the TorshX ones filed by eye; one (`TorshX_madrid_3.png`, a
 pink bottle) looks mis-attached in the invoice and sits in `_unsorted/`.
 
@@ -45,6 +45,21 @@ scope stay `product`, so widening the scope never relabels anything. The
 ordered to-do list is `docs/PILOT.md`.
 
 **Next:** pick the detector from the bakeoff overlays (`PILOT.md` step 1).
+
+**Later the same day.**
+- **Detector:** YOLO26l (SKU-110K weights) now pre-draws boxes for labeling.
+  YOLOE with reworded prompts collapsed to 98 boxes across 30 photos and is
+  shelved as a detector.
+- **Pilot labels:** named by brand and pack type only (`scope.yaml`
+  `detail: brand`), labeled in one pass by one person. Runbook:
+  `docs/PILOT_LABELING.md`.
+- **A discontinued brand was removed.** The company no longer produces or
+  distributes it. Its class, its import rule in `build_classes.py`, its invoice
+  images and every mention of it were deleted. Where it served as the example
+  of "another brand of ours", the docs now say that in general terms. An old
+  invoice that still lists it now adds nothing, because the brand is no longer
+  in `BRAND_CANON`. 109 of our classes remain, 126 in total. The pilot has 7
+  labels.
 
 **Lesson of the day:** the invoice text said "Carbonated Soft Drink" and the
 code guessed a container; the invoice's own pictures said otherwise. When a

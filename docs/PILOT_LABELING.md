@@ -30,7 +30,7 @@ It writes three things into `data/label_studio/`:
 | File | What it is |
 | --- | --- |
 | `images/` | The 30 photos, ready for any browser (4 HEIF/MPO converted to JPEG, upright) |
-| `labeling_config_scope.xml` | The label list: 8 labels with number keys |
+| `labeling_config_scope.xml` | The label list: 7 labels with number keys |
 | `tasks_test_labeling.json` | The 30 tasks, each with YOLO26l's boxes pre-drawn |
 
 ## 1. Upload the photos to the server
@@ -53,7 +53,7 @@ Open `http://<server>:7071` and log in.
 2. **Create Project**, named `pilot-test-cans-glass`. Skip the Data Import tab.
 3. **Labeling Setup** tab: choose **Custom template**, open the **Code** view,
    delete what is there, and paste the whole of
-   `data/label_studio/labeling_config_scope.xml`. The preview should show 8
+   `data/label_studio/labeling_config_scope.xml`. The preview should show 7
    labels, `product` in grey. **Save**.
 
 ## 3. Project settings
@@ -86,8 +86,8 @@ either step 1 didn't copy it or step 3.1 is missing; see
 1. Once per browser: in the labeling screen, open the **gear icon** and turn on
    **Show labels inside the regions**.
 2. Follow `docs/labeling_guide.md`, "Pilot". In short: fix the boxes, then click
-   each can or glass bottle and press its number (1-7). Leave the rest as
-   `product` (8).
+   each can or glass bottle and press its number (1-6). Leave the rest as
+   `product` (7).
 3. Useful controls:
    - Click a box to select it; `Backspace` or `Delete` deletes it.
    - Draw a new box: press the label's number first, then drag on the photo.

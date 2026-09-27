@@ -9,10 +9,10 @@
 #
 # Pilot, decided 2026-09-27: our share among all cans and all glass bottles,
 # reported separately per category, for two brands. Every can and glass bottle
-# is still named, whoever makes it (a Bomb can is ours, not a competitor);
-# `brands` only limits whose share is reported.
+# is still named, whoever makes it (a can of another brand of ours is ours,
+# not a competitor); `brands` only limits whose share is reported.
 #
-# Extensibility check: adding Bomb, a category, or a competitor name must only
+# Extensibility check: adding a brand, a category, or a competitor name must only
 # ever touch this file, classes.csv, reporting.yaml, and gallery images. If it
 # needs a code change or a relabel, the design failed; record where.
 

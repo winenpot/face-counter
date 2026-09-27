@@ -68,14 +68,13 @@ Every photo opens with boxes already drawn by a detector, all labeled `product`
 
    | Key | Label | Use for |
    | --- | --- | --- |
-   | 1 | `Bomb_canned` | Bomb energy drink can (ours, not a competitor) |
-   | 2 | `Kix-Max_canned` | Any Kix-Max can, any flavour |
-   | 3 | `Kix-Max_glass` | Any Kix-Max glass bottle, any flavour |
-   | 4 | `TorshX_canned` | Any TorshX can, any flavour |
-   | 5 | `TorshX_glass` | Any TorshX glass bottle, any flavour |
-   | 6 | `COMPETITOR_canned` | Any other can |
-   | 7 | `COMPETITOR_glass` | Any other glass bottle |
-   | 8 | `product` | Everything else: plastic bottles, cartons, snacks, oil... |
+   | 1 | `Kix-Max_canned` | Any Kix-Max can, any flavour |
+   | 2 | `Kix-Max_glass` | Any Kix-Max glass bottle, any flavour |
+   | 3 | `TorshX_canned` | Any TorshX can, any flavour, energy drink included |
+   | 4 | `TorshX_glass` | Any TorshX glass bottle, any flavour |
+   | 5 | `COMPETITOR_canned` | Any other can |
+   | 6 | `COMPETITOR_glass` | Any other glass bottle |
+   | 7 | `product` | Everything else: plastic bottles, cartons, snacks, oil... |
 
 3. **Leave everything else as `product`.** Don't use `out_of_scope` or
    `COMPETITOR_other` in the pilot. `product` means "not named yet", and a

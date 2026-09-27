@@ -171,10 +171,10 @@ only, not plastic), oils (cooking and frying) and dressings (for food)**.
   `tests/test_taxonomy.py` fails if a pack type we sell or report on has no
   competitor class, so this cannot silently regress.
 - **The `bottle` rows were wrong and are gone.** The invoice images show the
-  TorshX and Bomb energy drinks are cans, and the business confirmed every
-  TorshX soft-drink flavor is sold as both glass bottle and can. 9 `*_bottle_*`
-  classes became 16: `TorshX_{canned,glass}_<flavor>` x 7 and
-  `{TorshX,Bomb}_canned_energy-drink`. 110 of our classes, 127 in total.
+  TorshX energy drink is a can, and the business confirmed every
+  TorshX soft-drink flavor is sold as both glass bottle and can. 8 `*_bottle_*`
+  classes became 15: `TorshX_{canned,glass}_<flavor>` x 7 and
+  `TorshX_canned_energy-drink`. 109 of our classes, 126 in total.
   A drink row that states no container and is not in
   `build_classes.DRINK_CONTAINERS` now stops the import instead of guessing.
 
@@ -204,8 +204,8 @@ Still open:
       board, Dispenser Box — B2B case types, invisible on a shelf) into one
       class per shelf-visible product, while keeping real visual differences
       (Can vs Glass, each flavor) as separate classes. `configs/classes.csv`
-      now has 103 real classes across 9 brands (Kix-Max, TorshX, Picola,
-      My-Milk, Kix, Biskett, Tommy-Joy, Bomb), all `is_ours=1` — this
+      now has 102 real classes across 7 brands (Kix-Max, TorshX, Picola,
+      My-Milk, Kix, Biskett, Tommy-Joy), all `is_ours=1` — this
       invoice has no competitor rows. Heuristic text parsing on free-form
       invoice descriptions; expect some rough edges (e.g. two rows fell back
       to `..._unspecified` sku with no flavor word matched) — worth a human

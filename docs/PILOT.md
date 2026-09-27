@@ -17,13 +17,13 @@ horizontal plan; nothing in it is cancelled, only sequenced after this.
 
 Three rules keep the pilot from closing off the wider system:
 
-1. **Every can and glass bottle is named, whoever makes it.** Bomb's energy
-   drink is ours, so it is labeled as ours, even though Bomb's share is not
-   reported yet. Calling it a competitor would corrupt the denominator.
+1. **Every can and glass bottle is named, whoever makes it.** A can of
+   another brand of ours is labeled as ours even when that brand's share is
+   not reported. Calling it a competitor would corrupt the denominator.
 2. **Boxes outside the scope keep the label `product`** ("not identified
    yet"), never `out_of_scope`. A later scope names them; nothing is
    relabeled. Pass one (geometry) still boxes every product on the shelf.
-3. **Extensibility is the experiment.** Widening the scope (add Bomb, a
+3. **Extensibility is the experiment.** Widening the scope (add a brand, a
    category, a named competitor) must only touch `scope.yaml`,
    `classes.csv`, `reporting.yaml` and gallery images. If it needs code or a
    relabel, write down where; that is the finding.
@@ -32,9 +32,8 @@ Three rules keep the pilot from closing off the wider system:
 
 - [x] **Scope config and scoped labeling.** `configs/scope.yaml`;
       `uv run shelf-label-prep --list data/splits/test_labeling.txt --level scope`
-      emits the pilot's 8 labels (`detail: brand`): Bomb_canned,
-      Kix-Max_canned/glass, TorshX_canned/glass, `COMPETITOR_canned`,
-      `COMPETITOR_glass`, `product`.
+      emits the pilot's 7 labels (`detail: brand`): Kix-Max_canned/glass,
+      TorshX_canned/glass, `COMPETITOR_canned`, `COMPETITOR_glass`, `product`.
 - [x] **1. Pick the detector that pre-draws boxes: `yolo26l-sku110k`.**
       Decided 2026-09-27 from run `runs/bakeoff/20260927-114232/`: more boxes
       than YOLO11s (2,814 vs 2,319) at the same duplicate rate (~5%), and the
@@ -50,7 +49,7 @@ Three rules keep the pilot from closing off the wider system:
 - [ ] **3. Label the test set: one pass, brand level.** Decided 2026-09-27: one
       labeler, so one pass (fix YOLO26l's boxes and name the drinks on the
       same visit), and brand + pack type labels, no flavours
-      (`scope.yaml` `detail: brand`, 8 labels). Runbook:
+      (`scope.yaml` `detail: brand`, 7 labels). Runbook:
       `docs/PILOT_LABELING.md`. Take the three labeling-guide screenshots on
       the way (the last Phase 0 item).
 - [ ] **4. Gallery for the in-scope classes.** Invoice images in
@@ -70,8 +69,8 @@ Three rules keep the pilot from closing off the wider system:
       model out.
 - [ ] **7. Phase 2, narrowed.** `/count` and `/overlay` for the two
       categories, per `ROADMAP.md`.
-- [ ] **8. The extensibility test.** Add Bomb to `scope.yaml` `brands`, and
-      record what else had to change. Then try a named competitor.
+- [ ] **8. The extensibility test.** Add a category (e.g. `oils`) or a
+      named competitor to the scope, and record what else had to change.
 
 ## Deferred, not dropped
 

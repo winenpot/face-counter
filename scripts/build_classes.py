@@ -50,13 +50,12 @@ CONTAINER_CATEGORY = [
 # about the product line, confirmed by the invoice's own embedded images and
 # by the business (2026-09-27): every TorshX soft-drink flavor is sold in
 # BOTH a glass bottle and a can, so one invoice row becomes two classes; the
-# TorshX and Bomb energy drinks are cans. A drink that is not listed here and
+# TorshX energy drink is a can. A drink that is not listed here and
 # does not state its container raises UnknownContainer -- guessing wrong would
 # silently put a product in the wrong share-of-shelf category.
 DRINK_CONTAINERS = {
     ("TorshX", "soft"): ["canned", "glass"],
     ("TorshX", "energy"): ["canned"],
-    ("Bomb", "energy"): ["canned"],
 }
 
 
@@ -73,7 +72,6 @@ BRAND_CANON = {
     "kix": "Kix",  # multi-vitamin straw / ice-pop sub-brand, distinct from Kix-Max
     "biskett": "Biskett",
     "tommy joy": "Tommy-Joy",
-    "bomb": "Bomb",
 }
 
 FLAVOR_WORDS = re.compile(
