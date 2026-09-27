@@ -62,6 +62,11 @@ mlruns/
 wandb/
 *.log
 
+# --- Label Studio database dumps (scripts/deploy_label_studio.sh) ---
+# They hold every user, password hash and annotation: store them like the
+# photos, never in git.
+backups/
+
 # --- IDE / OS ---
 .vscode/
 .idea/

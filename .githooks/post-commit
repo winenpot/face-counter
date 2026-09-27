@@ -1,0 +1,21 @@
+#!/bin/sh
+# post-commit: remind, never deploy.
+#
+# Runs after every commit (core.hooksPath=.githooks, see README.md "Setup").
+# If the commit touched deploy/label-studio/, it prints a reminder to run the
+# deploy script. It deliberately does NOT deploy: a hook fires on every commit,
+# including work-in-progress commits, rebases and amends, and a deploy to the
+# shared production server must be a deliberate act. Why there is no CI/CD:
+# deploy/label-studio/README.md, "Deploying changes".
+#
+# A post-commit hook cannot block or undo the commit; it only prints.
+
+# `git diff-tree` lists the files the new commit changed. --root makes it also
+# work for the very first commit in a repository.
+if git diff-tree --root --no-commit-id --name-only -r HEAD | grep -q '^deploy/label-studio/'; then
+  echo ""
+  echo "  deploy/label-studio/ changed in this commit. To put it on the server:"
+  echo "    scripts/deploy_label_studio.sh --dry-run   # see what would change"
+  echo "    scripts/deploy_label_studio.sh             # back up, sync, restart"
+  echo ""
+fi
