@@ -86,7 +86,13 @@ ordered to-do list is `docs/PILOT.md`.
 - **Outside the code: labeling vendors.** The owner called 4-5 labeling
   companies, sent them sample photos, and asked whether they could label
   1,000-10,000 photos at a fair price. Two asked for a formal request for
-  proposal (RFP). Nothing is agreed yet.
+  proposal (RFP). Two others asked, by email and Telegram, for example photos
+  with labels, and got 5-6 labeled examples; both are expected to call back on
+  2026-09-28:
+  - Taghizadeh (تقی زاده), phone 0912 26814913
+  - Barai (بارای), info@barai.ir
+
+  Nothing is agreed yet.
 - **Paused by the owner:** tracking D-FINE ("DF-DETR") against YOLO26l.
   D-FINE and DEIM-D-FINE are already in `DETECTOR_ALTERNATIVES.md` and on the
   fine-tuning list (`PILOT.md` step 6b); a fair comparison needs the labeled
@@ -94,12 +100,13 @@ ordered to-do list is `docs/PILOT.md`.
 
 **Next:**
 1. Label the other 27 test photos, exporting JSON after each session.
-2. Write the RFP for the two vendors. It should cover: how many photos and
+2. Taghizadeh and Barai call back (2026-09-28).
+3. Write the RFP for the two vendors that asked for one. It should cover: how many photos and
    boxes per photo (about 100); our guide, labels and tool (Label Studio,
    JSON export); a paid pilot batch scored against our own labels before any
    large order; and data handling, since the photos are the company's (NDA,
    no reuse or publishing, deletion after the job, where the data is stored).
-3. Evaluation script, once the test set is labeled (`PILOT.md` step 6).
+4. Evaluation script, once the test set is labeled (`PILOT.md` step 6).
 
 **Lesson of the day:** the invoice text said "Carbonated Soft Drink" and the
 code guessed a container; the invoice's own pictures said otherwise. When a
