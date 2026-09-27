@@ -109,7 +109,7 @@ code that was deleted.
 - The 3 annotated examples for `labeling_guide.md` (last Phase 0 item, owner
   working on it).
 - `git clone` the GPU box so sync stops needing manual rsync.
-- Carried over: the 2,230-vs-3,292 store gap, studio packshots, `root` rotation.
+- Carried over: the 2,230-vs-3,292 store gap, studio packshots.
 
 **Lesson of the day:** a guard that fails closed on a condition nobody
 anticipated (no `.git` on the far side) is indistinguishable from a broken
@@ -209,8 +209,7 @@ them is free accuracy).
   Harmless today, but anything in Phase 1 trusting manifest width/height will
   place boxes rotated 90° — and it will look like a model bug, not an
   assumption bug.
-- Studio packshots from marketing (all 8 brands, named by `class_name`), and
-  the deferred `root` password rotation.
+- Studio packshots from marketing (all 8 brands, named by `class_name`).
 
 **Lesson of the day:** the two most valuable corrections came from outside the
 code. The user's offhand remark about the app developer's upload fix overturned

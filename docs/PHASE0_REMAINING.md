@@ -35,10 +35,17 @@ data. Re-check them any time with:
       authority. Never run `shelf-splits --force` again. Splits hash the
       resolved `store_id` (§1 of Done, below — NOT the raw `store_code`), so
       re-exporting never moves a store.
-- [ ] **Unexplained: 2,230 distinct `store_id`, against the surveyed 3,292.**
-      The 1% join-failure rate (93 blank rows) does not account for a 32% gap.
-      Not blocking — median 3 photos/store, max 37, ample for a 30-photo test
-      set — but do not quote store coverage until someone explains it.
+- [x] **Explained, 2026-09-27: 2,230 distinct `store_id` vs the surveyed
+      3,292 is revisits, not lost data.** The survey counted distinct
+      `store_code`, which is a per-visit code, so a store visited twice counted
+      twice. 2,230 is the resolved `permanent_id` count. Caveat from the
+      business: the field recording is poor, so some physical stores were
+      registered as *different* stores on revisit. **2,230 is therefore an
+      upper bound on physical stores**, and a store split this way can in
+      principle sit on both sides of train/test. `sha256` dedupe catches
+      byte-identical re-uploads only, not a fresh photo of the same shelf.
+      Accepted as a known, small leakage risk; don't quote store coverage as
+      an exact number.
 
 ## 2. Data quality
 
@@ -123,11 +130,12 @@ data. Re-check them any time with:
       face — wrong as a gallery reference. Would need renaming and curation
       before use.*
 
-      **Outstanding ask (`docs/requests.md`), no longer Phase 0-blocking:**
-      studio packshots named by `class_name`, 2–5 per SKU, covering all 8
-      brands. Matters most for SKUs that are rare in our own corpus — Phase 1
-      also builds gallery crops from corrected photos, which may well beat
-      packshots anyway since they match the reps' real cameras and lighting.
+      **Studio packshots: not coming, 2026-09-27.** The business says the
+      ask (`docs/requests.md`) is probably not possible within the remaining
+      two weeks. Plan without them: the gallery is the invoice thumbnails
+      plus crops from corrected, non-test photos. Crops may beat packshots
+      anyway, since they match the reps' cameras and lighting. SKUs that are
+      rare in our corpus are the ones this hurts.
 - [~] **Labeling guide examples** — `docs/labeling_guide.md` still asks for
       three annotated screenshots. In progress (owner working on it 2026-09-24);
       not blocking the rest of §1/§4.
@@ -141,10 +149,12 @@ set), embedding matcher with an `other` threshold, evaluation script.
 
 How the labeling itself starts — the two-pass test set, cluster labeling for
 identity, competitors at category level, and which free tools fit — is in
-`docs/LABELING_STRATEGY.md`. One business input is needed before competitor
-labeling: the **reporting categories** for share of shelf. `classes.csv`'s
-categories come from the invoice and describe our packaging (`canned`,
-`glass`, `milk-straw`), which may not be how analysts group the shelf.
+`docs/LABELING_STRATEGY.md`.
+
+**Reporting categories, decided by the business 2026-09-27:** share of shelf
+is reported for four categories: **canned drinks, glass drinks (glass bottles
+only, not plastic), oils (cooking and frying) and dressings (for food)**.
+`classes.csv` has no oil or dressing products of ours yet.
 
 ---
 
@@ -288,9 +298,3 @@ categories come from the invoice and describe our packaging (`canned`,
       mongosh as that user — `use` switches database, not user — and check that
       `db.perm_test.insertOne({x:1})` fails. Never write-test against
       `photos.files`.
-
-- [ ] **Rotate the `root` password.** It sat in a workstation `.env`; treat it
-      as exposed. **Deferred by user decision, 2026-09-24** — not blocking
-      Phase 0 close-out; not forgotten. The read-only `read@atpg` user is
-      already in use for the export, so the exposed root credential is not
-      on the active path, just outstanding cleanup.

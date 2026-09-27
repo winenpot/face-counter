@@ -36,6 +36,9 @@ to a class yet. The ask above still stands for full coverage: **all 8 brands,
 mockups (e.g. a 24-can bundle shot) — a reference image must show one product
 face, or it teaches the matcher the wrong thing.
 
+**Status 2026-09-27:** the business says this is probably not possible within
+the remaining two weeks. No need to chase it; plan without it.
+
 ## 3. Original uploads before recompression (to the field app developer)
 
 > Hi — question about how the app stores shelf photos.
