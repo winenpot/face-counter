@@ -33,12 +33,14 @@ Three rules keep the pilot from closing off the wider system:
       `uv run shelf-label-prep --list data/splits/test_labeling.txt --level scope`
       emits the 31-label identity-pass config (our 28 in-scope classes incl.
       Bomb, `COMPETITOR_canned`, `COMPETITOR_glass`, `product`).
-- [ ] **1. Pick the detector.** Look through
-      `runs/bakeoff/20260926-141557/overlays/`, fridge photos first: which of
-      `sku110k-yolo11s`, `detr-r50-sku110k`, `yoloe-26s` finds the most cans
-      and glass bottles, behind glass and glare? Also decide whether DETR's
-      extra boxes are real finds or duplicates (it saturates at 400).
-      **This blocks everything below.**
+- [~] **1. Pick the detector that pre-draws boxes.** Zero-shot run and visual
+      review done 2026-09-27; report and metric plan in
+      `docs/reports/2026-09-27_detector_step_zero.md`. Working choice:
+      `sku110k-yolo11s`. Still to run on the GPU box before confirming:
+      `yolo26l-sku110k` (download its weights first, see `configs/bakeoff.yaml`)
+      and `yoloe-26s` with reworded can prompts (`--yoloe-prompts`). This picks
+      the labeling assistant only; every candidate is re-scored after
+      fine-tuning. **This blocks everything below.**
 - [ ] **2. Count the drink photos in the test set.** Some of the 30 are candy
       aisles. The frozen set must not change, so report the pilot on the
       subset that contains cans or glass bottles and say how many that is
@@ -55,9 +57,14 @@ Three rules keep the pilot from closing off the wider system:
       yet, and the per-category share needs it. Cheapest candidates:
       zero-shot text match ("a can" vs "a glass bottle"), or YOLOE's own
       `can`/`bottle` prompt labels.
-- [ ] **6. Evaluation script.** Per category: share-of-shelf error, the
-      ours-vs-competitor confusion both ways (the error that moves the
-      number), and detector recall on drinks.
+- [ ] **6. Evaluation script.** Implements the metric tables in
+      `docs/reports/2026-09-27_detector_step_zero.md` §7. Per category:
+      share-of-shelf error, the ours-vs-competitor confusion both ways (the
+      error that moves the number), and detector recall on drinks.
+- [ ] **6b. Fine-tune and re-score.** Label a training batch (never test
+      stores), fine-tune the leading candidates (YOLO26, RF-DETR, DEIM-D-FINE),
+      and score them on the same test set. Zero-shot results do not rule any
+      model out.
 - [ ] **7. Phase 2, narrowed.** `/count` and `/overlay` for the two
       categories, per `ROADMAP.md`.
 - [ ] **8. The extensibility test.** Add Bomb to `scope.yaml` `brands`, and
