@@ -50,9 +50,58 @@ it in the task's **Notes** box and ask. Don't guess differently from everyone el
 - Aim for about 10 to 20 minutes per photo. If a photo takes longer than 30 minutes,
   skip it and tell the project lead.
 
+## Pilot: cans and glass bottles (test set, from 2026-09-27)
+
+The pilot measures our share of cans and of glass bottles. It labels in **one
+pass**, and it names brands, not flavours.
+
+Every photo opens with boxes already drawn by a detector, all labeled `product`
+(grey).
+
+1. **Fix the boxes, on every product, not only drinks.** Delete boxes on
+   reflections, empty dark spots, price tags and posters. Delete the extra box
+   when one product has two. Draw a box on every product the detector missed.
+   Tighten boxes that are clearly off. The rules above ("What to box", "Edge
+   cases") still decide what counts.
+2. **Name every can and every glass bottle.** Click the box, then press its
+   number or click the label:
+
+   | Key | Label | Use for |
+   | --- | --- | --- |
+   | 1 | `Bomb_canned` | Bomb energy drink can (ours, not a competitor) |
+   | 2 | `Kix-Max_canned` | Any Kix-Max can, any flavour |
+   | 3 | `Kix-Max_glass` | Any Kix-Max glass bottle, any flavour |
+   | 4 | `TorshX_canned` | Any TorshX can, any flavour |
+   | 5 | `TorshX_glass` | Any TorshX glass bottle, any flavour |
+   | 6 | `COMPETITOR_canned` | Any other can |
+   | 7 | `COMPETITOR_glass` | Any other glass bottle |
+   | 8 | `product` | Everything else: plastic bottles, cartons, snacks, oil... |
+
+3. **Leave everything else as `product`.** Don't use `out_of_scope` or
+   `COMPETITOR_other` in the pilot. `product` means "not named yet", and a
+   later round names those boxes without redrawing them.
+
+Unsure whether a bottle is glass or plastic? Leave it `product` and write
+`glass?` in Notes. A can or glass bottle whose brand you can't read is a
+competitor unless it's clearly ours.
+
 ## Examples
 
-Add three annotated screenshots here once the first photos are labeled:
-1. A supermarket aisle
-2. A fridge with glass and glare
-3. A crowded small shop
+Screenshots live in `docs/labeling_guide/` (company photos: private repo only).
+Take them from the Label Studio screen after the photo is finished, with **Show
+labels inside the regions** on.
+
+1. A supermarket aisle: `docs/labeling_guide/1_aisle.png`, from photo
+   `6a9eb3a923de307d656e13a7`
+
+   ![Supermarket aisle](labeling_guide/1_aisle.png)
+
+2. A fridge with glass and glare: `docs/labeling_guide/2_fridge_glare.png`, from
+   photo `6a817d5c3d53df2b4e45e836`
+
+   ![Fridge with glare](labeling_guide/2_fridge_glare.png)
+
+3. A crowded small shop: `docs/labeling_guide/3_small_shop.png`, from photo
+   `6a708b39ddee25bd587e2e06`
+
+   ![Crowded small shop](labeling_guide/3_small_shop.png)

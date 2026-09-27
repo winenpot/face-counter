@@ -8,7 +8,8 @@ horizontal plan; nothing in it is cancelled, only sequenced after this.
 
 - **Question:** what share of all cans, and separately of all glass bottles,
   on a shelf are ours?
-- **Brands reported:** Kix-Max and TorshX (27 of our classes).
+- **Brands reported:** Kix-Max and TorshX, named by brand and pack type only
+  (`Kix-Max_canned`), not by flavour.
 - **Categories:** `canned_drinks` and `glass_drinks`, reported **separately**.
   Glass means glass only; plastic bottles are not in either.
 - Lives in `configs/scope.yaml`. It is a filter over the full taxonomy
@@ -31,8 +32,9 @@ Three rules keep the pilot from closing off the wider system:
 
 - [x] **Scope config and scoped labeling.** `configs/scope.yaml`;
       `uv run shelf-label-prep --list data/splits/test_labeling.txt --level scope`
-      emits the 31-label identity-pass config (our 28 in-scope classes incl.
-      Bomb, `COMPETITOR_canned`, `COMPETITOR_glass`, `product`).
+      emits the pilot's 8 labels (`detail: brand`): Bomb_canned,
+      Kix-Max_canned/glass, TorshX_canned/glass, `COMPETITOR_canned`,
+      `COMPETITOR_glass`, `product`.
 - [x] **1. Pick the detector that pre-draws boxes: `yolo26l-sku110k`.**
       Decided 2026-09-27 from run `runs/bakeoff/20260927-114232/`: more boxes
       than YOLO11s (2,814 vs 2,319) at the same duplicate rate (~5%), and the
@@ -40,17 +42,17 @@ Three rules keep the pilot from closing off the wider system:
       specific prompts collapsed (98 boxes total) and is shelved as a
       detector. This picks the labeling assistant only; every candidate is
       re-scored after fine-tuning.
-- [ ] **2. Count the drink photos in the test set.** Some of the 30 are candy
-      aisles. The frozen set must not change, so report the pilot on the
-      subset that contains cans or glass bottles and say how many that is
-      (expect 15-20, so noisier numbers).
-- [ ] **3. Label the test set, two passes.** Pass one (`--level geometry`,
-      the single label `product`): import
-      `runs/bakeoff/20260927-114232/ls_predictions_yolo26l-sku110k.json` so
-      every photo opens with boxes pre-drawn; labelers delete wrong boxes and
-      draw missed ones. Pass two
-      (`--level scope`): name cans and glass bottles only. Take the three
-      labeling-guide screenshots from a drinks fridge.
+- [~] **2. Count the drink photos in the test set.** Contact sheet
+      2026-09-27: nearly all 30 show cans or glass bottles (fridges and drink
+      aisles), a few only snacks or oil. The frozen set must not change; the
+      exact subset falls out of the labels (a photo with no named can or glass
+      bottle), so the evaluation script counts it rather than an eyeball.
+- [ ] **3. Label the test set: one pass, brand level.** Decided 2026-09-27: one
+      labeler, so one pass (fix YOLO26l's boxes and name the drinks on the
+      same visit), and brand + pack type labels, no flavours
+      (`scope.yaml` `detail: brand`, 8 labels). Runbook:
+      `docs/PILOT_LABELING.md`. Take the three labeling-guide screenshots on
+      the way (the last Phase 0 item).
 - [ ] **4. Gallery for the in-scope classes.** Invoice images in
       `configs/Product/from_invoice/` (about 2 per SKU) plus crops from labeled
       non-test photos. Competitors need no gallery: not ours = competitor.
