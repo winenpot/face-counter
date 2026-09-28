@@ -14,6 +14,46 @@ original record.
 
 ---
 
+## 1405/07/06 (2026-09-28) — back up to speed, Persian labeling screen, test set reviewed
+
+- **Phase 0 closed in the docs.** `PHASE0_REMAINING.md` is now a record;
+  its open items moved to `PILOT.md` and ROADMAP "Risks".
+- **Labeling plan written down.** `LABELING_STRATEGY.md` §8 covers weekly
+  rounds of ~100 photos, how to choose them, capacity (100 a week is one
+  full-time labeler), vendors, and what survives a wider taxonomy.
+  `PILOT.md` gained 3b (a gold validation set) and 4b (the embedding
+  matcher). The labeling guide says to ignore detector confidence and sweep
+  for misses.
+- **Labeling screen in Persian, data still in English.** Label Studio's
+  `alias` shows Persian and stores the English names. It was proven in a
+  throwaway project first. That test also showed Label Studio 1.23.0
+  *accepts* a config that drops labels already in use, so its safety check
+  can't be relied on. Three photo-level fields were added (scene type,
+  capture problems incl. reflection and too-wide/cluttered, photo problems),
+  plus the B Yekan font embedded in the config. `docs/labeling-guide/README.fa.md`.
+  The config lives only in `data/label_studio/labeling_config_scope_fa.xml`
+  (no source change); rebuild with `shelf-ls-setup --config` pointing at it.
+  A dated JSON export was taken before every change.
+- **All 30 test photos submitted; labels not final.** The box work is real,
+  but many competitor cans and glass bottles are still grey `product` and
+  #24-#30 were not corrected. Checklist:
+  `docs/reports/2026-09-28_test_set_label_review.md`.
+- **The GitHub repo is public.** It exposes the three shop screenshots in
+  the labeling guide, `classes.csv` and the test photo ids. Make it private
+  before pushing today's commits. The licensed font stays out of git until
+  then (`deploy/label-studio/fonts/`, gitignored).
+
+**Next:**
+1. Work through the review checklist, export, and re-review.
+2. Make the GitHub repo private, then commit the font and push.
+3. Evaluation script (`PILOT.md` step 6), from the final export.
+
+**Lesson of the day:** "all 30 submitted" is not "labeled". Check what the
+metric needs (here, every can and glass bottle named) photo by photo, not
+from the counts.
+
+---
+
 ## 1405/07/05 (2026-09-27) — business answers, a taxonomy that can grow, and a two-brand pilot
 
 **Business answers.** Reporting categories are canned drinks, glass drinks
