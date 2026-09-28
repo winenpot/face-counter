@@ -233,6 +233,117 @@ saves real time and its output is imported back.
 7. **Job C** only if step 2 showed the detector misses too much, driven by the
    active-learning loop in `ERROR_ANALYSIS.md` §3.
 
+## 8. Weekly rounds, and what survives a wider taxonomy
+
+Once the test set is labeled, the training pool is labeled in **weekly rounds
+of about 100 photos**: the current model pre-labels a batch, people correct
+it, the model is retrained on everything corrected so far, and the better
+model pre-labels the next batch. This is iterative annotation, a known
+method: Adhikari & Huttunen report up to 75% less manual work than drawing
+from scratch. We do not start cold. `yolo26l-sku110k` already knows shelves,
+so week one is corrections, not drawing: on the first three test photos a
+labeler deleted 12–24 and drew 5–8 boxes out of about 115.
+
+### What each round does
+
+1. **Pick the batch** (see "Choosing the 100" below). Never from test stores
+   and never from the gold validation set. `label_batch_NN.txt` already
+   guarantees that no photo is sent to labelers twice.
+2. **Pre-label and correct.** The detector pre-draws the boxes and the gallery
+   matcher pre-suggests the names. These are two models (`ROADMAP.md`,
+   Architecture) and both improve from round to round.
+3. **Train.** Augmentation happens inside training: Ultralytics applies
+   mosaic, colour, scale and flip, plus Albumentations when it is installed.
+   Do not write augmented copies to disk. Add a targeted transform (glare,
+   JPEG compression) only after error analysis names that failure. Never
+   mirror crops for the identifier, because it would learn backwards text.
+4. **Choose on the gold validation set, confirm on the test set.** Tune and
+   compare on the gold validation set (PILOT step 3b). The frozen test set is
+   read once per round, to confirm. A new model replaces the old one only if
+   it beats it on the test set overall *and* in no slice does it get worse.
+   Keep every round's weights.
+5. **Record the learning curve:** detector recall and share-of-shelf error
+   against the number of training photos, per slice.
+
+### Choosing the 100
+
+- **Round 1: stratified, not uniform.** Every scene type gets enough photos
+  to be measured (roughly 15 or more), and rare types are over-sampled
+  relative to the corpus. Scene type is what is photographed: an open or
+  glass-door fridge, an aisle, a counter, a crowded small shop. It is a
+  different axis from the **capture-quality** slices (glare, blur, and the
+  field app's resolution tiers: full, 4 MiB-capped, 810x1080, 960x1280,
+  1200x1600; `ERROR_ANALYSIS.md` §1). Every photo has one value on each
+  axis. Resolution tier can be computed from the manifest. Scene type is not
+  recorded anywhere yet, so it is tagged per photo (PILOT step 3b).
+- **Rounds 2–3: re-weight by the learning curve, not by the error alone.**
+  Move photos toward the slices that are bad *and still improving* when data
+  is added. A slice that is bad and flat (say, glare that hides the label
+  entirely) will not be fixed by more labels. It needs a photo guideline for
+  reps or a different input. Keep a floor for the easy slices, roughly 20%
+  of the batch, so they cannot regress unnoticed.
+- **Round 4 on: pick photos, not types.** Active learning
+  (`ERROR_ANALYSIS.md` §3) picks the photos the model is least sure of. That
+  selects hard slices on its own, at photo level.
+- **When to stop geometry rounds:** when two rounds in a row move gold-set
+  recall by less than its noise in every slice. Labeling effort then moves to
+  identity (cluster naming, gallery crops). How many rounds that takes is
+  unmeasured; 3–6 rounds (300–600 photos) is a guess to be replaced by the
+  curve.
+
+### Capacity and cost
+
+At the guide's 10–20 minutes per photo, one person does about 20 photos in a
+productive day. **100 photos a week is one labeler, full time.** The test set
+still needs its 27 remaining photos (about one day of labeling) and the gold
+validation set about 30 more, both before round 1. Faster pre-labels shorten
+each photo; more labelers shorten each week.
+
+Outsourcing buys parallel labelers, not faster photos. It fits the loop under
+three conditions:
+
+- **Score every vendor batch against the gold validation set before paying
+  for the next.** People correcting a model's boxes tend to accept its
+  misses; the gold set catches that.
+- **Send geometry and the scope's short label list out; keep identity in
+  house.** Look-alike flavours are where outsiders fail, and cluster naming
+  (§3) makes identity cheap anyway.
+- **Price per corrected photo**, with the paid pilot batch from the RFP.
+
+If it gets expensive, these are the cheapest levers, in order:
+
+1. **Stop earlier.** The learning curve says when more photos stop paying.
+2. **Label bays, not photos.** Crop a photo to one shelf bay and label the
+   crop *exhaustively*. A crop trains the detector as well as a photo, for a
+   fraction of the boxes. Never label *part* of a full photo: every product
+   left unboxed is taught as background.
+3. **Buy geometry only.** The vendor boxes `product`; naming stays in house.
+4. **Make the selection sharper.** Active learning picks fewer photos that
+   matter more.
+
+### What survives when the taxonomy grows
+
+Adding SKUs, product lines (biscuits, oil, jelly powder) or named competitors
+never means redrawing, because the detector only knows `product`:
+
+| Asset | What happens when labels get more detailed |
+| --- | --- |
+| Boxes (geometry) | Kept, 100%. No taxonomy change touches the detector's single class. |
+| `product` boxes | These are the ones a wider scope names. That is renaming, pre-suggested by the matcher, never redrawing. |
+| Brand-level names (`Kix-Max_canned`) | Refined, not contradicted: the SKU classes share the brand prefix, so a labeler only picks among that brand's flavours, best done by cluster. |
+| `COMPETITOR_<pack_type>` | Already covers oil, dressing and the other pack types. Naming competitor brands is a rename, worth it only if someone will read that number. |
+| Identifier | A new SKU is gallery images, not retraining. A Phase-3 classifier would retrain on crops, starting from its previous weights. |
+| Configs | `scope.yaml`, `reporting.yaml`, rows in `classes.csv`. No code: this is PILOT step 8's pass/fail test. |
+| Test set | The frozen 30 are mostly drinks and may not cover a new category well enough to measure it. Add a second frozen list from the test split for it. Never re-cut the first. |
+
+`product` stays useful at any scope. It is the detector's training target,
+the ground truth for detector recall, and the honest label for anything not
+named yet. Fewer boxes carry it as the scope widens, but the label never goes
+away. What *can* force more geometry labeling is a new **scene type**, not a
+new label: oil aisles and biscuit racks look different from drink fridges,
+and the detector's recall there is unmeasured. That means more photos from
+those aisles, not redoing the drinks ones.
+
 ---
 
 ## Sources
@@ -245,5 +356,7 @@ saves real time and its output is imported back.
 - Make Sense, github.com/SkalskiP/make-sense — README, "Privacy" and model-assist sections, checked 2026-09-26
 - X-AnyLabeling, github.com/CVHub520/X-AnyLabeling — GPL-3.0 licence, checked 2026-09-26
 - Label Studio ML backend, github.com/HumanSignal/label-studio-ml-backend — YOLO, Grounding DINO, SAM examples, checked 2026-09-26
+- Adhikari & Huttunen, *Iterative Bounding Box Annotation for Object Detection*, ICPR 2020, arXiv 2007.00961 — train on small batches, pre-label the next, up to 75% less manual annotation
+- Ultralytics docs, "Albumentations integration" (docs.ultralytics.com/integrations/albumentations) — applied automatically during training when installed; checked 2026-09-28
 - Oquab et al., *DINOv2: Learning Robust Visual Features without Supervision*, arXiv 2304.07193
 - Goldman et al., *Precise Detection in Densely Packed Scenes* (SKU-110K), CVPR 2019

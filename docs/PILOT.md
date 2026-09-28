@@ -55,6 +55,23 @@ Three rules keep the pilot from closing off the wider system:
       project `pilot-test-cans-glass` (id 3), 30 tasks, 2,814 pre-drawn boxes,
       created by `uv run shelf-ls-setup`. 3 of 30 labeled (#04, #06, #22),
       and their screenshots are the guide's examples: Phase 0 closed.
+- [ ] **3b. Gold validation set.** About 30 photos from **val-split** stores,
+      labeled exactly like the test set (same guide, same scope labels). It is
+      what weekly tuning, model comparison and vendor scoring run on, so the
+      frozen test set is only read to confirm (`LABELING_STRATEGY.md` §8).
+      Needed before the first training round (6b) and before any vendor batch.
+      - Pick with the same `diverse_sample` logic as the test set, but
+        written to a new file, `data/splits/gold_val.txt`, tracked in git.
+        Needs a small addition to `make_splits.py`; **never** via
+        `shelf-splits --force`. Contact-sheet it and swap non-shelf photos,
+        as was done for the test set.
+      - Tag **scene type** on every gold and test photo: open fridge,
+        glass-door fridge, aisle, counter, small shop. It is recorded
+        nowhere today and every slice needs it. Add it as a single-choice
+        field in the Label Studio config. Resolution tier comes from the
+        manifest, so it needs no tag.
+      - Load it as its own Label Studio project, so its tasks never mix with
+        training batches.
 - [ ] **4. Gallery for the in-scope classes.** Invoice images in
       `configs/Product/from_invoice/` (about 2 per SKU) plus crops from labeled
       non-test photos. Competitors need no gallery: not ours = competitor.
@@ -71,14 +88,15 @@ Three rules keep the pilot from closing off the wider system:
       `docs/reports/2026-09-27_detector_step_zero.md` §7. Per category:
       share-of-shelf error, the ours-vs-competitor confusion both ways (the
       error that moves the number), and detector recall on drinks.
-- [ ] **6b. Fine-tune and re-score.** Label a training batch (never test
+- [ ] **6b. Fine-tune and re-score, in weekly rounds.** Label a training batch (never test
       stores), fine-tune the leading candidates (YOLO26, RF-DETR, DEIM-D-FINE),
       and score them on the same test set. Zero-shot results do not rule any
       model out. Training batches were not hand-reviewed the way the test
       set was: expect a few non-shelf uploads under `photo_type: shelf`
       (screenshots, storefronts; 9 PNGs in the corpus). Give labelers a
       "not a shelf photo, skip" answer before the batch goes out
-      (`PHASE0_REMAINING.md` §2).
+      (`PHASE0_REMAINING.md` §2). The round-by-round loop (batch choice,
+      capacity, vendors, stopping rule) is `LABELING_STRATEGY.md` §8.
 - [ ] **7. Phase 2, narrowed.** `/count` and `/overlay` for the two
       categories, per `ROADMAP.md`.
 - [ ] **8. The extensibility test.** Add a category (e.g. `oils`) or a

@@ -14,6 +14,9 @@
 - Not yet in code: gallery, embedding matcher (PILOT 4b), can-vs-glass for
   non-ours crops (PILOT 5, a gap in the plan), evaluation script (PILOT 6).
   Steps 5 and 6 can start against the 3 labeled photos.
+- Before the first weekly training round: the gold validation set plus
+  scene-type tags (PILOT 3b). Weekly-round method, capacity (100 photos a
+  week is one labeler full time) and vendor rules: `LABELING_STRATEGY.md` §8.
 
 Project-specific architecture, operations, and infrastructure knowledge for
 `face-counter`. Linked from the global Hermes vault's Projects index.
