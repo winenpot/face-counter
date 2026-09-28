@@ -79,9 +79,10 @@ screen shows them in Persian; what is saved is the English value in brackets.
    aisle (`shelf-aisle`), counter (`counter`), promo stand or floor display
    (`display`), fridge and shelf in one photo (`mixed`). If two appear, pick
    the one taking most of the photo, or `mixed`.
-2. **Capture problems**, any number or none: `glare`, `blur`, `dark`,
-   `angled`, `far`, `occluded`, `cut-off`. Tick one only when it really makes
-   products harder to count or name.
+2. **Capture problems**, any number or none: `glare`, `reflection` (mirror
+   images of products on glass, a shiny floor or shelf: never box them),
+   `blur`, `dark`, `angled`, `far`, `occluded`, `cut-off`. Tick one only when
+   it really makes products harder to count or name.
 3. **Photo problems**, any number or none: `not-a-shelf` (screenshot,
    storefront), `no-drinks` (no can or glass bottle at all), `multi-bay`.
 
