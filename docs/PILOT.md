@@ -58,6 +58,11 @@ Three rules keep the pilot from closing off the wider system:
 - [ ] **4. Gallery for the in-scope classes.** Invoice images in
       `configs/Product/from_invoice/` (about 2 per SKU) plus crops from labeled
       non-test photos. Competitors need no gallery: not ours = competitor.
+- [ ] **4b. Embedding matcher.** Embed each crop (DINOv2 or CLIP), take the
+      nearest gallery match, and call it not-ours below a similarity
+      threshold. This is the identifier half of the two-stage design; without
+      it nothing names a crop outside Label Studio. Tune the threshold on
+      non-test crops only.
 - [ ] **5. Can vs glass for non-ours crops.** Nothing in the plan does this
       yet, and the per-category share needs it. Cheapest candidates:
       zero-shot text match ("a can" vs "a glass bottle"), or YOLOE's own
