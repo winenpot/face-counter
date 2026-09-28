@@ -44,9 +44,27 @@ it in the task's **Notes** box and ask. Don't guess differently from everyone el
 | Product on a promo stand or floor display | Box it like a shelf product |
 | Product image on a poster, price tag, or cardboard | Don't box: it's not a product |
 
+## Pre-drawn boxes and their numbers
+
+Photos open with boxes a detector already drew. Each box shows a number, the
+detector's confidence. **Ignore it.** Judge every box by the rules on this
+page, whatever its number:
+
+- A high number does not mean the box is right. Reflections in fridge glass,
+  price tags and posters can score high. Check every box, not only the
+  low-numbered ones. Don't sort or skip boxes by their number.
+- **The worst mistakes are the boxes that aren't there.** The detector only
+  draws a box when it is fairly sure, so the products it missed are exactly
+  the hard ones: behind glare, small, dark, half hidden. You must add those
+  yourself. Accepting the pre-drawn boxes as they are is the most common
+  labeling error.
+- The number is not saved with your labels. Only your boxes count.
+
 ## Before you submit
 
-- Zoom in once across the whole photo and check for missed products.
+- Zoom in once across the whole photo and check for missed products. Look
+  hardest where the detector drew nothing: glare, dark corners, top and
+  bottom shelves, and the photo's edges.
 - Aim for about 10 to 20 minutes per photo. If a photo takes longer than 30 minutes,
   skip it and tell the project lead.
 
@@ -93,7 +111,7 @@ Three test photos, labeled for the pilot and screenshotted in Label Studio with
 **Show labels inside the regions** on (company photos: private repo only). The
 coloured boxes are named cans and glass bottles; the grey ones are `product`,
 boxed but not named. The numbers on the boxes are the detector's confidence;
-they don't matter for labeling.
+ignore them (see "Pre-drawn boxes and their numbers").
 
 1. **Drinks fridge behind glass**, mixed glass bottles and dairy (test photo
    #06, `6a7ab0c0a3a62efeb49860b2`). Competitor glass bottles named; milk,
