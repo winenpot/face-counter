@@ -11,6 +11,11 @@
   and glass bottles reported separately). Detector for pre-drawing:
   `yolo26l-sku110k`. Label Studio project `pilot-test-cans-glass` (id 3):
   30 tasks, 3 labeled (#04, #06, #22). **Critical path: label the other 27.**
+- **2026-09-28: all 30 submitted, labels not final.** Resume from the
+  checklist in `docs/reports/2026-09-28_test_set_label_review.md`. The
+  labeling screen is Persian (config only: `data/label_studio/labeling_config_scope_fa.xml`,
+  push with `shelf-ls-setup --config <that file>`). The GitHub repo is
+  public: make it private before pushing.
 - Not yet in code: gallery, embedding matcher (PILOT 4b), can-vs-glass for
   non-ours crops (PILOT 5, a gap in the plan), evaluation script (PILOT 6).
   Steps 5 and 6 can start against the 3 labeled photos.

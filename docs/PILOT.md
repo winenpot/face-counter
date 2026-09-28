@@ -55,6 +55,10 @@ Three rules keep the pilot from closing off the wider system:
       project `pilot-test-cans-glass` (id 3), 30 tasks, 2,814 pre-drawn boxes,
       created by `uv run shelf-ls-setup`. 3 of 30 labeled (#04, #06, #22),
       and their screenshots are the guide's examples: Phase 0 closed.
+      **2026-09-28: all 30 submitted, labels NOT final.** Many competitor
+      cans and glass bottles are still grey `product`, and #24-#30 are
+      unchanged from the detector. **Resume here:** the checklist in
+      `docs/reports/2026-09-28_test_set_label_review.md`, then re-review.
 - [ ] **3b. Gold validation set.** About 30 photos from **val-split** stores,
       labeled exactly like the test set (same guide, same scope labels). It is
       what weekly tuning, model comparison and vendor scoring run on, so the
