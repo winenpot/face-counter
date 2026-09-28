@@ -20,15 +20,15 @@ Studio for labelers.
 
 | Phase | What | State |
 | --- | --- | --- |
-| 0 | Export, manifest, fixed test set, labeling setup | **in progress** — see `docs/PHASE0_REMAINING.md` |
-| 1 | SKU-110K detector, reference gallery, embedding matcher | not started |
+| 0 | Export, manifest, fixed test set, labeling setup | **done** 2026-09-27 — findings in `docs/PHASE0_REMAINING.md` |
+| 1 | SKU-110K detector, reference gallery, embedding matcher | **under way** as a two-brand drinks pilot — see `docs/PILOT.md` |
 | 2 | FastAPI `/count`, `/overlay`, `/health` in Docker | not started — this repo will be its launchpad too, same as Label Studio: `deploy/serving/` (planned), compose-driven, `src/face_counter/serving/` already reserved |
 | 3 | Pre-labeling loop, fine-tuning, MLflow, DVC remote | not started |
 
-The Phase 0 tooling below runs, but it has not yet been pointed at the real
-database: `configs/export.yaml` still describes a schema the production data
-does not use, so no manifest and no fixed test set exist yet.
-`docs/PHASE0_REMAINING.md` has the actual schema and what is left.
+The Phase 0 tooling below has run against production: 9,704 photos exported
+(on the GPU box), a manifest, store-level splits, and a frozen 30-photo test
+set (`data/splits/test_labeling.txt`, tracked in git). `docs/PHASE0_REMAINING.md`
+records the real schema and what the survey found. Start from `docs/PILOT.md`.
 
 ## Setup
 

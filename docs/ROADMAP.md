@@ -86,11 +86,12 @@ Photos come in from the reps' app, results go back beside them, and corrections 
 
 By day 3: data is exportable, the test set is fixed, labeling is secured, and the business side is gathering classes and packshots.
 
-**Status (2026-09-26):** nearly closed. The full export ran against production
+**Status: complete, 2026-09-27.** The full export ran against production
 (9,704 photos, ~30 GB on the GPU box), the manifest exists, splits were cut
-over it (9,573 rows after dedupe: 7,640 train / 1,076 val / 857 test), and the
-30-photo test set is **frozen and tracked in git**. What is left is the
-labeling-guide examples. Detail in [`PHASE0_REMAINING.md`](PHASE0_REMAINING.md).
+over it (9,573 rows after dedupe: 7,640 train / 1,076 val / 857 test), the
+30-photo test set is **frozen and tracked in git**, and the labeling guide has
+its examples. The survey findings and their reasons are recorded in
+[`PHASE0_REMAINING.md`](PHASE0_REMAINING.md) (closed; code cites its §s).
 Checkboxes below: `[x]` done · `[~]` partly done, see the note · `[ ]` not started.
 
 - [x] **Secure Label Studio.** Set `LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK=true`, remove unknown accounts, use strong passwords. It's on the public internet, so this comes first. — *the running instance was hardened by hand, but the committed `deploy/label-studio/` could not reproduce it (would not start; published on `0.0.0.0`; no photo mount). The compose file is fixed now; the live instance still needs to be migrated onto it, and its member list re-checked.*
@@ -112,7 +113,7 @@ Checkboxes below: `[x]` done · `[~]` partly done, see the note · `[ ]` not sta
 
 By day 10: a script turns a photo into SKU counts end to end, with accuracy measured on the test set.
 
-- [~] **Detector, step zero — try published SKU-110K weights before training anything.** *Ran 2026-09-26 on the GPU box over the frozen test set (box counts in `LOGS.md`); overlays in `runs/bakeoff/20260926-141557/`. Pick not made yet: `PILOT.md` step 1.* Several exist (a DETR-ResNet-50 reporting 58.9 mAP, trained on a 4060 Ti; a YOLO26l reporting 0.906 mAP50; the original CVPR19 RetinaNet). Evaluating them costs an afternoon; training costs a night. Domain shift to Iranian shops/fridges is unmeasured — our frozen test set decides. Add **YOLOE-26** (open-vocabulary, text-prompted with generic packaging nouns) as a third entrant, scored by recall on the same test set; it may also pre-fill `COMPETITOR_<category>` labels. See [`DETECTOR_ALTERNATIVES.md`](DETECTOR_ALTERNATIVES.md).
+- [~] **Detector, step zero — try published SKU-110K weights before training anything.** *Ran 2026-09-26 on the GPU box over the frozen test set (box counts in `LOGS.md`); overlays in `runs/bakeoff/20260926-141557/`. Picked 2026-09-27 for pre-drawing boxes: `yolo26l-sku110k` (run `runs/bakeoff/20260927-114232/`, `PILOT.md` step 1). Every candidate is re-scored after fine-tuning.* Several exist (a DETR-ResNet-50 reporting 58.9 mAP, trained on a 4060 Ti; a YOLO26l reporting 0.906 mAP50; the original CVPR19 RetinaNet). Evaluating them costs an afternoon; training costs a night. Domain shift to Iranian shops/fridges is unmeasured — our frozen test set decides. Add **YOLOE-26** (open-vocabulary, text-prompted with generic packaging nouns) as a third entrant, scored by recall on the same test set; it may also pre-fill `COMPETITOR_<category>` labels. See [`DETECTOR_ALTERNATIVES.md`](DETECTOR_ALTERNATIVES.md).
 - [ ] **Detector.** If step zero isn't enough, train a small YOLO on SKU-110K overnight on the 4060 Ti. Check by eye that it finds most products on 10 of our photos.
 - [ ] **Keep the detector swappable.** A `Detector` protocol with one `detect(image) -> boxes`, backend chosen in config, so everything downstream is detector-agnostic. YOLO is the starting point, not the conclusion — the DETR branch (RT-DETR, D-FINE, DEIM) now leads real-time detection, and DEIM is Apache-2.0, halves training cost, and gains most on small objects, which is exactly our weakness. Rationale and candidate table in [`DETECTOR_ALTERNATIVES.md`](DETECTOR_ALTERNATIVES.md).
 - [ ] **Small objects.** Use a larger input size (1280) or tiled inference (SAHI) for whole-aisle photos.
@@ -199,6 +200,9 @@ The biggest risk is flavor-level confusion; brand-level counts will be reliable 
 | Our product misread as a competitor (or the reverse) | Share of shelf wrong in the direction that matters | Report the ours-vs-not confusion separately from flavor accuracy |
 | Non-category products counted as competitors | Share of shelf dragged down by framing | `out_of_scope` label; agree the reporting categories with the business |
 | Labeling volume looks unbounded | Team stalls | Only the test set is labeled exhaustively; identity by cluster; detector corrections metered by active learning |
+| No index on `photo_type`/`store_code` in production | A filtered export collection-scans ~24k docs | Acceptable for occasional exports; keep `throttle_seconds` on in work hours; never add an index to production without asking (`PHASE0_REMAINING.md` §2) |
+| 90 `store_id`s written in Persian digits (e.g. `۴۹۳۱`) | Anything that normalises digits could merge two ids, change a store's hash and leak it across splits | No leak today (checked 2026-09-26); re-run the leak check before normalising digits anywhere (`PHASE0_REMAINING.md` §2) |
+| Field app recompresses uploads (12.6% at ~4 MiB; 810x1080 / 960x1280 / 1200x1600 tiers) | Accuracy varies by resolution tier | Report resolution tier as a slice (`ERROR_ANALYSIS.md`); keep low-res photos, they are representative; ask whether originals survive (`requests.md` §3) |
 
 ## Resources and dependencies
 

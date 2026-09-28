@@ -2,6 +2,19 @@
 
 **Resume here:** `docs/PILOT.md` (active scope + ordered to-do list, 2026-09-27). Full plan: `docs/ROADMAP.md`.
 
+## Status (2026-09-28)
+
+- **Phase 0: closed 2026-09-27.** `docs/PHASE0_REMAINING.md` is now a
+  historical record (kept under its name because code/tests cite its §s);
+  its still-open items moved to `PILOT.md` and ROADMAP "Risks".
+- **Phase 1: running as the two-brand drinks pilot** (Kix-Max, TorshX; cans
+  and glass bottles reported separately). Detector for pre-drawing:
+  `yolo26l-sku110k`. Label Studio project `pilot-test-cans-glass` (id 3):
+  30 tasks, 3 labeled (#04, #06, #22). **Critical path: label the other 27.**
+- Not yet in code: gallery, embedding matcher (PILOT 4b), can-vs-glass for
+  non-ours crops (PILOT 5, a gap in the plan), evaluation script (PILOT 6).
+  Steps 5 and 6 can start against the 3 labeled photos.
+
 Project-specific architecture, operations, and infrastructure knowledge for
 `face-counter`. Linked from the global Hermes vault's Projects index.
 
@@ -20,7 +33,8 @@ SSH access available. Runs ~30 Docker containers, including:
 - `atpg_flask_app`, `atpgchart`, `atpg-dashboard`, and many unrelated
   internal tools (trade, HR, meeting, tagsystem, etc.)
 - `database-mongodb-primary` — production MongoDB (the `atpg` database this
-  project reads from; see `docs/PHASE0_REMAINING.md`)
+  project reads from; schema and survey findings in
+  `docs/PHASE0_REMAINING.md`, closed 2026-09-27)
 
 **Disk status (2026-09-22):** root (`/dev/sda2`) at 79% full, only 20GB free.
 `docker system df` showed 19.09GB reclaimable in images (85% of 22.29GB) and

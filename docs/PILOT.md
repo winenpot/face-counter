@@ -69,7 +69,11 @@ Three rules keep the pilot from closing off the wider system:
 - [ ] **6b. Fine-tune and re-score.** Label a training batch (never test
       stores), fine-tune the leading candidates (YOLO26, RF-DETR, DEIM-D-FINE),
       and score them on the same test set. Zero-shot results do not rule any
-      model out.
+      model out. Training batches were not hand-reviewed the way the test
+      set was: expect a few non-shelf uploads under `photo_type: shelf`
+      (screenshots, storefronts; 9 PNGs in the corpus). Give labelers a
+      "not a shelf photo, skip" answer before the batch goes out
+      (`PHASE0_REMAINING.md` §2).
 - [ ] **7. Phase 2, narrowed.** `/count` and `/overlay` for the two
       categories, per `ROADMAP.md`.
 - [ ] **8. The extensibility test.** Add a category (e.g. `oils`) or a
@@ -80,3 +84,9 @@ Three rules keep the pilot from closing off the wider system:
 Corpus-scale cluster labeling (only a small version for gallery crops is
 needed now), the full-class confusion matrix, oils and dressings (we have no
 products of ours there yet), all non-drink categories.
+
+Open question carried from Phase 0: `classes.csv` has no oil or dressing
+products of ours (the only `sauce` rows are Tommy-Joy dessert sauces). Either
+they are on another invoice, or those categories are competitor-only today.
+Ask before widening the scope to them; adding them is `source=manual` rows
+with `pack_type` `oil`/`dressing`, no code change.

@@ -1,5 +1,14 @@
 # Phase 0 — what is left
 
+> **Closed 2026-09-27.** Phase 0 is complete; this is now the historical
+> record of what the Phase 0 survey found and why. Code, configs and tests
+> cite its § numbers, so it stays in place under this name. Nothing new goes
+> here. The items still open below were moved to where they will be worked:
+> `docs/PILOT.md` (non-shelf uploads, oils and dressings) and
+> `docs/ROADMAP.md` "Risks and mitigations" (missing Mongo index,
+> Persian-digit store ids, server-side recompression). Active work:
+> `docs/PILOT.md`.
+
 From a read-only survey of the live `atpg` database, 2026-09-22. These numbers
 supersede `configs/export.yaml`, which was written before anyone looked at the
 data. Re-check them any time with:
