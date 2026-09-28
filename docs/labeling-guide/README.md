@@ -65,8 +65,30 @@ page, whatever its number:
 - Zoom in once across the whole photo and check for missed products. Look
   hardest where the detector drew nothing: glare, dark corners, top and
   bottom shelves, and the photo's edges.
+- Fill in the three photo fields below the photo (next section).
 - Aim for about 10 to 20 minutes per photo. If a photo takes longer than 30 minutes,
   skip it and tell the project lead.
+
+## The three photo fields (from 2026-09-28)
+
+Below the photo are three fields, filled once per photo, not per box. The
+screen shows them in Persian; what is saved is the English value in brackets.
+
+1. **Scene type**, exactly one, required (Submit refuses without it): open
+   fridge (`open-fridge`), glass-door fridge (`glass-door-fridge`), shelf
+   aisle (`shelf-aisle`), counter (`counter`), promo stand or floor display
+   (`display`), fridge and shelf in one photo (`mixed`). If two appear, pick
+   the one taking most of the photo, or `mixed`.
+2. **Capture problems**, any number or none: `glare`, `blur`, `dark`,
+   `angled`, `far`, `occluded`, `cut-off`. Tick one only when it really makes
+   products harder to count or name.
+3. **Photo problems**, any number or none: `not-a-shelf` (screenshot,
+   storefront), `no-drinks` (no can or glass bottle at all), `multi-bay`.
+
+Hover over an option for a one-line hint. These feed the sliced metrics in
+`docs/ERROR_ANALYSIS.md` §1 and the batch choice in
+`docs/LABELING_STRATEGY.md` §8. Persian translation of this guide:
+[`README.fa.md`](README.fa.md).
 
 ## Pilot: cans and glass bottles (test set, from 2026-09-27)
 
