@@ -14,6 +14,70 @@ original record.
 
 ---
 
+## 1405/07/07 (2026-09-29) — the Persian font finally renders
+
+**The font was deployed on the 28th and still rendered as Figtree.** Fixing
+it took three observations, and the order matters more than the fix:
+
+1. Computed style said `Figtree, sans-serif` → Label Studio 1.23 hardcodes
+   its font family and never reads a `--font-family` custom property. The
+   original `html body { --font-family: 'BYekanLS' ... !important }` set a
+   variable nothing consumes. `!important` cannot help: it wins the cascade
+   for a property, it cannot make anyone *read* that property.
+2. Only Figtree appeared in the Network tab → a browser downloads a webfont
+   **only when a matched rule actually uses it**. Our woff2 was never
+   fetched, which by itself proved no rule ever matched it. A font missing
+   from Network is stronger evidence than anything in Computed.
+3. Label chips changed but headings did not → a difference *inside* one
+   family is a weight-matching problem, not a selector problem.
+
+**The technique: redefine the family instead of overriding it.**
+`@font-face` does not say "use this font", it says "here is a font, and here
+are the characters it is for" (`unicode-range`). The browser matches **per
+codepoint**, so several `@font-face` rules can share one family name and
+split the alphabet between them. So B Yekan is declared *as* `Figtree`,
+scoped to `U+0600-06FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF`. Label Studio
+keeps asking for Figtree, keeps getting real Figtree for Latin (`Kix-Max`,
+`TorshX`), and silently gets B Yekan for Persian. No override, no cascade
+fight, no forked stylesheet.
+
+**Two traps worth remembering:**
+
+- *Weights.* The faces were first declared `font-weight: 500 900`, a range —
+  but the bold woff2 is a **static** font, and a static face spread over a
+  range is matched inconsistently. Headings (`typography-title-*`, weight
+  600/700) fell back while body-weight chips rendered. Declare `normal` and
+  `bold`, one face per value.
+- *Size.* The woff2 files are embedded as base64, so every extra
+  `@font-face` costs ~70 KB of config. A first attempt declaring 24 faces
+  (3 families × 8 weights) produced a **1.4 MB** labeling config; caught
+  before deploying and trimmed to 4 faces / 235 KB.
+
+Never use `* { font-family: ... !important }` for this: it also overrides
+Label Studio's **icon fonts** and turns the toolbar into empty boxes. The
+interface rule is scoped to real class names read off the live DOM
+(`[class*="typography-title"]`, `.lsf-choice`, `.lsf-hint`,
+`.ant-radio-wrapper`, ...).
+
+**Finding, not yet fixed: the labeling config is not in git.**
+`data/label_studio/` is gitignored as *generated* output, but
+`labeling_config_scope_fa.xml` is hand-maintained — it holds the Persian
+translation, the three photo-level fields, all 18 choices and now the font
+fix, and it exists on exactly one disk with no revert. `prepare_label_studio.py`
+cannot regenerate it either (`labeling_config()` emits the English config
+from `classes.csv`). Fix: a `.gitignore` exception for
+`labeling_config_*.xml`, and move the `<Style>` block into its own CSS file
+that `labeling_config()` inlines — then the gold set (3b) gets correct fonts
+for free instead of a hand-edited 235 KB copy.
+
+**Also:** the `#N` photo numbers in the review checklist are Label Studio's
+`inner_id` (1-30), while the Data Manager and task URLs use the global `id`
+(2-31) — **off by one**, because task id 1 belongs to another project. Jump
+to a photo with `/projects/3/data?task=<inner_id + 1>`. Putting the number
+on the labeling screen is deferred to the gold set's project.
+
+---
+
 ## 1405/07/06 (2026-09-28) — back up to speed, Persian labeling screen, test set reviewed
 
 - **Phase 0 closed in the docs.** `PHASE0_REMAINING.md` is now a record;
