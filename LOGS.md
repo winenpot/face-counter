@@ -231,7 +231,7 @@ revert safety net** for anything edited there, and the fix is to `git clone` it
 rather than to weaken the gate.
 
 **Also established: this workstation cannot be pushed to.** It runs no sshd —
-from the GPU box, `ssh winenpot@192.168.1.206` is refused. So "results are sent
+from the GPU box, `ssh <user>@<this-workstation>` is refused. So "results are sent
 back" is not implementable as a push; results come back only because this side
 pulls them. Any future automation of that must be initiated here.
 
