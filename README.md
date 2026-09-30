@@ -6,8 +6,13 @@ shelf. A field rep photographs a shelf; the service returns counts per
 
 Two stages, so that adding a product does not mean retraining a detector:
 
-    shelf photo -> detector (finds every product) -> crops
+    shelf photo -> detector (finds every face)    -> crops
                 -> identifier (names each crop)   -> counts + share of shelf
+
+A **face** is the frontmost unit of a lane (a line of units going back into the
+shelf), one per lane. Units behind it are not counted, even when clearly
+visible: the BI analyst reads faces. This is a standing issue, see
+`docs/ISSUE_FACES_NOT_OBJECTS.md`.
 
 See `docs/ROADMAP.md` for the full plan, `docs/PROPOSAL.md` for the original
 proposal, and `LOGS.md` for a human-readable timeline of what's happened.

@@ -28,7 +28,7 @@ ways, and conflating them sends you optimising the wrong stage:
 | **Duplicate** | Two boxes on one product | Detector (NMS / thresholds) |
 | **Ghost** | A box on background, shelf edge, or a price tag | Detector (precision) |
 | **Bad box** | Product found, box badly placed | Detector (localisation) |
-| **Back-row** | A product counted that our guide says shouldn't be | Detector + guide ambiguity |
+| **Back-row** | A unit behind the face of its lane, counted as a face. **This project's headline error** (below) | Detector + guide ambiguity |
 | **Wrong brand** | Right box, wrong brand | Identifier — **serious** |
 | **Wrong flavor** | Right brand, wrong SKU | Identifier — expected, tolerable early |
 | **False `other`** | A known SKU dumped into `other` | Gallery gap or threshold too high |
@@ -39,6 +39,23 @@ weakness — the risk table says brand-level counts land well before SKU-level.
 "Wrong brand" is a different animal and means something is actually broken. One
 mAP number cannot distinguish them; this taxonomy does, and it tells you which
 stage to spend the week on.
+
+### Back-row is the headline error here
+
+The BI analyst reads **faces**: the frontmost unit of each lane
+([`ISSUE_FACES_NOT_OBJECTS.md`](ISSUE_FACES_NOT_OBJECTS.md)). A detector trained
+to find every product boxes the units behind the face too, and *gains* all-object
+recall for it. So all-object recall and box counts can rise while the number the
+business reads gets worse. Rules for every report from now on:
+
+- Score against faces: face recall, face precision, the **behind false-positive
+  rate** (predictions that land on a unit behind a face, over all predictions)
+  and face count error per photo.
+- All-object recall stays as a diagnostic column only. The gap between it and
+  the face numbers is the size of the problem.
+- A count from an all-object detector with no face filter is never called
+  "faces".
+- Read the worst-50 bank for back-row errors first.
 
 The `other`-rate rows deserve special attention: they are the only errors that
 are *self-reporting in production*. Phase 4 monitors the share of `other`
@@ -64,6 +81,8 @@ Aggregate numbers hide everything that matters. Report every metric split by:
   one number. Whether the app still holds the uncompressed originals is an
   open question in `requests.md` — if it does, retraining on originals is free
   accuracy.
+- **Camera angle** — the `angled` tag. Angled photos expose the units behind a
+  face, so back-row errors should concentrate here (expected, not yet measured).
 - **Glare / blur / tilt** — rep photo quality varies; the guideline ("stand
   back, shoot straight, one bay per photo") is an intervention we should be
   able to *measure the effect of*.

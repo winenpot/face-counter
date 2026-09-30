@@ -14,11 +14,11 @@ A working MVP that counts products per SKU and computes share of shelf from a fi
 
 ## Approach
 
-We split the problem in two: a detector that finds every product, then an identifier that names each one. A single model that draws boxes and picks among 400 classes would need about 90,000 hand-drawn boxes for 300 photos alone, which doesn't fit the timeline.
+We split the problem in two: a detector that finds every **face** (the front unit of each lane, see [Standing issue](#standing-issue-count-faces-not-every-object)), then an identifier that names each one. A single model that draws boxes and picks among 400 classes would need about 90,000 hand-drawn boxes for 300 photos alone, which doesn't fit the timeline.
 
 ```mermaid
 flowchart LR
-  A[Shelf photo] --> B[Stage 1: Detector<br/>finds every product]
+  A[Shelf photo] --> B[Stage 1: Detector<br/>finds every face]
   B --> C[Crops]
   C --> D[Stage 2: Identifier<br/>names each crop]
   D --> E[Counts per SKU<br/>+ share of shelf]
@@ -38,6 +38,22 @@ Why this design:
 - **Faster labeling.** Labelers correct pre-drawn boxes and pick from top-5 suggestions instead of drawing from scratch.
 - **Competitors need a category, not a SKU.** Share of shelf is `our faces / all faces in the category`; the denominator only needs to know a face is *not ours*. Competitor products are boxed like any other and labeled `COMPETITOR_<category>`, which takes most of the "~400 classes" off the labeling bill. Clustering shows which competitor products recur; the top 20–30 get names only if the business will read brand-level competitor share, and the long tail stays at category level. Products outside every category we sell are `out_of_scope`, not competitors. Detail in [`LABELING_STRATEGY.md`](LABELING_STRATEGY.md) §4.
 - **Labeling is not "label every photo."** The only exhaustive job is the 30-photo test set. Identity for the training pool is labeled per *cluster* of near-identical crops, not per box. Plan in [`LABELING_STRATEGY.md`](LABELING_STRATEGY.md).
+
+## Standing issue: count faces, not every object
+
+**Open, standing, high priority (raised 2026-09-30).** Full write-up, open questions and plan: [`ISSUE_FACES_NOT_OBJECTS.md`](ISSUE_FACES_NOT_OBJECTS.md).
+
+The BI analyst consumes **face** counts. A **face** is the frontmost unit of a **lane** (a line of units going back into the shelf): one per lane, the unit a shopper's eye meets directly. Units behind it can be clearly visible, especially on angled photos, but they are not faces. "Find every product" is therefore the wrong target for stage 1, and the metrics that reward it (all-object recall, box counts) would pick the wrong model. No model is near the target yet, so this is the cheap moment to fix it.
+
+| Area | Rule from now on |
+| --- | --- |
+| Labels | Faces only; units behind a face are not boxed (on the test and gold sets they may be tagged `behind`, decision pending). The guide (v0.2) defines lane and face |
+| Training | Fine-tune on face-only labels. Never mix in raw all-object data such as SKU-110K annotations. Sample angled and deep-lane photos on purpose |
+| Metrics | Face recall and precision, behind false-positive rate, face count error per photo, share-of-shelf error. All-object recall is a diagnostic, not a headline |
+| Model selection | Promoted only if it wins on face metrics. "More boxes" never wins. The Phase 1 bake-off is re-scored on faces |
+| Reporting | `/count`, `/overlay` and the dashboard say "faces" and state the definition |
+
+It lands in Phase 1 (face audit of the test labels, face metrics in the evaluation script), Phase 2 (wording), Phase 3 (training and the promotion gate) and the risk table. The questions only the BI analyst can answer are in the issue, §5.
 
 ## Architecture
 
@@ -100,7 +116,7 @@ Checkboxes below: `[x]` done · `[~]` partly done, see the note · `[ ]` not sta
 - [x] **Fixed test set.** 30 photos from stores held out of training entirely, split by store, never by random photo. Mix aisles, fridges, glare, and store types. — *frozen 2026-09-26: 30 photos from 30 distinct stores, zero store overlap between any pair of splits. Reviewed by eye; two non-shelf photos were swapped for the next diverse picks. Hand-corrected, so `data/splits/test_labeling.txt` is tracked in git and is the authority. Never `--force` it again.*
 - [x] **Class list** requested from sales/analysts in `BRAND_CATEGORY_SKU` form; competitors may start as `COMPETITOR_<category>`. — *103 classes across 8 brands, built from the real sales invoice; see `PHASE0_REMAINING.md`. Competitors stay at `COMPETITOR_<category>` by design, not as a stopgap (see Approach). Reporting categories decided 2026-09-27: canned drinks, glass drinks, oils, dressings, mapped from pack types in `configs/reporting.yaml` so labels never depend on them. 110 of our classes after the TorshX can/glass split; no oil or dressing products of ours yet; see `PHASE0_REMAINING.md` §4.*
 - [x] **Packshots** requested from marketing: 2–5 images per SKU, ours first, competitors where available. — *enough to proceed: 242 invoice-embedded images named by `class_name` seed a first gallery. Studio packshots are probably not coming within the timeline (business, 2026-09-27); the gallery relies on invoice images plus crops from corrected non-test photos.*
-- [x] **Labeling guide,** one page: what counts as a face (front row only, visible label), partly hidden products, fridge glass, and 3 annotated example photos. — *done 2026-09-27: `docs/labeling-guide/README.md`, with 3 annotated examples from the pilot's first labeled test photos (two drinks fridges, one crowded small shop). **Phase 0 is complete.***
+- [x] **Labeling guide,** one page: what counts as a face (front row only, visible label), partly hidden products, fridge glass, and 3 annotated example photos. — *done 2026-09-27: `docs/labeling-guide/README.md`, with 3 annotated examples from the pilot's first labeled test photos (two drinks fridges, one crowded small shop). **Phase 0 is complete.** Guide v0.2 (2026-09-30) defines "lane" and "face"; see the [standing issue](ISSUE_FACES_NOT_OBJECTS.md).*
 
 ## Phase 1 — Working pipeline (days 4–10)
 
@@ -113,15 +129,16 @@ Checkboxes below: `[x]` done · `[~]` partly done, see the note · `[ ]` not sta
 
 By day 10: a script turns a photo into SKU counts end to end, with accuracy measured on the test set.
 
-- [~] **Detector, step zero — try published SKU-110K weights before training anything.** *Ran 2026-09-26 on the GPU box over the frozen test set (box counts in `LOGS.md`); overlays in `runs/bakeoff/20260926-141557/`. Picked 2026-09-27 for pre-drawing boxes: `yolo26l-sku110k` (run `runs/bakeoff/20260927-114232/`, `PILOT.md` step 1). Every candidate is re-scored after fine-tuning.* Several exist (a DETR-ResNet-50 reporting 58.9 mAP, trained on a 4060 Ti; a YOLO26l reporting 0.906 mAP50; the original CVPR19 RetinaNet). Evaluating them costs an afternoon; training costs a night. Domain shift to Iranian shops/fridges is unmeasured — our frozen test set decides. Add **YOLOE-26** (open-vocabulary, text-prompted with generic packaging nouns) as a third entrant, scored by recall on the same test set; it may also pre-fill `COMPETITOR_<category>` labels. See [`DETECTOR_ALTERNATIVES.md`](DETECTOR_ALTERNATIVES.md).
-- [ ] **Detector.** If step zero isn't enough, train a small YOLO on SKU-110K overnight on the 4060 Ti. Check by eye that it finds most products on 10 of our photos.
+- [~] **Detector, step zero — try published SKU-110K weights before training anything.** *Ran 2026-09-26 on the GPU box over the frozen test set (box counts in `LOGS.md`); overlays in `runs/bakeoff/20260926-141557/`. Picked 2026-09-27 for pre-drawing boxes: `yolo26l-sku110k` (run `runs/bakeoff/20260927-114232/`, `PILOT.md` step 1). Every candidate is re-scored after fine-tuning, on faces rather than on all objects (standing issue).* Several exist (a DETR-ResNet-50 reporting 58.9 mAP, trained on a 4060 Ti; a YOLO26l reporting 0.906 mAP50; the original CVPR19 RetinaNet). Evaluating them costs an afternoon; training costs a night. Domain shift to Iranian shops/fridges is unmeasured — our frozen test set decides. Add **YOLOE-26** (open-vocabulary, text-prompted with generic packaging nouns) as a third entrant, scored by recall on the same test set; it may also pre-fill `COMPETITOR_<category>` labels. See [`DETECTOR_ALTERNATIVES.md`](DETECTOR_ALTERNATIVES.md).
+- [ ] **Detector.** If step zero isn't enough, train a small YOLO on SKU-110K overnight on the 4060 Ti. Check by eye that it finds most faces on 10 of our photos. SKU-110K teaches "box every visible product", so treat it as a starting point: the fine-tune must use face-only labels (standing issue).
 - [ ] **Keep the detector swappable.** A `Detector` protocol with one `detect(image) -> boxes`, backend chosen in config, so everything downstream is detector-agnostic. YOLO is the starting point, not the conclusion — the DETR branch (RT-DETR, D-FINE, DEIM) now leads real-time detection, and DEIM is Apache-2.0, halves training cost, and gains most on small objects, which is exactly our weakness. Rationale and candidate table in [`DETECTOR_ALTERNATIVES.md`](DETECTOR_ALTERNATIVES.md).
 - [ ] **Small objects.** Use a larger input size (1280) or tiled inference (SAHI) for whole-aisle photos.
-- [ ] **Label the test set** in Label Studio with the detector's boxes pre-filled, in two passes: geometry first (class `product` only), then identity (our SKU, `COMPETITOR_<category>`, or `out_of_scope`). Two labelers on the first five photos to measure agreement. Brand level first if time is short. See [`LABELING_STRATEGY.md`](LABELING_STRATEGY.md) §2, §7.
+- [ ] **Label the test set** in Label Studio with the detector's boxes pre-filled, in two passes: geometry first (class `product` only, faces only: units behind a face are not boxed), then identity (our SKU, `COMPETITOR_<category>`, or `out_of_scope`). Two labelers on the first five photos to measure agreement. Brand level first if time is short. See [`LABELING_STRATEGY.md`](LABELING_STRATEGY.md) §2, §7.
+- [ ] **Face audit of the test labels** (standing issue). Mark every labeled box face or behind, report how many behind units the ~2,900 boxes hold, and save a new dated export. Comes before the labels are called final. See [`ISSUE_FACES_NOT_OBJECTS.md`](ISSUE_FACES_NOT_OBJECTS.md) §7.
 - [ ] **Cluster labeling, first batch.** Crop `label_batch_01.txt` with the detector, embed with DINOv2, cluster, pre-suggest classes from the invoice packshots, and name whole clusters in Label Studio. Measure crops per cluster, seconds per decision, and the `mixed` rate. Never over test-store photos. See [`LABELING_STRATEGY.md`](LABELING_STRATEGY.md) §3.
-- [ ] **Reference gallery.** Packshots plus crops from the corrected test-adjacent photos (never from the test set itself), one folder per SKU.
+- [ ] **Reference gallery.** Packshots plus crops from the corrected test-adjacent photos (never from the test set itself), face boxes only, one folder per SKU.
 - [ ] **Embedding matcher.** Embed each crop, find the nearest gallery match, and label it `other` below a similarity threshold.
-- [ ] **Evaluation script.** Per-brand count error and share-of-shelf error on the test set, plus detector recall.
+- [ ] **Evaluation script.** Per-brand face-count error and share-of-shelf error on the test set, plus detector **face** recall and precision and the behind false-positive rate (standing issue). All-object recall stays as a diagnostic column, never the headline.
 
 ## Phase 2 — MVP demo (days 11–15)
 
@@ -145,8 +162,8 @@ Method, taxonomies, and sources: [`ERROR_ANALYSIS.md`](ERROR_ANALYSIS.md).
 **Error analysis — first, before any retraining.** You cannot prioritize what
 you haven't diagnosed.
 
-- [ ] **Failure taxonomy.** Classify every error: miss, duplicate, ghost, bad box, back-row, wrong brand, wrong flavor, false `other`, missed `other`. Wrong-flavor is expected and tolerable; wrong-brand means something is broken. One mAP number cannot tell them apart.
-- [ ] **Sliced metrics,** never aggregate-only: fridge vs. aisle, crowding buckets, glare/blur/tilt, store type and region, head vs. tail classes. A model that improves overall while getting worse on fridges is a trade, not an improvement.
+- [ ] **Failure taxonomy.** Classify every error: miss, duplicate, ghost, bad box, **back-row** (this project's headline error: a unit behind the face counted as a face), wrong brand, wrong flavor, false `other`, missed `other`. Wrong-flavor is expected and tolerable; wrong-brand means something is broken. One mAP number cannot tell them apart.
+- [ ] **Sliced metrics,** never aggregate-only: fridge vs. aisle, crowding buckets, glare/blur/tilt (angled photos expose the units behind a face), store type and region, head vs. tail classes. A model that improves overall while getting worse on fridges is a trade, not an improvement.
 - [ ] **Confusion matrix over the 103 classes.** The off-diagonal mass is the research agenda for the rest of the month.
 - [ ] **Worst-50 photo bank,** reviewed by eye every model version. Not automatable — this is where you find the upside-down store and the shelf-wobbler counted as a product.
 - [ ] **Report honestly:** business terms, plus confidence intervals — 30 test photos make small moves meaningless.
@@ -165,10 +182,10 @@ training data directly. See `ERROR_ANALYSIS.md` §3.)
 
 **Models and infrastructure.**
 
-- [ ] **Fine-tune the detector** on our corrected boxes; re-run the Phase-1 bake-off now that we have real labels — a DEIM-trained D-FINE is the leading alternative and fits one 4060 Ti overnight.
+- [ ] **Fine-tune the detector** on our corrected face boxes (face-only labels; no raw all-object data such as SKU-110K annotations mixed in); re-run the Phase-1 bake-off now that we have real labels — a DEIM-trained D-FINE is the leading alternative and fits one 4060 Ti overnight.
 - [ ] **Train a crop classifier** for the ~400 classes; keep the embedding matcher as a fallback for new SKUs.
 - [ ] **Hyperparameter tuning,** time-boxed and in the right order: data → resolution/tiling → confidence and NMS thresholds → the `other` similarity cutoff → LR schedule. Tune on validation, never on test.
-- [ ] **MLflow,** self-hosted: log every experiment and register models. A model is promoted only if it beats the current one on the fixed test set.
+- [ ] **MLflow,** self-hosted: log every experiment and register models. A model is promoted only if it beats the current one on the fixed test set, on face metrics (never all-object AP or box count).
 - [ ] **Dataset versioning** with DVC on object storage. SeaweedFS or Garage go on a new disk on the db server; check MinIO's current licensing before choosing it.
 - [ ] **Disk:** budget an extra 500 GB–1 TB drive. The 100 GB free now won't hold exports, datasets, and model artifacts.
 
@@ -198,6 +215,7 @@ The biggest risk is flavor-level confusion; brand-level counts will be reliable 
 | Label Studio exposed publicly | Data exposure | Signup disabled day 1; reverse proxy in Phase 4 |
 | Class list or packshots arrive late | Stage 2 slips | Start with a brand-level gallery and `COMPETITOR_<category>` |
 | Our product misread as a competitor (or the reverse) | Share of shelf wrong in the direction that matters | Report the ours-vs-not confusion separately from flavor accuracy |
+| Detector counts every visible unit, not faces (units behind the front unit get boxed) | BI face counts and share of shelf inflated, and they vary with stocking depth and camera angle | Face definition in the guide; face-only labels; face metrics as the model-selection gate; audit of the test labels ([`ISSUE_FACES_NOT_OBJECTS.md`](ISSUE_FACES_NOT_OBJECTS.md)) |
 | Non-category products counted as competitors | Share of shelf dragged down by framing | `out_of_scope` label; agree the reporting categories with the business |
 | Labeling volume looks unbounded | Team stalls | Only the test set is labeled exhaustively; identity by cluster; detector corrections metered by active learning |
 | No index on `photo_type`/`store_code` in production | A filtered export collection-scans ~24k docs | Acceptable for occasional exports; keep `throttle_seconds` on in work hours; never add an index to production without asking (`PHASE0_REMAINING.md` §2) |

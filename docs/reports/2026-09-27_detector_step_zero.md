@@ -72,6 +72,15 @@ box 3, **can 0**, although "can" was one of its prompts.
 
 ## 7. Evaluation metrics
 
+> **Amended 2026-09-30** (standing issue,
+> [`ISSUE_FACES_NOT_OBJECTS.md`](../ISSUE_FACES_NOT_OBJECTS.md)). Read
+> "product" in the tables below as **face**: the frontmost unit of a lane.
+> Units behind a face are not products for these metrics. Recall, precision,
+> F1, AP and count error are computed against faces, and a **behind
+> false-positive rate** is added (predictions matching a behind-tagged box /
+> all predictions). The all-object versions stay as a diagnostic. The results
+> in §2 are box counts only and say nothing about faces.
+
 Detection is scored by first **matching** each predicted box to a labeled box.
 Two boxes match when their overlap, **IoU** (area of intersection / area of union),
 is at least 0.5. After matching, each predicted box is a true positive (TP) or a
@@ -79,7 +88,7 @@ false positive (FP), and each unmatched labeled box is a false negative (FN).
 There are no true negatives (empty background is not counted), so ROC and AUC do
 not apply; the precision-recall curve replaces them.
 
-### Stage 1: detector (finds every product)
+### Stage 1: detector (finds every face)
 
 | Metric | Measures | Computed as | Why it matters here |
 | --- | --- | --- | --- |

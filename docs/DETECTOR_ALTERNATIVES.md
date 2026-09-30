@@ -1,7 +1,8 @@
 # Detector alternatives — the knobs we deliberately left reachable
 
-Survey date 2026-09-24. Everything here is stage 1 only: *find every product*,
-don't name it. Naming is the embedding gallery's job (see `ROADMAP.md`).
+Survey date 2026-09-24. Everything here is stage 1 only: *find every face*
+(the front unit of each lane, one per lane; see
+[`ISSUE_FACES_NOT_OBJECTS.md`](ISSUE_FACES_NOT_OBJECTS.md)), don't name it. Naming is the embedding gallery's job (see `ROADMAP.md`).
 
 The roadmap says "train a small YOLO on SKU-110K". That is a **starting point,
 not a conclusion**. This document exists so that the day someone asks "could we
@@ -10,7 +11,7 @@ research project.
 
 ---
 
-## First, two things the roadmap's phrasing hides
+## First, three things the roadmap's phrasing hides
 
 **SKU-110K is a dataset, not a model.** Goldman et al., CVPR 2019, *Precise
 Detection in Densely Packed Scenes*. ~11,700 shelf photos, ~1.7M boxes,
@@ -28,6 +29,16 @@ precisely why the dataset fits: it solves stage 1 completely and demands zero
 labelling from us, while leaving stage 2 (which is where our 103 classes and
 our competitive advantage live) entirely to the gallery. If SKU-110K did hand us
 110K usable classes, our whole two-stage design would be unnecessary.
+
+**No candidate here knows what a face is** (added 2026-09-30). SKU-110K's
+`object` is every visible product, so pretrained weights box the units behind
+the front unit too, and the BI analyst reads faces, not units. Every detector
+in this document, whatever its architecture, is judged on **face** recall, face
+precision and the behind false-positive rate against face-only labels, never on
+box counts or all-object AP: a model that boxes more is not a better one.
+Fine-tuning on face-only labels is the first thing to try; a separate
+face-or-behind classifier is the fallback
+([`ISSUE_FACES_NOT_OBJECTS.md`](ISSUE_FACES_NOT_OBJECTS.md) §6).
 
 ---
 

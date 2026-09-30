@@ -19,7 +19,7 @@ The design splits labeling into three jobs of very different size:
 
 | Job | What a human does | Volume | When |
 | --- | --- | --- | --- |
-| **A. Test set** | Corrects pre-drawn boxes, names every product, carefully | 30 photos, ~4,500 boxes | First — nothing is measurable without it |
+| **A. Test set** | Corrects pre-drawn boxes (faces only), names every face, carefully | 30 photos, ~4,500 boxes | First — nothing is measurable without it |
 | **B. Identity, by cluster** | Names a *group* of near-identical crops at once | ~thousands of decisions, not millions of boxes | Phase 1, feeds the gallery |
 | **C. Detector corrections** | Fixes boxes the detector got wrong, chosen by active learning | A few hundred photos, in rounds | Phase 3, only if the detector needs it |
 
@@ -114,8 +114,8 @@ per category.
 
 Three consequences follow, and each is a rule:
 
-- **Competitors are still boxed.** The detector must find every product, and an
-  unboxed competitor both teaches it that products are background and silently
+- **Competitors are still boxed.** The detector must find every face, and an
+  unboxed competitor face both teaches it that faces are background and silently
   shrinks the share-of-shelf denominator. Only the *name* is coarse; the box is
   not optional.
 - **The category vocabulary is a business decision, and labels must not depend
@@ -207,7 +207,9 @@ saves real time and its output is imported back.
   Detail: `deploy/label-studio/README.md`, "Stopping without losing labels".
 - **Measure agreement on the geometry pass first.** Two labelers, the same five
   test photos. If they disagree on what counts as a face, fix
-  `labeling-guide/README.md` before labeling the other 25.
+  `labeling-guide/README.md` before labeling the other 25. The decision that
+  matters most is a face vs. the unit behind it
+  ([`ISSUE_FACES_NOT_OBJECTS.md`](ISSUE_FACES_NOT_OBJECTS.md) §7, step 3).
 - **Only the photos being labeled go to the Label Studio server**, not the
   30 GB corpus: the apps server's root disk has ~20 GB free.
 
@@ -315,7 +317,7 @@ If it gets expensive, these are the cheapest levers, in order:
 1. **Stop earlier.** The learning curve says when more photos stop paying.
 2. **Label bays, not photos.** Crop a photo to one shelf bay and label the
    crop *exhaustively*. A crop trains the detector as well as a photo, for a
-   fraction of the boxes. Never label *part* of a full photo: every product
+   fraction of the boxes. Never label *part* of a full photo: every face
    left unboxed is taught as background.
 3. **Buy geometry only.** The vendor boxes `product`; naming stays in house.
 4. **Make the selection sharper.** Active learning picks fewer photos that

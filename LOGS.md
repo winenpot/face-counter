@@ -14,6 +14,32 @@ original record.
 
 ---
 
+## 1405/07/08 (2026-09-30) — faces, not objects
+
+**Our yardstick was measuring the wrong thing, and nothing had flagged it.**
+The BI analyst reads *faces*: the frontmost unit of each lane, one per lane.
+Stage 1 was written everywhere as "the detector finds every product", the
+SKU-110K detector that pre-drew the test set boxes every visible unit, and every
+number so far (recall 0.878 and precision 0.896 on the 2026-09-28 review
+export; the bake-off's box counts) is against all labeled boxes. A detector that
+also boxes the units behind the face gets *better* recall while over-counting
+faces, so those numbers cannot pick the right model.
+
+- The intent was always faces (guide: front row only; taxonomy: "Back-row"), so
+  nothing was reversed. What was missing is enforcement: the guide said "label
+  every product", the metrics had no front/behind split, and how many test
+  boxes sit on units behind a face has never been measured.
+- "Row" meant two things: a lane (front to back) to the BI side, the line across
+  a shelf to the guide. Docs now say **lane** and **face**.
+- Written up as a standing issue, `docs/ISSUE_FACES_NOT_OBJECTS.md`: the
+  definition, four open questions for BI, face metrics (face recall and
+  precision, behind false-positive rate, face count error) and nine ordered
+  steps. The first real step is a face audit of the test labels. Reworded in
+  ROADMAP, PILOT, ERROR_ANALYSIS, LABELING_STRATEGY, DETECTOR_ALTERNATIVES,
+  step-zero §7, README, CLAUDE.md and the labeling guide (EN and FA, now v0.2).
+- No code changed. `shelf-eval` still scores all-object recall; that is step 4
+  of the issue.
+
 ## 1405/07/07 (2026-09-29) — the Persian font finally renders
 
 **The font was deployed on the 28th and still rendered as Figtree.** Fixing

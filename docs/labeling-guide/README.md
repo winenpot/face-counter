@@ -1,15 +1,29 @@
 # Labeling guide: shelf product faces
 
-Version 0.1. Every labeler follows this page. If the page doesn't answer a case, write
+Version 0.2 (2026-09-30: defines *face* and *lane*, and says what to do with
+units behind a face; open questions are in
+[`ISSUE_FACES_NOT_OBJECTS.md`](../ISSUE_FACES_NOT_OBJECTS.md) §5). Every labeler follows this page. If the page doesn't answer a case, write
 it in the task's **Notes** box and ask. Don't guess differently from everyone else.
 
 ## What to box
 
-- **One box per product face.** A face is one unit whose front (label side) is visible
-  in the **front row** of the shelf or fridge.
+- **One box per face.** A **face** is the frontmost unit of a **lane**: a line of
+  units going back into the shelf, one behind another. There is exactly one face per
+  lane, the unit a shopper's eye meets directly, with its front (label side) visible.
+  The faces side by side on one shelf level make up its **front row**.
+- **Only faces.** A unit behind the face of its lane is a real product but not a face:
+  don't box it, even when it is clearly visible (in angled photos you often see the top
+  or side of the units behind). The BI analyst reads your boxes as "number of faces".
 - **Tight boxes.** Draw around the visible product, not its shadow or the price tag.
-- **Label every product in the photo, ours and competitors'.** An unlabeled product
+- **Box every face in the photo, ours and competitors'.** A face left unboxed
   teaches the model that it's background.
+
+### Face or the unit behind it?
+
+The unit that covers part of another is in front. The front unit usually looks a
+little larger, its base sits at the shelf edge, and its label faces you. Units behind
+it show only a top, a sliver of side, or a label half hidden by the one in front.
+Can't tell which is in front? Write what you saw in **Notes** and ask; don't guess.
 
 ## Class names
 
@@ -33,7 +47,7 @@ it in the task's **Notes** box and ask. Don't guess differently from everyone el
 
 | Situation | Rule |
 | --- | --- |
-| Product behind the front row (second row visible) | Don't box |
+| Unit behind the face of its lane (second unit visible, straight-on or from an angle) | Don't box, even if clearly visible |
 | Front face at least 50% visible | Box it, box only the visible part |
 | Front face less than 50% visible, or only the side visible | Don't box |
 | Stacked units (one on top of another, both front row) | Box each one |
@@ -50,6 +64,8 @@ Photos open with boxes a detector already drew. Each box shows a number, the
 detector's confidence. **Ignore it.** Judge every box by the rules on this
 page, whatever its number:
 
+- **The detector boxes every visible product, including the units behind a
+  face.** It has no idea what a face is. Delete those boxes.
 - A high number does not mean the box is right. Reflections in fridge glass,
   price tags and posters can score high. Check every box, not only the
   low-numbered ones. Don't sort or skip boxes by their number.
@@ -101,9 +117,10 @@ pass**, and it names brands, not flavours.
 Every photo opens with boxes already drawn by a detector, all labeled `product`
 (grey).
 
-1. **Fix the boxes, on every product, not only drinks.** Delete boxes on
-   reflections, empty dark spots, price tags and posters. Delete the extra box
-   when one product has two. Draw a box on every product the detector missed.
+1. **Fix the boxes, on every face, not only drinks.** Delete boxes on
+   reflections, empty dark spots, price tags, posters and units behind a face.
+   Delete the extra box when one product has two. Draw a box on every face the
+   detector missed.
    Tighten boxes that are clearly off. The rules above ("What to box", "Edge
    cases") still decide what counts.
 2. **Name every can and every glass bottle.** Click the box, then press its
@@ -138,8 +155,8 @@ Every photo opens with boxes already drawn by a detector, all labeled `product`
    `out_of_scope` or `COMPETITOR_other` in the pilot. `product` means "not
    named yet": a later round names those boxes without redrawing them. Grey
    boxes follow the same rules as named ones (front row, at least 50%
-   visible, no reflections), because they are the ground truth for how many
-   products the detector should find.
+   visible, no reflections, no units behind a face), because they are the
+   ground truth for how many faces the detector should find.
 
 Unsure whether a bottle is glass or plastic? Leave it `product` and write
 `glass?` in Notes. A can or glass bottle whose brand you can't read is a

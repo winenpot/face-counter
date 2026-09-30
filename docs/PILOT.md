@@ -4,6 +4,12 @@
 work and its ordered to-do list. `ROADMAP.md` still holds the full,
 horizontal plan; nothing in it is cancelled, only sequenced after this.
 
+> **Standing issue (2026-09-30): the pilot counts *faces*, not every object.**
+> A face is the frontmost unit of a lane, one per lane; units behind it are
+> not faces even when clearly visible. Labels, metrics and model choice below
+> are read that way. Definition, open questions and plan:
+> [`ISSUE_FACES_NOT_OBJECTS.md`](ISSUE_FACES_NOT_OBJECTS.md).
+
 ## Scope (decided 2026-09-27, metric narrowed 2026-09-29)
 
 - **Question:** what share of the cans, and separately of the glass bottles,
@@ -34,7 +40,8 @@ Three rules keep the pilot from closing off the wider system:
 2. **Boxes outside the scope keep the label `product`** ("not identified
    yet"), never `out_of_scope`. **A box with no label at all counts as
    `product`** (decided 2026-09-29). A later scope names them; nothing is
-   relabeled. Pass one (geometry) still boxes every product on the shelf.
+   relabeled. Pass one (geometry) still boxes every *face* on the shelf: the front unit
+   of each lane; units behind it are not boxed.
 3. **Extensibility is the experiment.** Widening the scope (add a brand, a
    category, a named competitor) must only touch `scope.yaml`,
    `classes.csv`, `reporting.yaml` and gallery images. If it needs code or a
@@ -73,7 +80,8 @@ Three rules keep the pilot from closing off the wider system:
       competitors need names. **Remaining:** add the 10 targeted-competitor
       labels, one rename pass over the 132 `COMPETITOR_*` boxes plus any
       targeted can or bottle still grey, the hygiene items in
-      `docs/reports/2026-09-28_test_set_label_review.md` §2, then the final
+      `docs/reports/2026-09-28_test_set_label_review.md` §2, the **face audit** (are the boxes
+      faces? `docs/ISSUE_FACES_NOT_OBJECTS.md` §7), then the final
       export. Plan: `.hermes/plans/2026-09-29_pilot-parallel-tracks.md`.
 - [ ] **3b. Gold validation set.** About 30 photos from **val-split** stores,
       labeled exactly like the test set (same guide, same scope labels). It is
@@ -110,9 +118,15 @@ Three rules keep the pilot from closing off the wider system:
       `docs/reports/2026-09-27_detector_step_zero.md` §7. Per category:
       share-of-shelf error, the ours-vs-competitor confusion both ways (the
       error that moves the number), and detector recall on drinks.
+      **Amended 2026-09-30 (standing issue):** detector recall and precision
+      are scored against *faces*, and a behind false-positive rate is added;
+      the all-object numbers stay as a diagnostic column. This needs a
+      face/behind field in the label parser (`ls_export.py`).
 - [ ] **6b. Fine-tune and re-score, in weekly rounds.** Label a training batch (never test
       stores), fine-tune the leading candidates (YOLO26, RF-DETR, DEIM-D-FINE),
-      and score them on the same test set. Zero-shot results do not rule any
+      and score them on the same test set, on face metrics. Labels are
+      face-only and no raw SKU-110K annotations go in (standing issue).
+      Zero-shot results do not rule any
       model out. Training batches were not hand-reviewed the way the test
       set was: expect a few non-shelf uploads under `photo_type: shelf`
       (screenshots, storefronts; 9 PNGs in the corpus). Give labelers a
