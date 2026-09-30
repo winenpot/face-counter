@@ -37,6 +37,7 @@ Dependency management is via `uv` (Python 3.14, pinned in `.python-version`; `uv
 - Use a read-only Mongo user. Never add a write path to the export.
 - `make_splits.py` assigns splits by a **stable hash of `store_id`** with a fixed `SALT`. Changing the salt reshuffles which stores are in test and invalidates every accuracy number ever reported; don't. Splitting by store (not by photo) is what stops near-duplicate shelf photos leaking across train/test.
 - `data/splits/test_labeling.txt` is the fixed test set: **frozen 2026-09-26, hand-corrected, and tracked in git** (an explicit `.gitignore` exception). No seed regenerates it; never run `shelf-splits --force`.
+- Its **labels are frozen too (v1, 2026-09-30)**: Label Studio project `pilot-test-cans-glass` (id 3) and `data/label_studio/exports/pilot-test-v1-2026-09-30.json`, recorded in `data/label_studio/FROZEN.md`. Never write to that project (config, tasks, annotations, settings); `shelf-ls-setup` refuses it via `FROZEN_TITLES`. Corrections go into a new project and a new version.
 - Photos carry EXIF orientation (14 of the 30 test photos are stored sideways). Always load pixels through `ImageOps.exif_transpose`; the manifest's width/height are already post-rotation.
 
 ## Taxonomy: labels, categories, scope

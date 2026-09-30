@@ -35,6 +35,11 @@ It writes three things into `data/label_studio/`:
 
 ## 1-4. Put it on the server: one command
 
+> **Historical (frozen 2026-09-30).** This project is now the frozen test set
+> (`data/label_studio/FROZEN.md`); `shelf-ls-setup` refuses it and needs an
+> explicit `--title` for any other project. The commands below are how it was
+> built.
+
     uv run shelf-ls-setup --dry-run    # what would happen; changes nothing
     uv run shelf-ls-setup              # do it
 

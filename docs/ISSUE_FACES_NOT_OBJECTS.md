@@ -184,6 +184,9 @@ labels are marked final and `shelf-eval` starts from them.
       is face or behind (§6, recording). Report how many of the 2,869 boxes
       are behind, per scene type. This is the first real number for this
       issue. Save as a new dated export; keep the old one.
+      **Where (decided 2026-09-30):** a new Label Studio project seeded from
+      the frozen v1 labels, never the v1 project itself
+      (`data/label_studio/FROZEN.md`); its export becomes `pilot-test-v2`.
 - [ ] **3. Agreement check.** Two labelers, the same five photos, the
       face-vs-behind decision only. If they disagree, fix the guide before
       labeling more.

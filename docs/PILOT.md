@@ -4,6 +4,37 @@
 work and its ordered to-do list. `ROADMAP.md` still holds the full,
 horizontal plan; nothing in it is cancelled, only sequenced after this.
 
+## Current checkpoint (2026-09-30, end of day)
+
+Branch `master`, working tree clean after the day's commits, `uv run pytest`
+129 passed. Replace this section at every stop; don't append another.
+
+- **Done today:** rename pass to tracked rivals; `shelf-eval` (detector +
+  share, config-driven, labels' sha256 recorded); test labels frozen as v1
+  (`data/label_studio/FROZEN.md`: read-only export, checksum, pg_dump in
+  `backups/label-studio/`, `shelf-ls-setup` refuses the project, FROZEN notice
+  in LS); `data.no` photo numbers on every future task. First numbers:
+  `runs/eval/20260930-163443/summary.md`.
+- **Decided:** keep named tracked rivals; the headline share is vs tracked
+  rivals (`share_against: targeted`), vs-all is reported too. v1 is never
+  edited; the face audit happens in a copy project and becomes v2. Refer to
+  photos by `no` + filename, never by Label Studio id alone.
+- **Blocked on the business:** the four BI questions in
+  `docs/ISSUE_FACES_NOT_OBJECTS.md` §5. They gate the face audit.
+- **Next action (me, needs nothing from anyone):** gold validation set,
+  step 3b: `make_splits.py --gold-val 30` over val-split stores, writing
+  tracked `data/splits/gold_val.txt`, test-first, with a byte-identity test on
+  `test_labeling.txt`; then its contact sheet on the GPU box. Needs the
+  manifest here (`scripts/sync_from_hemin.sh --with-manifest`).
+- **Then, in order:** (you) gold-val contact-sheet review; face-audit copy
+  project once BI answers (me: build it from v1, `behind` label; you: tag);
+  face metrics in `shelf-eval`; (you) rival packshots into
+  `configs/Product/competitors/<Brand>_<pack>/`; gallery builder, can-vs-glass
+  spike, embedding matcher; share error + ours-vs-rival confusion.
+- **Never:** write to project 3; run `shelf-splits --force`; `docker compose
+  down -v` on Label Studio. The repo is public; the Persian config and the
+  checksums in FROZEN.md are the only data-adjacent files tracked.
+
 > **Standing issue (2026-09-30): the pilot counts *faces*, not every object.**
 > A face is the frontmost unit of a lane, one per lane; units behind it are
 > not faces even when clearly visible. Labels, metrics and model choice below
@@ -83,6 +114,9 @@ Three rules keep the pilot from closing off the wider system:
       `docs/reports/2026-09-28_test_set_label_review.md` §2, the **face audit** (are the boxes
       faces? `docs/ISSUE_FACES_NOT_OBJECTS.md` §7), then the final
       export. Plan: `.hermes/plans/2026-09-29_pilot-parallel-tracks.md`.
+      **2026-09-30: labels frozen as v1** (all objects, rename pass done):
+      `data/label_studio/FROZEN.md`. The project is never edited again; the
+      face audit is done in a separate copy project and saved as v2.
 - [ ] **3b. Gold validation set.** About 30 photos from **val-split** stores,
       labeled exactly like the test set (same guide, same scope labels). It is
       what weekly tuning, model comparison and vendor scoring run on, so the
@@ -118,6 +152,15 @@ Three rules keep the pilot from closing off the wider system:
       `docs/reports/2026-09-27_detector_step_zero.md` §7. Per category:
       share-of-shelf error, the ours-vs-competitor confusion both ways (the
       error that moves the number), and detector recall on drinks.
+      **2026-09-30: `uv run shelf-eval --labels <export> --detections <jsonl>`**
+      (`src/face_counter/evaluation/`) scores every bake-off detector and
+      computes the ground-truth share per category, both denominators
+      (`share_against` in `scope.yaml` picks the headline). Brands, tracked
+      competitors and categories are read from config only; a test proves
+      that adding a tracked competitor is a config edit that changes the
+      number. An unknown label stops the run instead of dropping out of the
+      share. Still to come: share error and the ours-vs-competitor confusion,
+      which need the matcher (4b) to produce predicted names.
       **Amended 2026-09-30 (standing issue):** detector recall and precision
       are scored against *faces*, and a behind false-positive rate is added;
       the all-object numbers stay as a diagnostic column. This needs a

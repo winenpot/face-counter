@@ -111,7 +111,7 @@ it. Two commands keep the server in line with git, each explained step by step
 in its own file header:
 
     scripts/deploy_label_studio.sh     # the APP: compose file, versions, settings
-    uv run shelf-ls-setup              # a PROJECT: label list, photos, tasks
+    uv run shelf-ls-setup --title <project> --tasks <tasks.json> --config <config.xml>   # a PROJECT
 
 `deploy_label_studio.sh` backs the database up, shows the changes, asks, syncs,
 restarts and health-checks; `.githooks/post-commit` reminds you to run it when a

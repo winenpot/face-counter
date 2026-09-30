@@ -14,6 +14,29 @@ original record.
 
 ---
 
+## 1405/07/08 (2026-09-30) — first numbers, test labels frozen as v1
+
+**The test set has its first share-of-shelf number, and its labels are now
+untouchable.** After the rename pass (132 generic competitor boxes retagged to
+the seven tracked rivals) and the hygiene fixes, the export was frozen as
+`pilot-test-v1-2026-09-30.json` (sha256 in `data/label_studio/FROZEN.md`).
+
+- `uv run shelf-eval` is new. Share against tracked rivals: cans 58.2%
+  (9 photos, 95% CI 41–89%), glass 22.1% (17 photos, 10–39%). Icy-Monkey is
+  the biggest rival in both. Intervals are wide: 30 photos is small.
+- Detector recall on all objects (not faces): yolo26l 0.871, DETR 0.755,
+  yolo11s 0.665. yolo26l is flattered, since the labels started from its boxes.
+- Extensibility held: nothing in the evaluator names a brand. Making Coca-Cola
+  a tracked rival is a config line plus a rename pass; a test proves it.
+- Protection: read-only export with checksum, database dump, `shelf-ls-setup`
+  refuses the project and lost its default title, a FROZEN notice in the
+  project's instructions. Community edition has no read-only mode, so a
+  browser edit is still possible; compare signatures, not eyes.
+- Decided: the face audit runs in a copy project and becomes v2; v1 never
+  changes. Future tasks carry a `no` column, because nobody could find
+  "#18" by Label Studio's ids.
+- Left as known: an unsaved draft on #18, a few duplicate grey boxes.
+
 ## 1405/07/08 (2026-09-30) — faces, not objects
 
 **Our yardstick was measuring the wrong thing, and nothing had flagged it.**

@@ -1,8 +1,17 @@
 # face-counter — Vault Home
 
-**Resume here:** `docs/PILOT.md` (active scope + ordered to-do list, 2026-09-27). Full plan: `docs/ROADMAP.md`.
+**Resume here:** `docs/PILOT.md`, section "Current checkpoint" (next action + ordered to-do). Full plan: `docs/ROADMAP.md`.
 
-## Status (2026-09-28)
+## Status (2026-09-30)
+
+- **Test-set labels frozen as v1** (all objects): `data/label_studio/FROZEN.md`.
+  Project `pilot-test-cans-glass` (id 3) is never written to again;
+  `shelf-ls-setup` refuses it. First numbers from `uv run shelf-eval`: share
+  vs tracked rivals cans 58.2%, glass 22.1% (wide CIs).
+- **Standing issue: count faces, not every object** (`docs/ISSUE_FACES_NOT_OBJECTS.md`).
+  Waits on four BI answers (§5); then a face audit in a *copy* project (v2).
+
+## Status (2026-09-28, superseded)
 
 - **Phase 0: closed 2026-09-27.** `docs/PHASE0_REMAINING.md` is now a
   historical record (kept under its name because code/tests cite its §s);
