@@ -1,0 +1,76 @@
+<View>
+  <Style>
+@font-face { font-family: 'Figtree'; src: url('/data/local-files/?d=raw/images/byekan-regular.woff2') format('woff2'); font-weight: 100; font-style: normal; unicode-range: U+0600-06FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF; font-display: swap; }
+@font-face { font-family: 'Figtree'; src: url('/data/local-files/?d=raw/images/byekan-regular.woff2') format('woff2'); font-weight: 200; font-style: normal; unicode-range: U+0600-06FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF; font-display: swap; }
+@font-face { font-family: 'Figtree'; src: url('/data/local-files/?d=raw/images/byekan-regular.woff2') format('woff2'); font-weight: 300; font-style: normal; unicode-range: U+0600-06FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF; font-display: swap; }
+@font-face { font-family: 'Figtree'; src: url('/data/local-files/?d=raw/images/byekan-regular.woff2') format('woff2'); font-weight: 400; font-style: normal; unicode-range: U+0600-06FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF; font-display: swap; }
+@font-face { font-family: 'Figtree'; src: url('/data/local-files/?d=raw/images/byekan-bold.woff2') format('woff2'); font-weight: 500; font-style: normal; unicode-range: U+0600-06FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF; font-display: swap; }
+@font-face { font-family: 'Figtree'; src: url('/data/local-files/?d=raw/images/byekan-bold.woff2') format('woff2'); font-weight: 600; font-style: normal; unicode-range: U+0600-06FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF; font-display: swap; }
+@font-face { font-family: 'Figtree'; src: url('/data/local-files/?d=raw/images/byekan-bold.woff2') format('woff2'); font-weight: 700; font-style: normal; unicode-range: U+0600-06FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF; font-display: swap; }
+@font-face { font-family: 'Figtree'; src: url('/data/local-files/?d=raw/images/byekan-bold.woff2') format('woff2'); font-weight: 800; font-style: normal; unicode-range: U+0600-06FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF; font-display: swap; }
+@font-face { font-family: 'Figtree'; src: url('/data/local-files/?d=raw/images/byekan-bold.woff2') format('woff2'); font-weight: 900; font-style: normal; unicode-range: U+0600-06FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF; font-display: swap; }
+@font-face { font-family: 'BYekanLS'; src: url('/data/local-files/?d=raw/images/byekan-regular.woff2') format('woff2'); font-weight: 100; font-style: normal; unicode-range: U+0600-06FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF; font-display: swap; }
+@font-face { font-family: 'BYekanLS'; src: url('/data/local-files/?d=raw/images/byekan-regular.woff2') format('woff2'); font-weight: 200; font-style: normal; unicode-range: U+0600-06FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF; font-display: swap; }
+@font-face { font-family: 'BYekanLS'; src: url('/data/local-files/?d=raw/images/byekan-regular.woff2') format('woff2'); font-weight: 300; font-style: normal; unicode-range: U+0600-06FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF; font-display: swap; }
+@font-face { font-family: 'BYekanLS'; src: url('/data/local-files/?d=raw/images/byekan-regular.woff2') format('woff2'); font-weight: 400; font-style: normal; unicode-range: U+0600-06FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF; font-display: swap; }
+@font-face { font-family: 'BYekanLS'; src: url('/data/local-files/?d=raw/images/byekan-bold.woff2') format('woff2'); font-weight: 500; font-style: normal; unicode-range: U+0600-06FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF; font-display: swap; }
+@font-face { font-family: 'BYekanLS'; src: url('/data/local-files/?d=raw/images/byekan-bold.woff2') format('woff2'); font-weight: 600; font-style: normal; unicode-range: U+0600-06FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF; font-display: swap; }
+@font-face { font-family: 'BYekanLS'; src: url('/data/local-files/?d=raw/images/byekan-bold.woff2') format('woff2'); font-weight: 700; font-style: normal; unicode-range: U+0600-06FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF; font-display: swap; }
+@font-face { font-family: 'BYekanLS'; src: url('/data/local-files/?d=raw/images/byekan-bold.woff2') format('woff2'); font-weight: 800; font-style: normal; unicode-range: U+0600-06FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF; font-display: swap; }
+@font-face { font-family: 'BYekanLS'; src: url('/data/local-files/?d=raw/images/byekan-bold.woff2') format('woff2'); font-weight: 900; font-style: normal; unicode-range: U+0600-06FF, U+200C-200F, U+FB50-FDFF, U+FE70-FEFF; font-display: swap; }
+[class*="typography-title"], [class*="typography-body"], .lsf-choice, .lsf-choices, .lsf-hint, .lsf-richtext, .lsf-label, .lsf-labels, .ant-radio-wrapper, .ant-checkbox-wrapper, .lsf-choice__item, .lsf-main-view { font-family: 'BYekanLS', 'Figtree', sans-serif; }
+  </Style>
+  <View style="direction: rtl; text-align: right;">
+    <Header value="کادرها را اصلاح کنید، سپس هر قوطی و هر بطری شیشه‌ای را نام‌گذاری کنید: کادر را انتخاب کنید و عدد آن را بزنید."/>
+  </View>
+  <RectangleLabels name="label" toName="image" strokeWidth="2" canRotate="false">
+    <Label value="Kix-Max_قوطی" alias="Kix-Max_canned" background="#e6194b" hotkey="1" hint="هر قوطی Kix-Max، هر طعمی"/>
+    <Label value="Kix-Max_شیشه‌ای" alias="Kix-Max_glass" background="#3cb44b" hotkey="2" hint="هر بطری شیشه‌ای Kix-Max، هر طعمی"/>
+    <Label value="TorshX_قوطی" alias="TorshX_canned" background="#4363d8" hotkey="3" hint="هر قوطی TorshX، هر طعمی، نوشیدنی انرژی‌زا هم"/>
+    <Label value="TorshX_شیشه‌ای" alias="TorshX_glass" background="#f58231" hotkey="4" hint="هر بطری شیشه‌ای TorshX، هر طعمی"/>
+    <Label value="قوطی رقیب" alias="COMPETITOR_canned" background="#911eb4" hotkey="5" hint="هر قوطی دیگری که مال ما نیست"/>
+    <Label value="شیشه رقیب" alias="COMPETITOR_glass" background="#42d4f4" hotkey="6" hint="هر بطری شیشه‌ای دیگری که مال ما نیست"/>
+    <Label value="محصول" alias="product" background="#9e9e9e" hotkey="7" hint="هر محصول دیگر: بطری پلاستیکی، پاکت، تنقلات، روغن و ..."/>
+    <Label value="شیشه فیزیو" alias="Fizzio_glass" background="#f032e6" hint="هر بطری شیشه‌ای فیزیو، رقیب هدف"/>
+    <Label value="شیشه فرش دی" alias="Freshy-Day_glass" background="#bfef45" hint="هر بطری شیشه‌ای فرش دی، رقیب هدف"/>
+    <Label value="شیشه جنیوس" alias="Genius_glass" background="#469990" hint="هر بطری شیشه‌ای جنیوس، رقیب هدف"/>
+    <Label value="قوطی هوفنبرگ" alias="Hoffenberg_canned" background="#9a6324" hint="هر قوطی هوفنبرگ، رقیب هدف"/>
+    <Label value="شیشه هوفنبرگ" alias="Hoffenberg_glass" background="#800000" hint="هر بطری شیشه‌ای هوفنبرگ، رقیب هدف"/>
+    <Label value="قوطی ایسی مانکی" alias="Icy-Monkey_canned" background="#808000" hint="هر قوطی ایسی مانکی، رقیب هدف"/>
+    <Label value="شیشه ایسی مانکی" alias="Icy-Monkey_glass" background="#000075" hint="هر بطری شیشه‌ای ایسی مانکی، رقیب هدف"/>
+    <Label value="قوطی لایمون فرش" alias="Laimon-Fresh_canned" background="#ffe119" hint="هر قوطی لایمون فرش، رقیب هدف"/>
+    <Label value="شیشه لایمون فرش" alias="Laimon-Fresh_glass" background="#fabed4" hint="هر بطری شیشه‌ای لایمون فرش، رقیب هدف"/>
+    <Label value="شیشه سن ایچ کول" alias="Sunich-Cool_glass" background="#dcbeff" hint="هر بطری شیشه‌ای سن ایچ کول، رقیب هدف"/>
+  </RectangleLabels>
+  <Image name="image" value="$image" zoom="true" zoomControl="true" rotateControl="false"/>
+  <View style="direction: rtl; text-align: right;">
+    <Header value="نوع صحنه (فقط یکی، الزامی)" size="5"/>
+    <Choices name="scene" toName="image" choice="single-radio" showInline="true" required="true" requiredMessage="نوع صحنه را انتخاب کنید.">
+      <Choice value="یخچال باز" alias="open-fridge" hint="یخچال بدون درب"/>
+      <Choice value="یخچال درب‌شیشه‌ای" alias="glass-door-fridge" hint="یخچال با درب شیشه‌ای"/>
+      <Choice value="قفسه راهرو" alias="shelf-aisle" hint="قفسه‌های راهروی فروشگاه (گوندولا)"/>
+      <Choice value="پیشخوان" alias="counter" hint="پیشخوان صندوق یا مغازه"/>
+      <Choice value="استند تبلیغاتی" alias="display" hint="استند، پالت یا چیدمان روی زمین"/>
+      <Choice value="ترکیبی" alias="mixed" hint="یخچال و قفسه در یک عکس"/>
+    </Choices>
+    <Header value="مشکلات عکس‌برداری (هر تعداد، یا هیچ‌کدام)" size="5"/>
+    <Choices name="capture" toName="image" choice="multiple" showInline="true">
+      <Choice value="بازتاب نور" alias="glare" hint="انعکاس نور، معمولاً روی شیشه یخچال"/>
+      <Choice value="انعکاس محصول روی سطح براق" alias="reflection" hint="تصویر محصولات روی شیشه، کف یا قفسه براق افتاده؛ برای انعکاس کادر نکشید"/>
+      <Choice value="تار" alias="blur" hint="عکس لرزیده یا فوکوس نشده"/>
+      <Choice value="تاریک" alias="dark" hint="نور کم"/>
+      <Choice value="زاویه‌دار" alias="angled" hint="از کنار گرفته شده، قفسه کج دیده می‌شود"/>
+      <Choice value="دور" alias="far" hint="از فاصله زیاد، محصولات خیلی ریزند"/>
+      <Choice value="کادر خیلی باز و شلوغ" alias="wide-cluttered" hint="عکس محدوده‌ی خیلی بزرگی را با جزئیات زیاد گرفته؛ محصولات ریز و درهم دیده می‌شوند"/>
+      <Choice value="جلوی دید بسته" alias="occluded" hint="قاب درب، آدم یا شیء جلوی قفسه"/>
+      <Choice value="بریده" alias="cut-off" hint="قفسه فقط بخشی در کادر است"/>
+    </Choices>
+    <Header value="وضعیت عکس (هر تعداد، یا هیچ‌کدام)" size="5"/>
+    <Choices name="photo_issue" toName="image" choice="multiple" showInline="true">
+      <Choice value="عکس قفسه نیست" alias="not-a-shelf" hint="اسکرین‌شات، نمای بیرون مغازه و ..."/>
+      <Choice value="بدون قوطی و شیشه" alias="no-drinks" hint="هیچ قوطی یا بطری شیشه‌ای در عکس نیست"/>
+      <Choice value="چند قفسه" alias="multi-bay" hint="چند قفسه یا یخچال جدا در یک عکس"/>
+    </Choices>
+  </View>
+  <TextArea name="notes" toName="image" placeholder="یادداشت اختیاری: unsure-sku، glass?، multipack، unknown product" maxSubmissions="1"/>
+</View>
