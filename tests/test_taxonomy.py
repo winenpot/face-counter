@@ -202,11 +202,57 @@ def test_unknown_scope_detail_is_rejected(tmp_path):
         _scope(tmp_path, "brands: [Kix-Max]\ncategories: [canned_drinks]\ndetail: flavour\n")
 
 
-def test_shipped_pilot_labels_are_the_seven_brand_level_labels():
+def test_shipped_pilot_labels_keep_keys_1_to_7_then_the_targeted_competitors():
+    # Keys 1-7 are in labelers' hands; the targeted competitors (2026-09-29) go
+    # after `product`, so no existing label moves.
     from face_counter.utils.config import DEFAULT_SCOPE
 
     scope = taxonomy.load_scope(DEFAULT_SCOPE, taxonomy.load_reporting(DEFAULT_REPORTING))
     with open(DEFAULT_CLASSES, newline="", encoding="utf-8") as f:
         names = taxonomy.scoped_label_names(list(csv.DictReader(f)), scope)
-    assert names == ["Kix-Max_canned", "Kix-Max_glass", "TorshX_canned", "TorshX_glass",
-                     "COMPETITOR_canned", "COMPETITOR_glass", "product"]
+    assert names[:7] == ["Kix-Max_canned", "Kix-Max_glass", "TorshX_canned", "TorshX_glass",
+                         "COMPETITOR_canned", "COMPETITOR_glass", "product"]
+    assert names[7:] == [
+        "Fizzio_glass", "Freshy-Day_glass", "Genius_glass",
+        "Hoffenberg_canned", "Hoffenberg_glass", "Icy-Monkey_canned", "Icy-Monkey_glass",
+        "Laimon-Fresh_canned", "Laimon-Fresh_glass", "Sunich-Cool_glass"]
+
+
+# --- targeted competitors: named by brand + pack type, is_ours=0 ------------
+
+def test_named_competitor_is_valid(tmp_path):
+    rows = GOOD + [_row("Rival_canned", "Rival", "canned", 0)]
+    assert taxonomy.problems(rows, _reporting(tmp_path, REPORTING)) == []
+
+
+def test_named_competitor_must_be_brand_underscore_pack_type_and_manual(tmp_path):
+    rep = _reporting(tmp_path, REPORTING)
+    bad_name = GOOD + [_row("Rival_canned_cola", "Rival", "canned", 0)]
+    assert any("Rival_canned_cola" in p for p in taxonomy.problems(bad_name, rep))
+    from_invoice = GOOD + [_row("Rival_canned", "Rival", "canned", 0, "invoice")]
+    assert any("Rival_canned" in p for p in taxonomy.problems(from_invoice, rep))
+
+
+def test_scope_competitors_are_named_after_product(tmp_path):
+    rows = SCOPE_ROWS + [_row("Rival_canned", "Rival", "canned", 0),
+                         _row("Rival_glass", "Rival", "glass", 0),
+                         _row("Other_canned", "Other", "canned", 0)]
+    scope = _scope(tmp_path, "brands: [Kix-Max]\ncategories: [canned_drinks]\n"
+                             "detail: brand\ncompetitors: [Rival]\n")
+    assert scope.competitors == ["Rival"]
+    # Out-of-scope pack types (Rival_glass) and untargeted brands (Other) are left out.
+    assert taxonomy.scoped_label_names(rows, scope) == [
+        "Kix-Max_canned", "Kix_canned", "COMPETITOR_canned", "product", "Rival_canned"]
+    assert taxonomy.targeted_label_names(rows, scope) == ["Rival_canned"]
+
+
+def test_scope_competitor_missing_from_class_list_is_rejected(tmp_path):
+    scope = _scope(tmp_path, "brands: [Kix-Max]\ncategories: [canned_drinks]\ncompetitors: [Ghost]\n")
+    with pytest.raises(ValueError, match="Ghost"):
+        taxonomy.scoped_label_names(SCOPE_ROWS, scope)
+
+
+def test_scope_competitor_that_is_ours_is_rejected(tmp_path):
+    scope = _scope(tmp_path, "brands: [Kix-Max]\ncategories: [canned_drinks]\ncompetitors: [Kix]\n")
+    with pytest.raises(ValueError, match="Kix"):
+        taxonomy.scoped_label_names(SCOPE_ROWS, scope)

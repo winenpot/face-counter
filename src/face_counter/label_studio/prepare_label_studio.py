@@ -42,9 +42,11 @@ from face_counter.utils.config import (
     DEFAULT_SCOPE,
 )
 
-# Distinct, readable box colours; cycles for long class lists.
+# Distinct, readable box colours; cycles for long class lists. No grey: grey is
+# `product` only, so a named box must never look unnamed.
 PALETTE = ["#e6194b", "#3cb44b", "#4363d8", "#f58231", "#911eb4", "#42d4f4", "#f032e6",
-           "#bfef45", "#469990", "#9a6324", "#800000", "#808000", "#000075", "#a9a9a9"]
+           "#bfef45", "#469990", "#9a6324", "#800000", "#808000", "#000075", "#ffe119",
+           "#fabed4", "#dcbeff", "#aaffc3", "#ffd8b1"]
 # `product` = "boxed, not named yet". Grey, so every box still to be named stands out.
 UNNAMED_COLOUR = "#9e9e9e"
 # Short label lists get number-key shortcuts (1-9) instead of a search box.
@@ -59,11 +61,14 @@ def read_classes(path: Path, level: str, scope: Path = DEFAULT_SCOPE,
         return [{"name": taxonomy.PRODUCT}]
     if level == "scope":  # the active pilot's identity pass; see configs/scope.yaml
         s = taxonomy.load_scope(scope, taxonomy.load_reporting(reporting))
-        return [{"name": n} for n in taxonomy.scoped_label_names(rows, s)]
+        targeted = set(taxonomy.targeted_label_names(rows, s))
+        # Targeted competitors are click-only: keys 1-7 stay where labelers learned them.
+        return [{"name": n, "hotkey": n not in targeted} for n in taxonomy.scoped_label_names(rows, s)]
     if level == "sku":
         names = [r["class_name"].strip() for r in rows]
-    else:  # brand level; competitors keep their category so share-of-shelf stays computable
-        names = [r["class_name"].strip() if r["brand"] == "COMPETITOR" else r["brand"].strip() for r in rows]
+    else:  # brand level; competitors keep their pack type so share-of-shelf stays computable
+        names = [r["class_name"].strip() if str(r.get("is_ours", "")).strip() == "0" else r["brand"].strip()
+                 for r in rows]
     seen, out = set(), []
     for n in names:
         if n not in seen:
@@ -75,12 +80,20 @@ def read_classes(path: Path, level: str, scope: Path = DEFAULT_SCOPE,
 
 
 def labeling_config(classes: list[dict]) -> str:
-    short = len(classes) <= MAX_HOTKEYS
+    """Classes with `"hotkey": False` are click-only: they get no number key and
+    don't count toward the short-list limit, so appending them never moves the
+    keys labelers already use."""
+    keyed = [c for c in classes if c.get("hotkey", True)]
+    short = len(keyed) <= MAX_HOTKEYS
     colours = iter(PALETTE * (len(classes) // len(PALETTE) + 1))
     labels = []
-    for i, c in enumerate(classes):
+    key = 0
+    for c in classes:
         colour = UNNAMED_COLOUR if c["name"] == taxonomy.PRODUCT else next(colours)
-        hotkey = f' hotkey="{i + 1}"' if short else ""
+        hotkey = ""
+        if short and c.get("hotkey", True):
+            key += 1
+            hotkey = f' hotkey="{key}"'
         labels.append(f'    <Label value={quoteattr(c["name"])} background="{colour}"{hotkey}/>')
     labels = "\n".join(labels)
     # Long lists (~400 classes) need a search box; short ones use number keys.

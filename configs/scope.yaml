@@ -5,19 +5,37 @@
 # narrows what labelers are asked to name and what gets reported. Widening it
 # is a config edit, and nothing already labeled changes: boxes outside the
 # scope keep the label `product` ("not identified yet") and get named when a
-# later scope reaches them.
+# later scope reaches them. A box with no label at all counts as `product`.
 #
-# Pilot, decided 2026-09-27: our share among all cans and all glass bottles,
-# reported separately per category, for two brands. Every can and glass bottle
-# is still named, whoever makes it (a can of another brand of ours is ours,
-# not a competitor); `brands` only limits whose share is reported.
+# Pilot, decided 2026-09-27: per category (cans, glass, reported separately),
+# for two brands. Every can and glass bottle of ours is still named, whichever
+# brand (a can of another brand of ours is ours, not a competitor); `brands`
+# only limits whose share is reported.
+#
+# Metric narrowed 2026-09-29: share = ours / (ours + targeted competitors).
+# This is our share AGAINST THE RIVALS WE TRACK, not our share of all cans:
+# untargeted brands (Coca-Cola, Bear, ...) are in neither side, so they may
+# stay `product`. Never report this number as "share of shelf" unqualified.
 #
 # Extensibility check: adding a brand, a category, or a competitor name must only
 # ever touch this file, classes.csv, reporting.yaml, and gallery images. If it
-# needs a code change or a relabel, the design failed; record where.
+# needs a code change or a relabel, the design failed; record where
+# (docs/PILOT.md step 8).
 
 brands: [Kix-Max, TorshX]
 categories: [canned_drinks, glass_drinks]
+
+# Targeted competitors, by `brand` in classes.csv (rows `<brand>_<pack_type>`,
+# is_ours=0, source=manual). Their labels come after `product` and have no
+# number key, so keys 1-7 never move. Decided 2026-09-29.
+competitors:
+  - Icy-Monkey     # ایسی مانکی   cans + glass
+  - Hoffenberg     # هوفنبرگ      cans + glass
+  - Laimon-Fresh   # لایمون فرش   cans + glass
+  - Fizzio         # فیزیو        glass
+  - Freshy-Day     # فرش دی       glass
+  - Genius         # جنیوس        glass
+  - Sunich-Cool    # سن ایچ کول   glass
 
 # How finely our products are named: `sku` (Kix-Max_canned_blue-berry) or
 # `brand` (Kix-Max_canned). The pilot needs brand only, decided 2026-09-27:

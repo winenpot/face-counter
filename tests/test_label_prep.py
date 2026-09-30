@@ -36,6 +36,28 @@ def test_long_label_list_keeps_the_search_box():
     assert not any(e.getAttribute("hotkey") for e in _labels(xml).values())
 
 
+TARGETED = ["Fizzio_glass", "Freshy-Day_glass", "Genius_glass", "Hoffenberg_canned",
+            "Hoffenberg_glass", "Icy-Monkey_canned", "Icy-Monkey_glass",
+            "Laimon-Fresh_canned", "Laimon-Fresh_glass", "Sunich-Cool_glass"]
+
+
+def test_click_only_labels_leave_keys_1_to_7_where_they_were():
+    classes = [{"name": n} for n in PILOT] + [{"name": n, "hotkey": False} for n in TARGETED]
+    xml = pls.labeling_config(classes)
+    labels = _labels(xml)
+    assert [labels[n].getAttribute("hotkey") for n in PILOT] == [str(i) for i in range(1, 8)]
+    assert not any(labels[n].getAttribute("hotkey") for n in TARGETED)
+    assert "<Filter" not in xml
+
+
+def test_every_named_label_gets_its_own_colour_and_none_looks_grey():
+    classes = [{"name": n} for n in PILOT] + [{"name": n, "hotkey": False} for n in TARGETED]
+    labels = _labels(pls.labeling_config(classes))
+    named = [labels[n].getAttribute("background") for n in PILOT + TARGETED if n != "product"]
+    assert len(set(named)) == len(named)
+    assert "#a9a9a9" not in named  # indistinguishable from `product` grey
+
+
 def _tasks():
     return [{"data": {"image": "/data/local-files/?d=raw/images/a.jpg", "photo_id": "a",
                       "file_name": "a.jpg", "store_id": "s1", "taken_at": ""}},
