@@ -119,6 +119,21 @@ Every photo opens with boxes already drawn by a detector, all labeled `product`
    | 6 | `COMPETITOR_glass` | Any other glass bottle |
    | 7 | `product` | Everything else: plastic bottles, cartons, snacks, oil... |
 
+   Targeted competitors (from 2026-09-29): no number key, click the label.
+
+   | Label(s) | Brand |
+   | --- | --- |
+   | `Icy-Monkey_canned`, `Icy-Monkey_glass` | Icy Monkey (ایسی مانکی) |
+   | `Hoffenberg_canned`, `Hoffenberg_glass` | Hoffenberg (هوفنبرگ) |
+   | `Laimon-Fresh_canned`, `Laimon-Fresh_glass` | Laimon Fresh (لایمون فرش) |
+   | `Fizzio_glass` | Fizzio (فیزیو) |
+   | `Freshy-Day_glass` | Freshy Day (فرش دی) |
+   | `Genius_glass` | Genius (جنیوس) |
+   | `Sunich-Cool_glass` | Sunich Cool (سن ایچ کول) |
+
+   Other competitors' cans and glass bottles (Coca-Cola, Bear, ...) may stay
+   `product`. A box with no label counts as `product`.
+
 3. **Leave everything else as `product`, but keep its box.** Don't use
    `out_of_scope` or `COMPETITOR_other` in the pilot. `product` means "not
    named yet": a later round names those boxes without redrawing them. Grey
