@@ -134,3 +134,14 @@ def test_tasks_point_at_the_served_file_and_keep_the_original_name(tmp_path):
     assert tasks[1]["data"]["image"] == "/data/local-files/?d=raw/images/b.jpg"
     assert tasks[1]["data"]["file_name"] == "b.heif"
     assert tasks[1]["data"]["photo_id"] == "b"
+
+
+
+def test_every_task_carries_a_photo_number_for_the_data_manager(tmp_path):
+    # Label Studio's own ids differ per project and its list has no "No." column;
+    # data.no (1..N in list order) shows as a sortable column and is what
+    # review notes refer to.
+    lst = tmp_path / "list.txt"
+    lst.write_text("a.jpg\nb.jpg\nc.jpg\n", encoding="utf-8")
+    tasks = pls.build_tasks(lst, tmp_path / "no-manifest.csv", "raw/images")
+    assert [t["data"]["no"] for t in tasks] == [1, 2, 3]

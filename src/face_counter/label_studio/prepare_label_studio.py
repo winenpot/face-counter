@@ -151,10 +151,14 @@ def build_tasks(list_file: Path, manifest: Path, url_prefix: str,
         with open(manifest, newline="", encoding="utf-8") as f:
             meta = {r["file_name"]: r for r in csv.DictReader(f)}
     tasks = []
-    for name in list_file.read_text(encoding="utf-8").split():
+    for no, name in enumerate(list_file.read_text(encoding="utf-8").split(), 1):
         m = meta.get(name, {})
         shown = (served or {}).get(name, name)
         tasks.append({"data": {
+            # The photo's number in its list: a visible, sortable column in the
+            # Data Manager, and what review notes refer to. Label Studio's own
+            # task ids differ per project and are shown nowhere as "No.".
+            "no": no,
             "image": f"/data/local-files/?d={quote(url_prefix.rstrip('/') + '/' + shown)}",
             "photo_id": m.get("photo_id", Path(name).stem),
             "file_name": name,
