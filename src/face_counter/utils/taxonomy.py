@@ -116,6 +116,10 @@ def problems(rows: list[dict], reporting: dict[str, list[str]]) -> list[str]:
 # moving a scope from brand to sku later refines existing labels, never
 # contradicts them.
 DETAILS = ("sku", "brand")
+# The share denominator. "targeted": ours / (ours + the scope's competitors).
+# "all": ours / every named face of the category (ours of any brand, targeted
+# and untargeted competitors). Both are always computed; this picks the headline.
+SHARE_AGAINST = ("targeted", "all")
 
 
 @dataclass(frozen=True)
@@ -127,6 +131,7 @@ class Scope:
     # Targeted competitors, named by brand. The pilot's share is
     # ours / (ours + these); untargeted competitors are in neither.
     competitors: list[str] = field(default_factory=list)
+    share_against: str = "targeted"   # one of SHARE_AGAINST
 
 
 def load_scope(path: str | Path, reporting: dict[str, list[str]]) -> Scope:
@@ -135,6 +140,7 @@ def load_scope(path: str | Path, reporting: dict[str, list[str]]) -> Scope:
     cats = list(cfg.get("categories") or [])
     detail = str(cfg.get("detail") or "sku")
     competitors = list(cfg.get("competitors") or [])
+    share_against = str(cfg.get("share_against") or "targeted")
     unknown = [c for c in cats if c not in reporting]
     if unknown:
         raise ValueError(f"scope names categories not in reporting.yaml: {unknown}")
@@ -142,9 +148,11 @@ def load_scope(path: str | Path, reporting: dict[str, list[str]]) -> Scope:
         raise ValueError("scope needs at least one brand and one category")
     if detail not in DETAILS:
         raise ValueError(f"scope detail must be one of {DETAILS}, got {detail!r}")
+    if share_against not in SHARE_AGAINST:
+        raise ValueError(f"scope share_against must be one of {SHARE_AGAINST}, got {share_against!r}")
     packs = [p for c in cats for p in reporting[c]]
     return Scope(brands=brands, categories=cats, pack_types=packs, detail=detail,
-                 competitors=competitors)
+                 competitors=competitors, share_against=share_against)
 
 
 def targeted_label_names(rows: list[dict], scope: Scope) -> list[str]:

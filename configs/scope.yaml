@@ -37,6 +37,16 @@ competitors:
   - Genius         # جنیوس        glass
   - Sunich-Cool    # سن ایچ کول   glass
 
+# Which denominator is the headline share (shelf-eval reports both):
+#   targeted  ours / (ours + the competitors above)   <- the pilot's number
+#   all       ours / every named face in the category (ours, tracked and
+#             untracked competitors). Only meaningful once untracked cans and
+#             glass are labeled COMPETITOR_<pack_type> instead of left grey.
+# Adding a tracked competitor (e.g. Coca-Cola): a classes.csv row per pack type
+# (`Coca-Cola_canned,Coca-Cola,canned,,0,manual`), a line above, the label in
+# the Label Studio config, and a rename pass over COMPETITOR_* boxes. No code.
+share_against: targeted
+
 # How finely our products are named: `sku` (Kix-Max_canned_blue-berry) or
 # `brand` (Kix-Max_canned). The pilot needs brand only, decided 2026-09-27:
 # share of shelf per category doesn't depend on the flavour. `brand` labels are
