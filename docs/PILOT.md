@@ -4,10 +4,19 @@
 work and its ordered to-do list. `ROADMAP.md` still holds the full,
 horizontal plan; nothing in it is cancelled, only sequenced after this.
 
-## Scope (decided 2026-09-27)
+## Scope (decided 2026-09-27, metric narrowed 2026-09-29)
 
-- **Question:** what share of all cans, and separately of all glass bottles,
-  on a shelf are ours?
+- **Question:** what share of the cans, and separately of the glass bottles,
+  from us and our **targeted competitors** are ours? Per category:
+  `ours / (ours + targeted competitors)`. This is our share *against the
+  rivals we track*, **not** our share of all cans on the shelf: Coca-Cola, Bear
+  and other untargeted brands are in neither the numerator nor the
+  denominator. Always report it under that name; the two numbers are not
+  comparable.
+- **Targeted competitors** (decided 2026-09-29), named by brand and pack type
+  like ours: Icy-Monkey, Hoffenberg, Laimon-Fresh (cans and glass); Fizzio,
+  Freshy-Day, Genius, Sunich-Cool (glass only). Persian names in
+  `configs/scope.yaml`.
 - **Brands reported:** Kix-Max and TorshX, named by brand and pack type only
   (`Kix-Max_canned`), not by flavour.
 - **Categories:** `canned_drinks` and `glass_drinks`, reported **separately**.
@@ -17,11 +26,14 @@ horizontal plan; nothing in it is cancelled, only sequenced after this.
 
 Three rules keep the pilot from closing off the wider system:
 
-1. **Every can and glass bottle is named, whoever makes it.** A can of
-   another brand of ours is labeled as ours even when that brand's share is
-   not reported. Calling it a competitor would corrupt the denominator.
+1. **Every can and glass bottle of ours is named**, whatever the brand. A can
+   of another brand of ours is labeled as ours even when that brand's share is
+   not reported. Targeted competitors are named too. Untargeted competitor
+   cans and glass may keep `COMPETITOR_canned`/`COMPETITOR_glass` or stay
+   `product`; the pilot's number reads neither.
 2. **Boxes outside the scope keep the label `product`** ("not identified
-   yet"), never `out_of_scope`. A later scope names them; nothing is
+   yet"), never `out_of_scope`. **A box with no label at all counts as
+   `product`** (decided 2026-09-29). A later scope names them; nothing is
    relabeled. Pass one (geometry) still boxes every product on the shelf.
 3. **Extensibility is the experiment.** Widening the scope (add a brand, a
    category, a named competitor) must only touch `scope.yaml`,
@@ -55,10 +67,14 @@ Three rules keep the pilot from closing off the wider system:
       project `pilot-test-cans-glass` (id 3), 30 tasks, 2,814 pre-drawn boxes,
       created by `uv run shelf-ls-setup`. 3 of 30 labeled (#04, #06, #22),
       and their screenshots are the guide's examples: Phase 0 closed.
-      **2026-09-28: all 30 submitted, labels NOT final.** Many competitor
-      cans and glass bottles are still grey `product`, and #24-#30 are
-      unchanged from the detector. **Resume here:** the checklist in
-      `docs/reports/2026-09-28_test_set_label_review.md`, then re-review.
+      **2026-09-28: all 30 submitted.** **2026-09-29: naming passed** by
+      decision: grey `product` boxes stay grey (only the pilot's number
+      ignores them; they remain detector ground truth), and only targeted
+      competitors need names. **Remaining:** add the 10 targeted-competitor
+      labels, one rename pass over the 132 `COMPETITOR_*` boxes plus any
+      targeted can or bottle still grey, the hygiene items in
+      `docs/reports/2026-09-28_test_set_label_review.md` §2, then the final
+      export. Plan: `.hermes/plans/2026-09-29_pilot-parallel-tracks.md`.
 - [ ] **3b. Gold validation set.** About 30 photos from **val-split** stores,
       labeled exactly like the test set (same guide, same scope labels). It is
       what weekly tuning, model comparison and vendor scoring run on, so the
@@ -78,7 +94,9 @@ Three rules keep the pilot from closing off the wider system:
         training batches.
 - [ ] **4. Gallery for the in-scope classes.** Invoice images in
       `configs/Product/from_invoice/` (about 2 per SKU) plus crops from labeled
-      non-test photos. Competitors need no gallery: not ours = competitor.
+      non-test photos. Targeted competitors need a gallery too (2026-09-29):
+      the matcher has to name them. Untargeted ones need none: not ours and
+      not targeted = not counted.
 - [ ] **4b. Embedding matcher.** Embed each crop (DINOv2 or CLIP), take the
       nearest gallery match, and call it not-ours below a similarity
       threshold. This is the identifier half of the two-stage design; without
@@ -105,6 +123,15 @@ Three rules keep the pilot from closing off the wider system:
       categories, per `ROADMAP.md`.
 - [ ] **8. The extensibility test.** Add a category (e.g. `oils`) or a
       named competitor to the scope, and record what else had to change.
+      Findings so far:
+      - 2026-09-29, named competitors: `taxonomy.problems()` rejected any
+        brand other than `COMPETITOR` with `is_ours=0`, and `scope.yaml` had
+        no way to list competitors. Both needed a code change (small, but
+        code). Adding a *further* targeted competitor is now config only.
+      - 2026-09-29: the 132 boxes already labeled `COMPETITOR_*` needed a
+        rename pass, because the category label had mixed targeted and
+        untargeted brands. Future named competitors will need the same pass
+        over `COMPETITOR_*` boxes; no box is redrawn.
 
 ## Deferred, not dropped
 

@@ -7,6 +7,14 @@ next session.** The 30 photos stay frozen; only the labels change.
 
 ## Verdict: labels not final yet
 
+> **Superseded 2026-09-29 (§1 closed by decision).** Grey `product` boxes
+> stay grey, and only **targeted** competitors are named (list in
+> `docs/PILOT.md`, Scope). The pilot's number is our share against those
+> competitors, so the untargeted cans and glass in §1 no longer need naming.
+> A box with no label counts as `product`, so the #15 item in §2 is
+> dropped too. What remains is the rest of §2, a rename pass for targeted
+> competitors, and §3.
+
 Boxes are in good shape on #1-#23. The problem is **naming**: many
 competitor cans and glass bottles are still grey `product`, which makes our
 share of shelf look larger than it is. Photos #24-#30 look unfinished: their
@@ -23,11 +31,11 @@ Select a box, press **5** (competitor can) or **6** (competitor glass), or
 1-4 for ours. A brand you can't read counts as a competitor unless it's
 clearly ours.
 
-- [ ] **#25** Fridge full of cans: 5 Kix-Max named; about 25 competitor cans
+- [X] **#25** Fridge full of cans: 5 Kix-Max named; about 25 competitor cans
       (King, Life, Monster, Red Bull, Big Bear...) still grey.
-- [ ] **#30** Dozens of cans and glass bottles, only 7 named. Also check boxes
+- [X] **#30** Dozens of cans and glass bottles, only 7 named. Also check boxes
       (unchanged from the detector).
-- [ ] **#29** 3 named; the juice fridge (Sunich etc.) has many glass bottles.
+- [X] **#29** 3 named; the juice fridge (Sunich etc.) has many glass bottles.
       Also check boxes.
 - [ ] **#16** 16 glass bottles named; the two top rows of cans (Monster, Life,
       Hype, One, Nescafe...) are grey.
@@ -46,7 +54,8 @@ clearly ours.
 
 ### 2. Small fixes
 
-- [ ] **#15** 9 boxes with no label at all: label or delete them.
+- [ ] ~~**#15** 9 boxes with no label at all: label or delete them.~~ Not needed
+      (2026-09-29): no label counts as `product`.
 - [ ] **#6, #17** Unsaved drafts newer than the submission: open and press
       **Update**, or the changes stay unsaved.
 - [ ] **#23** Two submitted versions: delete the older one.
