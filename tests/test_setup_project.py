@@ -157,3 +157,25 @@ def test_import_skips_photos_already_in_the_project():
     posted = next(c[2] for c in ls.calls if c[0] == "POST")
     assert [t["data"]["photo_id"] for t in posted] == ["b"]
     json.dumps(posted)  # the body must be plain JSON
+
+
+# --- frozen projects ---------------------------------------------------------
+
+def test_a_frozen_project_is_never_written_to():
+    """The test set's project is the evaluation ground truth: no config
+    update, no storage change, no import, whatever the config says."""
+    frozen = next(iter(sp.FROZEN_TITLES))
+    ls = FakeLS(projects=[{"id": 3, "title": frozen, "label_config": "<View/>",
+                           "show_collab_predictions": True}])
+    with pytest.raises(SystemExit, match="frozen"):
+        sp.ensure_project(ls, frozen, CONFIG, "yolo26l-sku110k")
+    assert [c[0] for c in ls.calls if c[0] != "GET"] == []
+
+
+def test_the_pilot_test_project_is_frozen():
+    assert "pilot-test-cans-glass" in sp.FROZEN_TITLES
+
+
+def test_the_default_title_is_not_a_frozen_project():
+    # Running shelf-ls-setup with no --title must not even aim at the test set.
+    assert sp.DEFAULT_TITLE not in sp.FROZEN_TITLES

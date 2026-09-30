@@ -48,6 +48,9 @@ data/splits/*
 # server. The `.before-*` copies and the generated English configs stay ignored.
 data/label_studio/*
 !data/label_studio/labeling_config_scope_fa.xml
+# The frozen test-set record (the export itself holds company data, so it stays
+# out of git; its sha256 is in this file).
+!data/label_studio/FROZEN.md
 # One-off scratch list from an early classes.csv probe; the kept version of that
 # work lives in investigations/ (see its README).
 trial.txt

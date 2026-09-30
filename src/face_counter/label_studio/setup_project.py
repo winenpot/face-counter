@@ -1,7 +1,10 @@
 """Create or update a Label Studio project from shelf-label-prep's files, over the API.
 
-    uv run shelf-ls-setup                      # the pilot test set, on the server
-    uv run shelf-ls-setup --dry-run            # show what would happen, change nothing
+    uv run shelf-ls-setup --title pilot-gold-val --tasks <tasks.json> --config <config.xml>
+    uv run shelf-ls-setup --title <title> ... --dry-run   # show what would happen, change nothing
+
+Frozen projects (FROZEN_TITLES, e.g. the pilot test set) are refused before
+anything is copied or sent.
 
 What it does, in order (each step is safe to repeat; a second run changes nothing):
 
@@ -51,7 +54,15 @@ from face_counter.utils.config import DEFAULT_LABEL_STUDIO_DIR, PROJECT_ROOT
 
 # --- defaults: the pilot test set on the production server -------------------
 
-DEFAULT_TITLE = "pilot-test-cans-glass"
+# Projects this script must never write to, matched by title. The pilot test
+# set's labels were frozen on 2026-09-30 as the evaluation ground truth
+# (data/label_studio/FROZEN.md); a config push or an import there would
+# change what every reported number is measured against.
+FROZEN_TITLES = frozenset({"pilot-test-cans-glass"})
+
+# No default project: every run names its target with --title, so a bare
+# `shelf-ls-setup` can never reach the frozen test-set project.
+DEFAULT_TITLE = None
 DEFAULT_CONFIG = DEFAULT_LABEL_STUDIO_DIR / "labeling_config_scope.xml"
 DEFAULT_TASKS = DEFAULT_LABEL_STUDIO_DIR / "tasks_test_labeling.json"
 DEFAULT_IMAGES = DEFAULT_LABEL_STUDIO_DIR / "images"
@@ -169,6 +180,10 @@ def _results(page):
 
 def ensure_project(ls, title: str, config: str, model_version: str | None) -> dict:
     """Find the project by title, creating or updating it as needed."""
+    if title in FROZEN_TITLES:
+        raise SystemExit(f"project {title!r} is frozen (evaluation ground truth, see "
+                         f"data/label_studio/FROZEN.md); this script never writes to it. "
+                         f"Use a new title for a new project.")
     projects = _results(ls.request("GET", "/api/projects/", params={"page_size": 1000}))
     same = [p for p in projects if p.get("title") == title]
     if len(same) > 1:
@@ -334,7 +349,9 @@ def verify(ls, project_id: int, expected_tasks: int) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--title", default=DEFAULT_TITLE, help="project title (the key: one project per title)")
+    ap.add_argument("--title", required=True,
+                    help="project title (the key: one project per title). Frozen projects "
+                         f"are refused: {', '.join(sorted(FROZEN_TITLES))}")
     ap.add_argument("--config", default=str(DEFAULT_CONFIG), help="labeling config XML")
     ap.add_argument("--tasks", default=str(DEFAULT_TASKS), help="tasks JSON from shelf-label-prep")
     ap.add_argument("--images", default=str(DEFAULT_IMAGES), help="staged photos to copy")
@@ -349,6 +366,9 @@ def main() -> None:
     args = ap.parse_args()
 
     token = read_token(Path(args.env_file))
+    if args.title in FROZEN_TITLES:  # before any photo is copied or tunnel opened
+        raise SystemExit(f"project {args.title!r} is frozen (data/label_studio/FROZEN.md); "
+                         "nothing was done.")
     config = Path(args.config).read_text(encoding="utf-8")
     tasks = json.loads(Path(args.tasks).read_text(encoding="utf-8"))
     model_version = model_version_of(tasks)
