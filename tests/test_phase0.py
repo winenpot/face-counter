@@ -379,6 +379,78 @@ def test_gold_val_refuses_pcts_that_disagree_with_splits_csv(fake_db, tmp_path):
         make_splits.make_gold_val(manifest, out, size=8, seed=1, test_pct=5, val_pct=60)
 
 
+def _gold_setup(fake_db, tmp_path, size=6):
+    manifest = export_photos.export(_cfg(tmp_path), db=fake_db)
+    out = tmp_path / "splits"
+    df = make_splits.make_splits(manifest, out, 20, 20, 10, 25, seed=1, force=False)
+    gold = make_splits.make_gold_val(manifest, out, size=size, seed=1, test_pct=20, val_pct=20)
+    return manifest, out, df, gold
+
+
+def _sha(out):
+    import hashlib
+    return hashlib.sha256((out / "gold_val.txt").read_bytes()).hexdigest()
+
+
+def test_gold_swap_replaces_only_the_named_tiles_from_unused_val_stores(fake_db, tmp_path):
+    """Contact-sheet review: tiles the reviewer rejects are swapped for new val photos.
+    Kept tiles keep their position; nothing else in data/splits/ moves."""
+    manifest, out, df, gold = _gold_setup(fake_db, tmp_path)
+    frozen = {n: (out / n).read_bytes() for n in
+              ("test_labeling.txt", "label_batch_01.txt", "splits.csv")}
+    store_of, split_of = dict(zip(df.file_name, df.store_id)), dict(zip(df.file_name, df.split))
+
+    new = make_splits.swap_gold_val(manifest, out, positions=[2, 5], expect_sha=_sha(out)[:12],
+                                    seed=1, test_pct=20, val_pct=20)
+
+    assert len(new) == len(gold) == 6 and len(set(new)) == 6
+    assert [new[i] for i in (0, 2, 3, 5)] == [gold[i] for i in (0, 2, 3, 5)]   # kept: same slot
+    added = [new[1], new[4]]
+    assert not set(added) & set(gold)                                         # genuinely new
+    assert all(split_of[n] == "val" for n in added)
+    kept_stores = {store_of[gold[i]] for i in (0, 2, 3, 5)}
+    assert not {store_of[n] for n in added} & kept_stores - {""}              # new stores
+    assert (out / "gold_val_rejected.txt").read_text().split() == [gold[1], gold[4]]
+    assert {n: (out / n).read_bytes() for n in frozen} == frozen              # nothing else moved
+
+
+def test_gold_swap_refuses_a_stale_sheet_and_bad_tiles_and_changes_nothing(fake_db, tmp_path):
+    manifest, out, _, gold = _gold_setup(fake_db, tmp_path)
+    before = (out / "gold_val.txt").read_bytes()
+    kw = dict(seed=1, test_pct=20, val_pct=20)
+    with pytest.raises(ValueError, match="sheet"):          # list changed since the sheet was made
+        make_splits.swap_gold_val(manifest, out, [1], expect_sha="deadbeef0000", **kw)
+    for bad in ([0], [7], [1, 1], []):                      # 1-based, in range, no repeats, not empty
+        with pytest.raises(ValueError, match="tile"):
+            make_splits.swap_gold_val(manifest, out, bad, expect_sha=_sha(out)[:12], **kw)
+    assert (out / "gold_val.txt").read_bytes() == before
+    assert not (out / "gold_val_rejected.txt").exists()
+
+
+def test_gold_swap_never_brings_back_a_rejected_photo(fake_db, tmp_path):
+    manifest, out, _, gold = _gold_setup(fake_db, tmp_path)
+    kw = dict(seed=1, test_pct=20, val_pct=20)
+    first = make_splits.swap_gold_val(manifest, out, [1, 2], expect_sha=_sha(out)[:12], **kw)
+    second = make_splits.swap_gold_val(manifest, out, [1, 2], expect_sha=_sha(out)[:12], **kw)
+    rejected = (out / "gold_val_rejected.txt").read_text().split()
+    assert rejected == [gold[0], gold[1], first[0], first[1]]
+    assert not set(second) & set(rejected)
+
+
+def test_gold_swap_refuses_when_there_are_not_enough_unused_stores(fake_db, tmp_path):
+    manifest, out, df, gold = _gold_setup(fake_db, tmp_path)
+    # Every other val photo was already rejected in earlier rounds: nothing is left to draw.
+    spare = [n for n, sp in zip(df.file_name, df.split) if sp == "val" and n not in gold]
+    (out / "gold_val_rejected.txt").write_text("\n".join(spare) + "\n")
+    before = (out / "gold_val.txt").read_bytes()
+    rejected_before = (out / "gold_val_rejected.txt").read_bytes()
+    with pytest.raises(ValueError, match="enough"):
+        make_splits.swap_gold_val(manifest, out, [1, 2], expect_sha=_sha(out)[:12],
+                                  seed=1, test_pct=20, val_pct=20)
+    assert (out / "gold_val.txt").read_bytes() == before        # no half-filled list
+    assert (out / "gold_val_rejected.txt").read_bytes() == rejected_before
+
+
 def test_label_batches_never_repeat_a_photo(fake_db, tmp_path):
     """The one mistake that can't happen: a photo already sent to labelers
     (in any label_batch_*.txt) must never appear in a later batch, even
