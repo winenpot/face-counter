@@ -139,6 +139,12 @@ Three rules keep the pilot from closing off the wider system:
       non-test photos. Targeted competitors need a gallery too (2026-09-29):
       the matcher has to name them. Untargeted ones need none: not ours and
       not targeted = not counted.
+      **2026-10-04:** the 10 tracked-competitor folders are generated from
+      config by `uv run python scripts/make_gallery_folders.py` (`--check`
+      reports what is still empty), each with a README of what belongs in it;
+      index and Persian brand names in `configs/Product/competitors/README.md`.
+      Waiting on the packshots themselves (you); at least 2 per folder, never
+      crops from the frozen test set.
 - [ ] **4b. Embedding matcher.** Embed each crop (DINOv2 or CLIP), take the
       nearest gallery match, and call it not-ours below a similarity
       threshold. This is the identifier half of the two-stage design; without
