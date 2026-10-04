@@ -4,36 +4,24 @@
 work and its ordered to-do list. `ROADMAP.md` still holds the full,
 horizontal plan; nothing in it is cancelled, only sequenced after this.
 
-## Current checkpoint (2026-09-30, end of day)
+## Current checkpoint (2026-10-04, end of day)
 
-Branch `master`, working tree clean after the day's commits, `uv run pytest`
-129 passed. Replace this section at every stop; don't append another.
+Branch `master`, 149 tests pass. Replace this section at every stop; don't append.
+The ordered task list and the full handoff are in `.hermes/plans/2026-10-04_demo-path.md`
+(section "Current handoff"): read that first. Goal: an API where an uploaded shelf
+photo returns our faces vs tracked rivals, per category (T6), demoed from T8.
 
-- **Done today:** rename pass to tracked rivals; `shelf-eval` (detector +
-  share, config-driven, labels' sha256 recorded); test labels frozen as v1
-  (`data/label_studio/FROZEN.md`: read-only export, checksum, pg_dump in
-  `backups/label-studio/`, `shelf-ls-setup` refuses the project, FROZEN notice
-  in LS); `data.no` photo numbers on every future task. First numbers:
-  `runs/eval/20260930-163443/summary.md`.
-- **Decided:** keep named tracked rivals; the headline share is vs tracked
-  rivals (`share_against: targeted`), vs-all is reported too. v1 is never
-  edited; the face audit happens in a copy project and becomes v2. Refer to
-  photos by `no` + filename, never by Label Studio id alone.
-- **Blocked on the business:** the four BI questions in
-  `docs/ISSUE_FACES_NOT_OBJECTS.md` §5. They gate the face audit.
-- **Next action (me, needs nothing from anyone):** gold validation set,
-  step 3b: `make_splits.py --gold-val 30` over val-split stores, writing
-  tracked `data/splits/gold_val.txt`, test-first, with a byte-identity test on
-  `test_labeling.txt`; then its contact sheet on the GPU box. Needs the
-  manifest here (`scripts/sync_from_hemin.sh --with-manifest`).
-- **Then, in order:** (you) gold-val contact-sheet review; face-audit copy
-  project once BI answers (me: build it from v1, `behind` label; you: tag);
-  face metrics in `shelf-eval`; (you) rival packshots into
-  `configs/Product/competitors/<Brand>_<pack>/`; gallery builder, can-vs-glass
-  spike, embedding matcher; share error + ours-vs-rival confusion.
+- **Active: T2, gold set. Waiting on the user:** label project 5 `pilot-gold-val`
+  (30 photos) and export it. List is final (sha `71c7f434c344`).
+- **Done since 2026-09-30:** rival gallery folders and `retired:` scope label
+  (Laimon-Fresh glass; glass headline 22.1% -> 24.0%, cans 58.2%); can-vs-glass
+  spike (CLIP ViT-L/14, 89.5% on rival boxes, exploratory); hemin is a git checkout
+  (code by git only); gold list, `--gold-swap`, pre-draw, project 5.
+- **Next, in order:** confirm T4 on gold; T3 embedding matcher; T5 predicted share
+  on v1; T6 FastAPI; T7 Docker on the db server; T7b harden hemin's git access; T8 demo.
 - **Never:** write to project 3; run `shelf-splits --force`; `docker compose
-  down -v` on Label Studio. The repo is public; the Persian config and the
-  checksums in FROZEN.md are the only data-adjacent files tracked.
+  down -v` on Label Studio; rsync code to hemin. The repo is public; the Persian
+  config and the checksums in FROZEN.md are the only data-adjacent files tracked.
 
 > **Standing issue (2026-09-30): the pilot counts *faces*, not every object.**
 > A face is the frontmost unit of a lane, one per lane; units behind it are
