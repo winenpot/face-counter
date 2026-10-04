@@ -215,7 +215,7 @@ def test_shipped_pilot_labels_keep_keys_1_to_7_then_the_targeted_competitors():
     assert names[7:] == [
         "Fizzio_glass", "Freshy-Day_glass", "Genius_glass",
         "Hoffenberg_canned", "Hoffenberg_glass", "Icy-Monkey_canned", "Icy-Monkey_glass",
-        "Laimon-Fresh_canned", "Laimon-Fresh_glass", "Sunich-Cool_glass"]
+        "Laimon-Fresh_canned", "Sunich-Cool_glass"]   # Laimon-Fresh_glass retired 2026-10-04
 
 
 # --- targeted competitors: named by brand + pack type, is_ours=0 ------------
@@ -244,6 +244,27 @@ def test_scope_competitors_are_named_after_product(tmp_path):
     assert taxonomy.scoped_label_names(rows, scope) == [
         "Kix-Max_canned", "Kix_canned", "COMPETITOR_canned", "product", "Rival_canned"]
     assert taxonomy.targeted_label_names(rows, scope) == ["Rival_canned"]
+
+
+def test_retired_label_is_not_offered_to_labelers_but_its_brand_stays_tracked(tmp_path):
+    rows = SCOPE_ROWS + [_row("Rival_canned", "Rival", "canned", 0),
+                         _row("Rival_glass", "Rival", "glass", 0)]
+    text = ("brands: [Kix-Max]\ncategories: [canned_drinks, glass_drinks]\n"
+            "detail: brand\ncompetitors: [Rival]\n")
+    assert taxonomy.targeted_label_names(rows, _scope(tmp_path, text)) == ["Rival_canned", "Rival_glass"]
+    scope = _scope(tmp_path, text + "retired: [Rival_glass]\n")
+    assert scope.retired == ["Rival_glass"]
+    assert taxonomy.targeted_label_names(rows, scope) == ["Rival_canned"]
+    assert "Rival_glass" not in taxonomy.scoped_label_names(rows, scope)
+
+
+def test_retired_label_must_exist_in_the_class_list(tmp_path):
+    # A typo here would silently retire nothing.
+    scope = _scope(tmp_path, "brands: [Kix-Max]\ncategories: [canned_drinks]\n"
+                             "competitors: [Rival]\nretired: [Rival_glasss]\n")
+    rows = SCOPE_ROWS + [_row("Rival_canned", "Rival", "canned", 0)]
+    with pytest.raises(ValueError, match="Rival_glasss"):
+        taxonomy.targeted_label_names(rows, scope)
 
 
 def test_scope_competitor_missing_from_class_list_is_rejected(tmp_path):

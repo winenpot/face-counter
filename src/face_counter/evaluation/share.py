@@ -57,6 +57,8 @@ class Taxonomy:
         """(brand, pack_type, role), or None for a box that names nothing."""
         if label in (taxonomy.PRODUCT, taxonomy.OUT_OF_SCOPE):
             return None
+        if label in self.scope.retired and label in self.labels:
+            return None   # no longer tracked: grey, in neither side of the share
         if label not in self.labels:
             raise ValueError(f"label {label!r} is not in classes.csv; add the row (or fix the "
                              "label) before evaluating, or it silently drops out of the share")

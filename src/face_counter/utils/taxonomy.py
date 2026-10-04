@@ -132,6 +132,10 @@ class Scope:
     # ours / (ours + these); untargeted competitors are in neither.
     competitors: list[str] = field(default_factory=list)
     share_against: str = "targeted"   # one of SHARE_AGAINST
+    # `<brand>_<pack_type>` labels no longer tracked (the brand may stay tracked
+    # for its other pack types). Old labels still parse; the evaluator reads them
+    # as grey `product`, labelers are not offered them, no gallery is built.
+    retired: list[str] = field(default_factory=list)
 
 
 def load_scope(path: str | Path, reporting: dict[str, list[str]]) -> Scope:
@@ -141,6 +145,7 @@ def load_scope(path: str | Path, reporting: dict[str, list[str]]) -> Scope:
     detail = str(cfg.get("detail") or "sku")
     competitors = list(cfg.get("competitors") or [])
     share_against = str(cfg.get("share_against") or "targeted")
+    retired = list(cfg.get("retired") or [])
     unknown = [c for c in cats if c not in reporting]
     if unknown:
         raise ValueError(f"scope names categories not in reporting.yaml: {unknown}")
@@ -152,7 +157,7 @@ def load_scope(path: str | Path, reporting: dict[str, list[str]]) -> Scope:
         raise ValueError(f"scope share_against must be one of {SHARE_AGAINST}, got {share_against!r}")
     packs = [p for c in cats for p in reporting[c]]
     return Scope(brands=brands, categories=cats, pack_types=packs, detail=detail,
-                 competitors=competitors, share_against=share_against)
+                 competitors=competitors, share_against=share_against, retired=retired)
 
 
 def targeted_label_names(rows: list[dict], scope: Scope) -> list[str]:
@@ -167,10 +172,15 @@ def targeted_label_names(rows: list[dict], scope: Scope) -> list[str]:
     if bad:
         raise ValueError(f"scope competitors must be named competitor brands in classes.csv "
                          f"(is_ours=0), not ours or missing: {bad}")
+    known = {r["class_name"].strip() for r in rows if str(r.get("is_ours", "")).strip() == "0"}
+    typos = [n for n in scope.retired if n not in known]   # a typo would retire nothing
+    if typos:
+        raise ValueError(f"scope retired labels must be named competitor rows in classes.csv: {typos}")
     return sorted(r["class_name"].strip() for r in rows
                   if str(r.get("is_ours", "")).strip() == "0"
                   and (r.get("brand") or "").strip() in scope.competitors
-                  and (r.get("pack_type") or "").strip() in scope.pack_types)
+                  and (r.get("pack_type") or "").strip() in scope.pack_types
+                  and r["class_name"].strip() not in scope.retired)
 
 
 def scoped_label_names(rows: list[dict], scope: Scope) -> list[str]:

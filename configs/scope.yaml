@@ -31,11 +31,19 @@ categories: [canned_drinks, glass_drinks]
 competitors:
   - Icy-Monkey     # ایسی مانکی   cans + glass
   - Hoffenberg     # هوفنبرگ      cans + glass
-  - Laimon-Fresh   # لایمون فرش   cans + glass
+  - Laimon-Fresh   # لایمون فرش   cans (glass retired, see below)
   - Fizzio         # فیزیو        glass
   - Freshy-Day     # فرش دی       glass
   - Genius         # جنیوس        glass
   - Sunich-Cool    # سن ایچ کول   glass
+
+# Labels no longer tracked (2026-10-04: marketing dropped Laimon-Fresh glass as
+# unrelated). The brand stays tracked for its other pack types. Boxes already
+# labeled this way (the frozen v1 export is never edited) are read as grey
+# `product`: in neither side of the share. Labelers are no longer offered the
+# label and no gallery folder is made for it. The classes.csv row stays so old
+# exports keep parsing.
+retired: [Laimon-Fresh_glass]
 
 # Which denominator is the headline share (shelf-eval reports both):
 #   targeted  ours / (ours + the competitors above)   <- the pilot's number

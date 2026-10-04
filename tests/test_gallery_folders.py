@@ -120,8 +120,15 @@ def test_count_images_ignores_readme_and_counts_photos(tmp_path):
     assert mgf.count_images(folder) == 2
 
 
-def test_live_config_produces_the_ten_pilot_galleries():
-    """Guards the real configs/: the pilot tracks 7 rivals over 10 pack types."""
+def test_retired_label_gets_no_gallery_folder(cfg):
+    labels = [row[0] for row in _labels(cfg, SCOPE + "retired: [Icy-Monkey_glass]\n")]
+    assert labels == ["Icy-Monkey_canned"]
+
+
+def test_live_config_produces_the_nine_pilot_galleries():
+    """Guards the real configs/: 7 rivals over 10 pack types, minus the retired
+    Laimon-Fresh_glass (2026-10-04)."""
     labels = [row[0] for row in mgf.gallery_labels()]
-    assert len(labels) == 10
+    assert len(labels) == 9
     assert "Icy-Monkey_canned" in labels and "Sunich-Cool_glass" in labels
+    assert "Laimon-Fresh_glass" not in labels and "Laimon-Fresh_canned" in labels

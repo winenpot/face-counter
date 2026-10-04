@@ -183,6 +183,7 @@ COMPETITOR_canned,COMPETITOR,canned,,0,manual
 COMPETITOR_glass,COMPETITOR,glass,,0,manual
 COMPETITOR_other,COMPETITOR,other,,0,manual
 Icy-Monkey_canned,Icy-Monkey,canned,,0,manual
+Icy-Monkey_glass,Icy-Monkey,glass,,0,manual
 Coca-Cola_canned,Coca-Cola,canned,,0,manual
 out_of_scope,out_of_scope,,,0,manual
 """
@@ -192,12 +193,12 @@ REPORTING = """categories:
 """
 
 
-def _taxonomy(tmp_path, competitors, brands=("Kix-Max", "TorshX"), detail="brand"):
+def _taxonomy(tmp_path, competitors, brands=("Kix-Max", "TorshX"), detail="brand", retired=()):
     c = _write(tmp_path, "classes.csv", CLASSES)
     r = _write(tmp_path, "reporting.yaml", REPORTING)
     s = _write(tmp_path, "scope.yaml",
                f"brands: {list(brands)}\ncategories: [canned_drinks, glass_drinks]\n"
-               f"detail: {detail}\ncompetitors: {list(competitors)}\n")
+               f"detail: {detail}\ncompetitors: {list(competitors)}\nretired: {list(retired)}\n")
     return share.Taxonomy.load(c, r, s)
 
 
@@ -250,6 +251,23 @@ def test_adding_a_targeted_competitor_is_a_config_edit_that_changes_the_share(tm
     after = share.evaluate(photos, _taxonomy(tmp_path, ["Icy-Monkey", "Coca-Cola"]), n_boot=10)
     assert before.categories["canned_drinks"].share == pytest.approx(2 / 3)
     assert after.categories["canned_drinks"].share == pytest.approx(2 / 5)
+
+
+def test_a_retired_label_reads_as_grey_product_and_leaves_the_share(tmp_path):
+    """Marketing stops tracking Icy-Monkey glass (2026-10-04, as it did Laimon-Fresh
+    glass). Labels already written keep parsing, but the boxes count as grey `product`:
+    in neither side of the share. The frozen export is never edited; this is the edit."""
+    photos = [_labeled("a", ["Kix-Max_glass"] * 2 + ["Icy-Monkey_glass"] * 3 + ["Icy-Monkey_canned"])]
+    before = share.evaluate(photos, _taxonomy(tmp_path, ["Icy-Monkey"]), n_boot=10)
+    tax = _taxonomy(tmp_path, ["Icy-Monkey"], retired=["Icy-Monkey_glass"])
+    after = share.evaluate(photos, tax, n_boot=10)
+    assert tax.resolve("Icy-Monkey_glass") is None          # same as `product`
+    assert before.categories["glass_drinks"].share == pytest.approx(2 / 5)
+    assert after.categories["glass_drinks"].share == pytest.approx(1.0)
+    assert after.categories["glass_drinks"].untargeted == 0  # grey, not "untracked rival"
+    # The same brand's other pack type stays tracked.
+    assert tax.resolve("Icy-Monkey_canned") == ("Icy-Monkey", "canned", "targeted")
+    assert after.categories["canned_drinks"].targeted == 1
 
 
 def test_reporting_a_further_brand_of_ours_is_a_config_edit(tmp_path):

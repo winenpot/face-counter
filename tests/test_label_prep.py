@@ -38,7 +38,7 @@ def test_long_label_list_keeps_the_search_box():
 
 TARGETED = ["Fizzio_glass", "Freshy-Day_glass", "Genius_glass", "Hoffenberg_canned",
             "Hoffenberg_glass", "Icy-Monkey_canned", "Icy-Monkey_glass",
-            "Laimon-Fresh_canned", "Laimon-Fresh_glass", "Sunich-Cool_glass"]
+            "Laimon-Fresh_canned", "Sunich-Cool_glass"]
 
 
 def test_click_only_labels_leave_keys_1_to_7_where_they_were():
