@@ -48,9 +48,9 @@ SUBJECT = re.compile(
 )
 
 SUBJECT_MAX_LEN = (
-    72  # git's own convention: fits one terminal line in `git log --oneline`
+    98  # git's own convention: fits one terminal line in `git log --oneline`
 )
-BODY_LINE_MAX_LEN = 100  # a wrapped paragraph, not an unwrapped essay line
+BODY_LINE_MAX_LEN = 140  # a wrapped paragraph, not an unwrapped essay line
 BODY_MAX_LINES = 20  # ~20 lines of body is already generous for "why", not "everything"
 
 HELP = (
