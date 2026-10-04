@@ -46,7 +46,7 @@ faces**.
 What follows from this:
 
 - A face is defined by **position** (frontmost in its lane), not by how it
-  looks. The same can is a face today and a behind unit tomorrow, after the
+  looks. The same can is a face today and a behind unit earlier, after the
   front one is sold. A model can only infer position from cues in the picture:
   occlusion (the front unit covers part of the one behind), size, where the
   base sits at the shelf edge, and the camera angle. That is why this is hard,

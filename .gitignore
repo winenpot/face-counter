@@ -85,3 +85,6 @@ backups/
 # Licensed font (B Yekan, "All Rights Reserved"): kept locally, never committed.
 # Embedded into the Label Studio labeling config, not shipped by the deploy script.
 deploy/label-studio/fonts/
+
+
+graphify-out/cache/
