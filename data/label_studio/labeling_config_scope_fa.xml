@@ -39,7 +39,6 @@
     <Label value="قوطی ایسی مانکی" alias="Icy-Monkey_canned" background="#808000" hint="هر قوطی ایسی مانکی، رقیب هدف"/>
     <Label value="شیشه ایسی مانکی" alias="Icy-Monkey_glass" background="#000075" hint="هر بطری شیشه‌ای ایسی مانکی، رقیب هدف"/>
     <Label value="قوطی لایمون فرش" alias="Laimon-Fresh_canned" background="#ffe119" hint="هر قوطی لایمون فرش، رقیب هدف"/>
-    <Label value="شیشه لایمون فرش" alias="Laimon-Fresh_glass" background="#fabed4" hint="هر بطری شیشه‌ای لایمون فرش، رقیب هدف"/>
     <Label value="شیشه سن ایچ کول" alias="Sunich-Cool_glass" background="#dcbeff" hint="هر بطری شیشه‌ای سن ایچ کول، رقیب هدف"/>
   </RectangleLabels>
   <Image name="image" value="$image" zoom="true" zoomControl="true" rotateControl="false"/>
