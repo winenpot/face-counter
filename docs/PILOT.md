@@ -51,7 +51,8 @@ Branch `master`, working tree clean after the day's commits, `uv run pytest`
   denominator. Always report it under that name; the two numbers are not
   comparable.
 - **Targeted competitors** (decided 2026-09-29), named by brand and pack type
-  like ours: Icy-Monkey, Hoffenberg, Laimon-Fresh (cans and glass); Fizzio,
+  like ours: Icy-Monkey, Hoffenberg (cans and glass), Laimon-Fresh (cans only; its glass was
+  retired 2026-10-04, marketing); Fizzio,
   Freshy-Day, Genius, Sunich-Cool (glass only). Persian names in
   `configs/scope.yaml`.
 - **Brands reported:** Kix-Max and TorshX, named by brand and pack type only
@@ -191,6 +192,12 @@ Three rules keep the pilot from closing off the wider system:
         brand other than `COMPETITOR` with `is_ours=0`, and `scope.yaml` had
         no way to list competitors. Both needed a code change (small, but
         code). Adding a *further* targeted competitor is now config only.
+      - 2026-10-04, retiring a tracked label (`Laimon-Fresh_glass`): the scope
+        had no way to drop one pack type of a tracked brand, so it needed a
+        small code change (`retired:` in `scope.yaml`, read by `load_scope`,
+        `targeted_label_names`, `Taxonomy.resolve`). Existing labels are not
+        relabeled: the frozen v1 export is untouched and its 9 boxes are read as
+        grey `product`. Retiring a label is now config only.
       - 2026-09-29: the 132 boxes already labeled `COMPETITOR_*` needed a
         rename pass, because the category label had mixed targeted and
         untargeted brands. Future named competitors will need the same pass

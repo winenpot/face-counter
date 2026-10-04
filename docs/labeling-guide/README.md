@@ -142,7 +142,7 @@ Every photo opens with boxes already drawn by a detector, all labeled `product`
    | --- | --- |
    | `Icy-Monkey_canned`, `Icy-Monkey_glass` | Icy Monkey (ایسی مانکی) |
    | `Hoffenberg_canned`, `Hoffenberg_glass` | Hoffenberg (هوفنبرگ) |
-   | `Laimon-Fresh_canned`, `Laimon-Fresh_glass` | Laimon Fresh (لایمون فرش) |
+   | `Laimon-Fresh_canned` | Laimon Fresh (لایمون فرش), cans only: its glass bottles are no longer tracked (2026-10-04), leave them `product` |
    | `Fizzio_glass` | Fizzio (فیزیو) |
    | `Freshy-Day_glass` | Freshy Day (فرش دی) |
    | `Genius_glass` | Genius (جنیوس) |
