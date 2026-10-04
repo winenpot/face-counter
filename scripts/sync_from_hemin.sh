@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Pull results from Hemin's GPU training box (~/code/face-counter) back here,
 # one-way. This is for RESULTS only (trained weights, run artifacts) -- never
-# code. Code changes on Hemin's side belong in git (commit + push there,
-# pull here); rsync has no merge logic, so pulling his code over ours would
-# silently clobber whatever's uncommitted on this side with no diff and no
-# way back. If his tree isn't clean, stop and sort that out with git first,
-# don't rsync around it.
+# code. Code changes on Hemin's side belong in git: he commits on the `hemin`
+# branch and pushes it, we merge it into master HERE (where the tests run and
+# conflicts get resolved), push master, and he fast-forwards. rsync has no
+# merge logic, so it never carries code. If his box has edits or commits git
+# doesn't have, this script stops (see the checks below).
 #
 # Split into role-owned folders (src/face_counter/training, label_studio,
 # serving, utils) so this exclude list can leave out what belongs to his
@@ -41,16 +41,30 @@ esac
 HOST="hemin"                       # ~/.ssh/config alias for the 4060 Ti box
 REMOTE_DIR="~/code/face-counter/"
 
-if [[ -n "$(git status --porcelain)" ]]; then
-  echo "Local tree is dirty. Commit or stash before pulling -- an incoming" >&2
-  echo "runs/ sync could still collide with local uncommitted state." >&2
+# No local clean-tree check: this script only writes runs/ and data/raw/, both
+# gitignored, so nothing tracked here can be overwritten.
+#
+# Hemin's side must have nothing git doesn't know about: no edited tracked file and
+# no commit that is on no origin branch (the `hemin` branch counts). Otherwise the
+# results were produced by code that exists nowhere else; push it first (hemin
+# branch), merge it into master here, then pull results.
+if ! ssh "${HOST}" 'cd code/face-counter && git fetch -q origin'; then
+  echo "Could not fetch origin on ${HOST}; cannot verify its code is in git." >&2
   exit 1
 fi
-if ! ssh "${HOST}" "cd code/face-counter && [[ -z \"\$(git status --porcelain)\" ]]"; then
-  echo "${HOST}'s tree is dirty. Pull results only after Hemin commits --" >&2
-  echo "code should never travel by rsync, only by git." >&2
+if [[ -n "$(ssh "${HOST}" 'cd code/face-counter && git status --porcelain')" ]]; then
+  echo "${HOST} has uncommitted changes to tracked files. Commit them on its" >&2
+  echo "'hemin' branch and push, or revert them. Code travels by git only." >&2
   exit 1
 fi
+UNPUSHED="$(ssh "${HOST}" 'cd code/face-counter && git rev-list --count HEAD --not --remotes=origin')"
+if [[ "${UNPUSHED}" != "0" ]]; then
+  echo "${HOST} has ${UNPUSHED} commit(s) that are on no origin branch. Push them" >&2
+  echo "(git push on hemin, to origin/hemin) before pulling results from them." >&2
+  exit 1
+fi
+echo "${HOST}: $(ssh "${HOST}" 'cd code/face-counter && git branch --show-current'), clean," \
+     "$(ssh "${HOST}" 'cd code/face-counter && git rev-list --count HEAD..origin/master') commit(s) behind origin/master."
 
 INCLUDES_ONLY=(
   # Only pull training results, never code (code -> git) and never his

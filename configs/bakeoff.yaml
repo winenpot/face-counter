@@ -38,7 +38,7 @@ yolo26l-sku110k:
   # YOLO26l trained on SKU-110K (0.906 mAP50 on SKU-110K val). Its weights are not
   # a scriptable download: open the page below, press "Download model" (.pt), and
   # save the file at `weights` (relative to the repo root). *.pt is gitignored, so
-  # the file never enters git; scripts/sync_to_hemin.sh does carry it to the GPU box.
+  # the file never enters git; carry it to the GPU box with scp and compare sha256s.
   # Page: https://platform.ultralytics.com/fatih-enterprise/yolo26-sku-detection/yolo26l-sku-detector-sku-110k
   # Needs ultralytics>=8.4.156.
   weights: models/yolo26l-sku110k.pt

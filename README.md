@@ -189,7 +189,7 @@ commits) is not revalidated or rewritten.
       serving/                      placeholder for the future inference API (Phase 2)
     deploy/label-studio/    Label Studio (third-party labeling app) deployment
     docs/           ROADMAP, PROPOSAL, PILOT, PILOT_LABELING, DATASET_PREPARATION, labeling-guide/ (guide + examples), requests
-    scripts/        deploy_label_studio.sh (deploy the app); build_classes.py; scan_images.py; sync_to_hemin.sh, sync_from_hemin.sh
+    scripts/        deploy_label_studio.sh (deploy the app); build_classes.py; scan_images.py; sync_from_hemin.sh (results back; code travels by git, branch `hemin`), pull_photos.sh, contact_sheet.py
     .githooks/      commit-msg (message format), post-commit (deploy reminder)
     tests/          end-to-end tests on a fake MongoDB
     investigations/ one-off probes kept for the record; nothing depends on them
