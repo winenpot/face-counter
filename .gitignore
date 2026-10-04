@@ -43,6 +43,9 @@ data/raw/
 # `data/splits/`) is what lets git re-include one file inside the directory.
 data/splits/*
 !data/splits/test_labeling.txt
+# Same for the gold validation set: frozen once written (shelf-splits --gold-val),
+# and swapped by hand after its contact sheet, so no seed regenerates it.
+!data/splits/gold_val.txt
 # Exception: the Persian labeling config is hand-kept source (translations,
 # photo fields, font block), not generator output; it is what runs on the
 # server. The `.before-*` copies and the generated English configs stay ignored.
