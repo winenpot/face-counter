@@ -46,6 +46,8 @@ data/splits/*
 # Same for the gold validation set: frozen once written (shelf-splits --gold-val),
 # and swapped by hand after its contact sheet, so no seed regenerates it.
 !data/splits/gold_val.txt
+# Photos rejected at review: tracked so no machine ever draws them again.
+!data/splits/gold_val_rejected.txt
 # Exception: the Persian labeling config is hand-kept source (translations,
 # photo fields, font block), not generator output; it is what runs on the
 # server. The `.before-*` copies and the generated English configs stay ignored.

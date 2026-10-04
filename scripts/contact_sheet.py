@@ -11,6 +11,7 @@ data/label_studio/ by default (gitignored, like the photos themselves).
 from __future__ import annotations
 
 import argparse
+import hashlib
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageOps
@@ -56,6 +57,8 @@ def main() -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     render(names, Path(args.images_dir), args.cols).save(out, quality=88)
     print(out)
+    # Swapping tiles (shelf-splits --gold-swap) must prove the list is the one on this sheet.
+    print(f"list sha256 prefix: {hashlib.sha256(list_path.read_bytes()).hexdigest()[:12]}")
 
 
 if __name__ == "__main__":
