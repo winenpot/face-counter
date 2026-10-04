@@ -16,7 +16,7 @@ case "${EXTRA}" in ""|--dry-run) ;; *) echo "Unknown option: ${EXTRA}" >&2; exit
 [[ -f "${LIST}" ]] || { echo "No such list: ${LIST}" >&2; exit 1; }
 
 HOST="hemin"                                   # ~/.ssh/config alias for the GPU box
-REMOTE_DIR="~/code/face-counter/data/raw/images/"
+REMOTE_DIR="code/face-counter/data/raw/images/"   # relative to the remote home: a quoted ~ is not expanded
 LOCAL_DIR="data/raw/images/"
 mkdir -p "${LOCAL_DIR}"
 
