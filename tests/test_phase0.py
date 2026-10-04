@@ -337,6 +337,48 @@ def test_splits_no_leakage_and_stable(fake_db, tmp_path):
     assert (out / "test_labeling.txt").read_text().split() == test_list
 
 
+def test_gold_val_is_val_only_disjoint_and_leaves_everything_else_byte_identical(fake_db, tmp_path):
+    """The gold validation set (PILOT 3b): photos from val-split stores only, so it can
+    never share a store with the frozen test set or a training batch. Adding it must not
+    move a byte of the test list, a batch, or splits.csv."""
+    manifest = export_photos.export(_cfg(tmp_path), db=fake_db)
+    out = tmp_path / "splits"
+    df = make_splits.make_splits(manifest, out, 20, 20, 10, 25, seed=1, force=False)
+    frozen = {n: (out / n).read_bytes() for n in
+              ("test_labeling.txt", "label_batch_01.txt", "splits.csv")}
+
+    gold = make_splits.make_gold_val(manifest, out, size=8, seed=1, test_pct=20, val_pct=20)
+
+    assert len(gold) == 8 and len(set(gold)) == 8
+    split_of = dict(zip(df.file_name, df.split))
+    store_of = dict(zip(df.file_name, df.store_id))
+    assert all(split_of[n] == "val" for n in gold)
+    test_stores = {store_of[n] for n in (out / "test_labeling.txt").read_text().split()}
+    assert not test_stores & {store_of[n] for n in gold}
+    assert (out / "gold_val.txt").read_text().split() == gold
+    assert {n: (out / n).read_bytes() for n in frozen} == frozen   # nothing else moved
+    assert not (out / "label_batch_02.txt").exists()               # no side-effect batch
+
+
+def test_gold_val_is_never_overwritten_once_written(fake_db, tmp_path):
+    manifest = export_photos.export(_cfg(tmp_path), db=fake_db)
+    out = tmp_path / "splits"
+    make_splits.make_splits(manifest, out, 20, 20, 10, 25, seed=1, force=False)
+    first = make_splits.make_gold_val(manifest, out, size=8, seed=1, test_pct=20, val_pct=20)
+    again = make_splits.make_gold_val(manifest, out, size=8, seed=77, test_pct=20, val_pct=20)
+    assert again == first                                           # frozen like the test set
+
+
+def test_gold_val_refuses_pcts_that_disagree_with_splits_csv(fake_db, tmp_path):
+    """A different --test-pct/--val-pct would silently pick stores that splits.csv calls
+    train or test. The guard compares against the file that was actually used."""
+    manifest = export_photos.export(_cfg(tmp_path), db=fake_db)
+    out = tmp_path / "splits"
+    make_splits.make_splits(manifest, out, 20, 20, 10, 25, seed=1, force=False)
+    with pytest.raises(ValueError, match="splits.csv"):
+        make_splits.make_gold_val(manifest, out, size=8, seed=1, test_pct=5, val_pct=60)
+
+
 def test_label_batches_never_repeat_a_photo(fake_db, tmp_path):
     """The one mistake that can't happen: a photo already sent to labelers
     (in any label_batch_*.txt) must never appear in a later batch, even

@@ -16,10 +16,13 @@ Outputs (data/splits/):
     test_labeling.txt    the ~30 test photos to label first (never overwritten without --force)
     label_batch_01.txt   ~250 diverse train photos for the first labeling round
     label_batch_02.txt   the next ~250 NEW train photos (created on the next run, only if any exist)
+    gold_val.txt         the gold validation set (--gold-val N): photos from val-split stores,
+                         labeled exactly like the test set; written once, never overwritten
 
 Usage:
     uv run shelf-splits
     uv run shelf-splits --test-pct 10 --val-pct 10 --test-size 30 --batch-size 250
+    uv run shelf-splits --gold-val 30        # ONLY writes gold_val.txt; touches nothing else
 """
 from __future__ import annotations
 
@@ -144,6 +147,45 @@ def make_splits(manifest: Path, out_dir: Path, test_pct: int, val_pct: int,
     return df
 
 
+def make_gold_val(manifest: Path, out_dir: Path, size: int, seed: int,
+                  test_pct: int, val_pct: int) -> list[str]:
+    """Pick the gold validation set from val-split stores into gold_val.txt.
+
+    It is what weekly tuning, model comparison and the matcher's similarity threshold run
+    on, so the frozen test set is only read to confirm (LABELING_STRATEGY.md section 8).
+    Same `diverse_sample` logic and `max_per_group=2` as the test set.
+
+    Deliberately NOT part of make_splits(): that function also writes label batches and
+    would regenerate files. This reads splits.csv and the manifest and writes one file.
+    Like test_labeling.txt it is frozen: once it exists it is returned unchanged.
+    Refuses test_pct/val_pct that disagree with splits.csv, which would silently pick
+    stores that file calls train or test.
+    """
+    gold_file = out_dir / "gold_val.txt"
+    if gold_file.exists():
+        log.info("%s exists; keeping the fixed gold set", gold_file)
+        return gold_file.read_text(encoding="utf-8").split()
+
+    df = pd.read_csv(manifest, dtype=str).fillna("")
+    df = df.drop_duplicates(subset="sha256", keep="first")   # same as make_splits
+    df["group"] = df.apply(group_key, axis=1)
+    df["split"] = df["group"].map(lambda k: split_for(k, test_pct, val_pct))
+    recorded = pd.read_csv(out_dir / "splits.csv", dtype=str).fillna("")
+    if dict(zip(recorded.photo_id, recorded.split)) != dict(zip(df.photo_id, df.split)):
+        raise ValueError("--test-pct/--val-pct do not reproduce data/splits/splits.csv; "
+                         "use the values shelf-splits ran with")
+
+    taken = set()
+    for f in out_dir.glob("*.txt"):          # test list, label batches: never re-pick
+        taken.update(f.read_text(encoding="utf-8").split())
+    pool = df[(df.split == "val") & (~df.file_name.isin(taken))]
+    if len(pool) < size:
+        log.warning("only %d val photos available for a gold set of %d", len(pool), size)
+    ids = diverse_sample(pool, size, seed, max_per_group=2)
+    _write_list(gold_file, df, ids)
+    return gold_file.read_text(encoding="utf-8").split()
+
+
 def _already_sent(out_dir: Path) -> set[str]:
     """File names that appear in any existing label_batch_*.txt.
 
@@ -203,8 +245,16 @@ def main() -> None:
     ap.add_argument("--batch-size", type=int, default=250, help="train photos in labeling batch 01")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--force", action="store_true", help="regenerate test_labeling.txt")
+    ap.add_argument("--gold-val", type=int, default=0, metavar="N",
+                    help="write ONLY data/splits/gold_val.txt: N photos from val-split stores")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    if args.gold_val:
+        if args.force:
+            ap.error("--gold-val never overwrites; --force is for the test list only")
+        make_gold_val(Path(args.manifest), Path(args.out_dir), args.gold_val, args.seed,
+                      args.test_pct, args.val_pct)
+        return
     make_splits(Path(args.manifest), Path(args.out_dir), args.test_pct, args.val_pct,
                 args.test_size, args.batch_size, args.seed, args.force)
 
