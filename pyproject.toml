@@ -25,6 +25,7 @@ shelf-label-prep = "face_counter.label_studio.prepare_label_studio:main"
 shelf-ls-setup = "face_counter.label_studio.setup_project:main"
 shelf-bakeoff = "face_counter.training.detector_bakeoff:main"
 shelf-eval = "face_counter.evaluation.cli:main"
+shelf-match = "face_counter.identification.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.12.15,<0.13.0"]
