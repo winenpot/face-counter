@@ -143,8 +143,23 @@ These block guide v1.0 and the audit. Proposed defaults in italics.
 2. **The front unit is unreadable** (glare, under 50% visible) but the one
    behind it is clear. *Proposed: the lane counts zero faces, and the guide's
    50% rule stands.* Confirm an undercount is acceptable.
-3. **No lanes** (loose pile, bin, crate). *No proposal.* Needs a rule, or these
-   photos get a `display` tag and are reported apart.
+3. **No lanes** (loose pile, bin, crate) — **concrete example found
+   2026-10-05**, gold-val photo `6a96a34500055f2fa674f5a4` (project 5, task
+   20, store 1735): a slot above the main shelf rows holds a brown clumped
+   mass with cobweb strands crossing it and the cans beside it; no packaging
+   or branding legible at full resolution. Most likely dust/cobweb debris,
+   not a product, but the photo is also blurry with glare so this can't be
+   called with certainty from the image alone. Tracked in
+   [issue #1](https://github.com/winenpot/face-counter/issues/1).
+   **Interim default (effective now, unblocks T2):** no legible product, no
+   identifiable front-facing lane -> don't box it, whatever it turns out to
+   be. This already follows the existing "can't tell the brand at all ->
+   don't box" rule (`labeling-guide/README.md` edge cases). Write
+   `unclear-no-lane` in Notes so these cases can be found later.
+   **Still open, needs BI** (issue #1): whether this recurs often enough to
+   need its own scene/capture tag, and whether the detector should ever
+   learn a "not a display area" signal (default: no — keep the single
+   `product` class; this stays labeler judgment).
 4. **Stacked units and multipacks.** The guide boxes each stacked unit and has
    multipacks "to be decided". *Proposed: keep as is.*
 
