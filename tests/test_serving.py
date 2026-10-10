@@ -7,13 +7,17 @@ touch the real ONNX detector, DINOv2 embedder, or CLIP classifier.
 
 from __future__ import annotations
 
+from io import BytesIO
+
 import numpy as np
 import pytest
+from fastapi.testclient import TestClient
 from PIL import Image
 
 from face_counter.evaluation import share
 from face_counter.identification import embedder, gallery, pack_type
 from face_counter.identification.gallery import GalleryImage
+from face_counter.serving import app as app_mod
 from face_counter.serving import pipeline as pipe
 from face_counter.serving import schemas
 from face_counter.training.detector_bakeoff import Detections
@@ -182,3 +186,92 @@ def test_from_result_converts_nan_share_to_none():
     assert resp.debug is not None
     assert resp.debug.share["canned_drinks"].share is None
     assert any("EXPERIMENTAL" in c for c in resp.debug.caveats)
+
+
+# ---------------------------------------------------------------------------
+# app.py: /health, /count, /overlay (TestClient + an injected real Pipeline
+# with a fake detector, same pattern as the pipeline tests above)
+# ---------------------------------------------------------------------------
+
+def _png_bytes(size=(40, 30), color=(10, 20, 30)) -> bytes:
+    buf = BytesIO()
+    Image.new("RGB", size, color).save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def test_health_reports_model_names(tmp_path):
+    def fake_detector(img):
+        return Detections(boxes=[], scores=[], labels=[])
+
+    p = _make_pipeline(tmp_path, fake_detector, None)
+    with TestClient(app_mod.create_app(pipeline=p)) as client:
+        r = client.get("/health")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "ok"
+    assert body["detector"] == "yolo26l-sku110k"
+
+
+def test_count_endpoint_omits_debug_by_default(tmp_path, monkeypatch):
+    def fake_detector(img):
+        return Detections(boxes=[[0, 0, 10, 10]], scores=[0.9], labels=["product"])
+
+    p = _make_pipeline(tmp_path, fake_detector, None)
+    monkeypatch.setattr(pack_type, "pack_types", lambda crops, **kw: ["canned"])
+
+    with TestClient(app_mod.create_app(pipeline=p)) as client:
+        r = client.post("/count", files={"file": ("a.png", _png_bytes(), "image/png")})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["units_detected"] == 1
+    assert body["categories"] == {"canned_drinks": 1}
+    assert "debug" not in body
+
+
+def test_count_endpoint_debug_true_includes_debug_field(tmp_path, monkeypatch):
+    def fake_detector(img):
+        return Detections(boxes=[[0, 0, 10, 10]], scores=[0.9], labels=["product"])
+
+    p = _make_pipeline(tmp_path, fake_detector, None)
+    monkeypatch.setattr(pack_type, "pack_types", lambda crops, **kw: ["canned"])
+    monkeypatch.setattr(pack_type, "score_crops", lambda crops, **kw: [0.5] * len(crops))
+    invoice_dir = tmp_path / "invoice"
+    invoice_dir.mkdir()
+    Image.new("RGB", (10, 10)).save(invoice_dir / "ref.png")
+    monkeypatch.setattr(gallery, "build", lambda **kw: [
+        GalleryImage(path=invoice_dir / "ref.png", label="Kix-Max_canned", ours=True)
+    ])
+    monkeypatch.setattr(embedder, "embed_paths", lambda paths, **kw: np.array([[1.0, 0.0]]))
+    monkeypatch.setattr(embedder, "embed_images", lambda imgs, **kw: np.array([[1.0, 0.0]] * len(imgs)))
+
+    with TestClient(app_mod.create_app(pipeline=p)) as client:
+        r = client.post("/count", params={"debug": "true"},
+                        files={"file": ("a.png", _png_bytes(), "image/png")})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["debug"] is not None
+    assert any("EXPERIMENTAL" in c for c in body["debug"]["caveats"])
+
+
+def test_count_endpoint_rejects_undecodable_bytes(tmp_path):
+    def fake_detector(img):
+        return Detections(boxes=[], scores=[], labels=[])
+
+    p = _make_pipeline(tmp_path, fake_detector, None)
+    with TestClient(app_mod.create_app(pipeline=p)) as client:
+        r = client.post("/count", files={"file": ("a.png", b"not an image", "image/png")})
+    assert r.status_code == 400
+
+
+def test_overlay_endpoint_returns_jpeg(tmp_path, monkeypatch):
+    def fake_detector(img):
+        return Detections(boxes=[[0, 0, 10, 10]], scores=[0.9], labels=["product"])
+
+    p = _make_pipeline(tmp_path, fake_detector, None)
+    monkeypatch.setattr(pack_type, "pack_types", lambda crops, **kw: ["canned"])
+
+    with TestClient(app_mod.create_app(pipeline=p)) as client:
+        r = client.post("/overlay", files={"file": ("a.png", _png_bytes(), "image/png")})
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "image/jpeg"
+    assert r.content[:2] == b"\xff\xd8"  # JPEG magic bytes
