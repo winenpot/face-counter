@@ -90,3 +90,5 @@ deploy/label-studio/fonts/
 
 
 graphify-out/cache/
+# Obsidian per-person workspace state (vault notes themselves are tracked)
+docs/vault/.obsidian/
