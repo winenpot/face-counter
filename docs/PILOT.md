@@ -17,7 +17,7 @@ handoff"); serving detail is in `.hermes/plans/2026-10-10_111130-t6-fastapi-serv
   unit. Brand matching (identity 65.3% on gold) is opt-in behind
   `?debug=true`. The CLIP canned/glass stage is off by default
   (`FACE_COUNTER_CLASSIFY`): it costs ~15 s and ~2 GB per process on CPU.
-- **Running:** container `face-counter-serve` on the apps server, 127.0.0.1:8096 (SSH tunnel), key rotated,
+- **Running:** container `face-counter-serve` on the apps server, public on port 8096 for demos (plain HTTP, demo key: risk note in the runbook),
   memory-capped, ~5 s per photo. Runbook and measurements:
   `docs/vault/DevOps/Demo API on the apps server.md`.
 - **Read before more serving work:** `docs/SERVING_STRATEGY.md` (why BI wants
