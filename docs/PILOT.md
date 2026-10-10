@@ -4,24 +4,34 @@
 work and its ordered to-do list. `ROADMAP.md` still holds the full,
 horizontal plan; nothing in it is cancelled, only sequenced after this.
 
-## Current checkpoint (2026-10-04, end of day)
+## Current checkpoint (2026-10-10, end of day)
 
-Branch `master`, 149 tests pass. Replace this section at every stop; don't append.
-The ordered task list and the full handoff are in `.hermes/plans/2026-10-04_demo-path.md`
-(section "Current handoff"): read that first. Goal: an API where an uploaded shelf
-photo returns our faces vs tracked rivals, per category (T6), demoed from T8.
+Branch `master`, 213 tests pass (`uv run pytest`). `uv run ruff check .`
+reports 56 errors, all pre-existing (count unchanged by this work). Replace
+this section at every stop; don't append. The ordered task list and the full
+handoff are in `.hermes/plans/2026-10-04_demo-path.md` (section "Current
+handoff"); serving detail is in `.hermes/plans/2026-10-10_111130-t6-fastapi-service.md`.
 
-- **Active: T2, gold set. Waiting on the user:** label project 5 `pilot-gold-val`
-  (30 photos) and export it. List is final (sha `71c7f434c344`).
-- **Done since 2026-09-30:** rival gallery folders and `retired:` scope label
-  (Laimon-Fresh glass; glass headline 22.1% -> 24.0%, cans 58.2%); can-vs-glass
-  spike (CLIP ViT-L/14, 89.5% on rival boxes, exploratory); hemin is a git checkout
-  (code by git only); gold list, `--gold-swap`, pre-draw, project 5.
-- **Next, in order:** confirm T4 on gold; T3 embedding matcher; T5 predicted share
-  on v1; T6 FastAPI; T7 Docker on the db server; T7b harden hemin's git access; T8 demo.
+- **Done: T6, with revised scope.** The demo API is detection-only. `/count`
+  returns units detected plus boxes, and `/overlay` draws one neutral box per
+  unit. Brand matching (identity 65.3% on gold) is opt-in behind
+  `?debug=true`. The CLIP canned/glass stage is off by default
+  (`FACE_COUNTER_CLASSIFY`): it costs ~15 s and ~2 GB per process on CPU.
+- **Running:** container `face-counter-serve` on the apps server, localhost
+  only, memory-capped, ~5 s per photo. Runbook and measurements:
+  `docs/vault/DevOps/Demo API on the apps server.md`.
+- **Read before more serving work:** `docs/SERVING_STRATEGY.md` (why BI wants
+  async intake and pull workers, and the queue path) and
+  `docs/PACK_TYPE_ALTERNATIVES.md` (CLIP alternatives; its 93.8% was never
+  measured on detector boxes). Open GitHub issues: #2, #3, #5, #6, #7.
+- **Next, in order:** T7. The plan says the db server, which has no SSH
+  access, while the demo already runs on the apps server, so decide which;
+  issue #6's blockers come first either way. Then T7b, then T8 (the demo,
+  with its caveats).
 - **Never:** write to project 3; run `shelf-splits --force`; `docker compose
-  down -v` on Label Studio; rsync code to hemin. The repo is public; the Persian
-  config and the checksums in FROZEN.md are the only data-adjacent files tracked.
+  down -v` on Label Studio; rsync code to hemin; publish credentials or IP
+  addresses (the repo is public). The Persian config and the checksums in
+  FROZEN.md are the only data-adjacent files tracked.
 
 > **Standing issue (2026-09-30): the pilot counts *faces*, not every object.**
 > A face is the frontmost unit of a lane, one per lane; units behind it are
