@@ -169,7 +169,13 @@ def create_app(pipeline: Pipeline | None = None) -> FastAPI:
 
 def main() -> None:
     import uvicorn
+    from dotenv import load_dotenv
 
+    from face_counter.utils.config import PROJECT_ROOT
+
+    # Same universal .env as the scripts; real environment variables win, so the
+    # container (which gets its values via `docker run --env-file`) is unaffected.
+    load_dotenv(PROJECT_ROOT / ".env", override=False)
     host = os.environ.get("FACE_COUNTER_HOST", "127.0.0.1")
     port = int(os.environ.get("FACE_COUNTER_PORT", "8000"))
     uvicorn.run(create_app(), host=host, port=port)
