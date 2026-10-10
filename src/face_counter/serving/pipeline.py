@@ -1,17 +1,25 @@
 """The serving pipeline: one photo in, counts out (T6 plan, revised 2026-10-10).
 
-Default path — detection + pack-type counting, both measured reliable:
-    detect (ONNX YOLO26l-sku110k) -> crop -> classify canned/glass (T4's CLIP
-    classifier, 93.8% acc on gold) -> count per category (configs/reporting.yaml).
-No brand identity, no gallery, no DINOv2 — those models are never loaded
-unless a request asks for ``debug=True``.
+Default path — detection only:
+    detect (ONNX YOLO26l-sku110k) -> one generic box per unit -> units_detected.
+No torch, no transformers, no CLIP: the process stays at the ONNX detector's
+footprint (docs/SERVING_STRATEGY.md §1 for why that matters on atpg).
+
+Optional pack-type stage — ``ServeConfig.classify`` (env
+``FACE_COUNTER_CLASSIFY=1``), off by default since 2026-10-10:
+    crop -> classify canned/glass (T4's CLIP ViT-L/14, 93.8% acc on gold)
+    -> count per category (configs/reporting.yaml).
+Off because it costs ~15 s per 44-crop photo and a ~2 GB resident floor on
+CPU. Alternatives are tracked in docs/PACK_TYPE_ALTERNATIVES.md.
 
 Optional ``debug=True`` path — the brand-identity matcher (T3) and the
 share-of-shelf calculation (T5), lazily loaded on first use: EXPERIMENTAL,
 not demo-ready. Identity accuracy is 65.3% on the gold set and the T5 verdict
 found the predicted share has a large, well-understood architectural gap
 (embedding separability, not a code bug). This exists for internal poking,
-never the demo's headline numbers — see ``DebugResult.caveats``.
+never the demo's headline numbers — see ``DebugResult.caveats``. It loads
+DINOv2, and CLIP too (``predict.name_crops`` names unmatched crops'
+pack type), whatever ``classify`` says.
 """
 
 from __future__ import annotations
@@ -66,6 +74,7 @@ class ServeConfig:
     match_threshold: float = 0.7115  # debug-path only; see T6 plan's resolved questions
     device: str | None = "cpu"
     api_key: str = "12345678"  # placeholder, see Task 5b; rotate before non-local use
+    classify: bool = False  # CLIP pack-type stage; see module docstring
 
     @classmethod
     def from_env(cls) -> ServeConfig:
@@ -83,14 +92,15 @@ class ServeConfig:
             match_threshold=float(_s("FACE_COUNTER_MATCH_THRESHOLD", "0.7115")),
             device=_s("FACE_COUNTER_DEVICE", "cpu"),
             api_key=_s("FACE_COUNTER_API_KEY", "12345678"),
+            classify=_s("FACE_COUNTER_CLASSIFY", "0").strip().lower() in {"1", "true", "yes", "on"},
         )
 
 
 @dataclass
 class BoxResult:
     xyxy: tuple[float, float, float, float]
-    pack_type: str  # "canned" or "glass" (T4 classifier)
-    category: str | None  # via configs/reporting.yaml; None if unmapped
+    pack_type: str | None  # "canned"/"glass" (T4 classifier); None when classify is off
+    category: str | None  # via configs/reporting.yaml; None if unmapped or classify is off
     score: float  # detector confidence
 
 
@@ -158,14 +168,20 @@ class Pipeline:
         dets = self.detector(img)
         t1 = perf_counter()
 
-        crops = [pred_mod.crop_box(img, tuple(b)) for b in dets.boxes]
-        packs = pt.pack_types(crops, device=self.cfg.device) if crops else []
+        # Crops only when a stage needs them: the detection-only default
+        # never holds per-box image copies.
+        need_crops = self.cfg.classify or debug
+        crops = [pred_mod.crop_box(img, tuple(b)) for b in dets.boxes] if need_crops else []
+        if self.cfg.classify and crops:
+            packs: list[str | None] = list(pt.pack_types(crops, device=self.cfg.device))
+        else:
+            packs = [None] * len(dets.boxes)
         t2 = perf_counter()
 
         box_results: list[BoxResult] = []
         cat_counts: Counter = Counter()
         for box, score, pack in zip(dets.boxes, dets.scores, packs):
-            category = tax_mod.category_of(pack, self.reporting)
+            category = tax_mod.category_of(pack, self.reporting) if pack else None
             box_results.append(
                 BoxResult(xyxy=tuple(box), pack_type=pack, category=category, score=score)
             )
@@ -200,14 +216,14 @@ class Pipeline:
             debug_result = DebugResult(boxes=debug_boxes, share=rep)
         t3 = perf_counter()
 
+        timings = {"detect_ms": (t1 - t0) * 1000}
+        if self.cfg.classify:
+            timings["classify_ms"] = (t2 - t1) * 1000
+        timings["total_ms"] = (t3 - t0) * 1000
         return Result(
             units_detected=len(dets.boxes),
             categories=dict(cat_counts),
             boxes=box_results,
-            timings_ms={
-                "detect_ms": (t1 - t0) * 1000,
-                "classify_ms": (t2 - t1) * 1000,
-                "total_ms": (t3 - t0) * 1000,
-            },
+            timings_ms=timings,
             debug=debug_result,
         )

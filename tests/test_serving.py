@@ -7,6 +7,9 @@ touch the real ONNX detector, DINOv2 embedder, or CLIP classifier.
 
 from __future__ import annotations
 
+import subprocess
+import sys
+import textwrap
 from io import BytesIO
 
 import numpy as np
@@ -58,9 +61,14 @@ def _write_configs(tmp_path):
     return classes, reporting, scope
 
 
-def _make_pipeline(tmp_path, detector, pack_types_result):
+def _make_pipeline(tmp_path, detector, pack_types_result, classify=True):
+    # classify=True by default here: most tests below exercise the pack-type
+    # stage. The serving default (ServeConfig) is classify=False; the tests
+    # in the "classifier off" section cover that path.
     classes, reporting_path, scope = _write_configs(tmp_path)
-    cfg = pipe.ServeConfig(classes_path=classes, reporting_path=reporting_path, scope_path=scope)
+    cfg = pipe.ServeConfig(
+        classes_path=classes, reporting_path=reporting_path, scope_path=scope, classify=classify
+    )
     reporting = tax_mod.load_reporting(reporting_path)
     p = pipe.Pipeline(cfg, detector, reporting)
     return p
@@ -151,9 +159,105 @@ def test_run_debug_adds_caveated_share(tmp_path, monkeypatch):
 
 def test_serve_config_from_env_reads_defaults(monkeypatch):
     monkeypatch.delenv("FACE_COUNTER_API_KEY", raising=False)
+    monkeypatch.delenv("FACE_COUNTER_CLASSIFY", raising=False)
     cfg = pipe.ServeConfig.from_env()
     assert cfg.api_key == "12345678"
     assert cfg.match_threshold == pytest.approx(0.7115)
+    assert cfg.classify is False
+
+
+@pytest.mark.parametrize("raw,expected", [("1", True), ("true", True), ("YES", True),
+                                          ("0", False), ("false", False), ("", False)])
+def test_serve_config_from_env_parses_classify(monkeypatch, raw, expected):
+    monkeypatch.setenv("FACE_COUNTER_CLASSIFY", raw)
+    assert pipe.ServeConfig.from_env().classify is expected
+
+
+# ---------------------------------------------------------------------------
+# Classifier off (the serving default): detection only, CLIP never runs
+# ---------------------------------------------------------------------------
+
+def _boom(*a, **kw):
+    raise AssertionError("pack_type.pack_types must not run with classify=False")
+
+
+def test_run_classifier_off_never_calls_clip(tmp_path, monkeypatch):
+    def fake_detector(img):
+        return Detections(boxes=[[0, 0, 10, 10], [10, 10, 20, 20]], scores=[0.9, 0.8], labels=["product"] * 2)
+
+    p = _make_pipeline(tmp_path, fake_detector, None, classify=False)
+    monkeypatch.setattr(pack_type, "pack_types", _boom)
+
+    result = p.run(Image.new("RGB", (100, 100)))
+
+    assert result.units_detected == 2
+    assert result.categories == {}
+    assert [b.pack_type for b in result.boxes] == [None, None]
+    assert [b.category for b in result.boxes] == [None, None]
+    assert [b.score for b in result.boxes] == [0.9, 0.8]
+    assert "classify_ms" not in result.timings_ms
+    assert "detect_ms" in result.timings_ms
+
+
+def test_count_endpoint_classifier_off(tmp_path, monkeypatch):
+    def fake_detector(img):
+        return Detections(boxes=[[0, 0, 10, 10]], scores=[0.9], labels=["product"])
+
+    p = _make_pipeline(tmp_path, fake_detector, None, classify=False)
+    monkeypatch.setattr(pack_type, "pack_types", _boom)
+
+    with TestClient(app_mod.create_app(pipeline=p)) as client:
+        r = client.post("/count", headers=_AUTH, files={"file": ("a.png", _png_bytes(), "image/png")})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["units_detected"] == 1
+    assert body["categories"] == {}
+    assert "pack_type" not in body["boxes"][0]
+    assert "pack_classifier" not in body["model"]
+    assert any("classification is off" in c for c in body["caveats"])
+    assert not any("93.8%" in c for c in body["caveats"])
+
+
+def test_health_classifier_off_reports_none(tmp_path):
+    p = _make_pipeline(tmp_path, lambda img: Detections(boxes=[], scores=[], labels=[]), None, classify=False)
+    with TestClient(app_mod.create_app(pipeline=p)) as client:
+        body = client.get("/health").json()
+    assert body["pack_classifier"] is None
+
+
+def test_overlay_classifier_off_returns_jpeg(tmp_path, monkeypatch):
+    def fake_detector(img):
+        return Detections(boxes=[[0, 0, 10, 10]], scores=[0.9], labels=["product"])
+
+    p = _make_pipeline(tmp_path, fake_detector, None, classify=False)
+    monkeypatch.setattr(pack_type, "pack_types", _boom)
+    with TestClient(app_mod.create_app(pipeline=p)) as client:
+        r = client.post("/overlay", headers=_AUTH, files={"file": ("a.png", _png_bytes(), "image/png")})
+    assert r.status_code == 200
+    assert r.content[:2] == b"\xff\xd8"
+
+
+def test_classifier_off_serving_never_imports_torch():
+    """The serve environment's promise: with the classifier off, a request
+    runs without torch/transformers/ultralytics ever being imported. Fresh
+    interpreter, because this test process has torch loaded already."""
+    code = textwrap.dedent(
+        """
+        import sys
+        from PIL import Image
+        from face_counter.serving import app as app_mod  # noqa: F401
+        from face_counter.serving import pipeline as pipe
+        from face_counter.training.detector_bakeoff import Detections
+
+        def det(img):
+            return Detections(boxes=[[0, 0, 5, 5]], scores=[0.9], labels=["product"])
+
+        pipe.Pipeline(pipe.ServeConfig(classify=False), det, {}).run(Image.new("RGB", (20, 20)))
+        print(",".join(m for m in ("torch", "transformers", "ultralytics") if m in sys.modules))
+        """
+    )
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)
+    assert out.stdout.strip() == ""
 
 
 # ---------------------------------------------------------------------------
@@ -213,6 +317,7 @@ def test_health_reports_model_names(tmp_path):
     body = r.json()
     assert body["status"] == "ok"
     assert body["detector"] == "yolo26l-sku110k"
+    assert body["pack_classifier"] == pack_type.MODEL
 
 
 def test_count_endpoint_omits_debug_by_default(tmp_path, monkeypatch):

@@ -59,6 +59,11 @@ def _git_sha() -> str:
     return os.environ.get("FACE_COUNTER_VERSION", "unknown")
 
 
+def _pack_classifier_name(pipeline: Pipeline | None) -> str | None:
+    """The classifier actually in use, or None when the stage is off."""
+    return pt.MODEL if pipeline is not None and pipeline.cfg.classify else None
+
+
 def _decode_image(data: bytes) -> Image.Image:
     try:
         return ImageOps.exif_transpose(Image.open(io.BytesIO(data))).convert("RGB")
@@ -124,7 +129,7 @@ def create_app(pipeline: Pipeline | None = None) -> FastAPI:
         return {
             "status": "ok" if pipeline_ is not None else "loading",
             "detector": pipeline_.cfg.detector_model if pipeline_ else None,
-            "pack_classifier": pt.MODEL,
+            "pack_classifier": _pack_classifier_name(pipeline_),
             "version": _git_sha(),
         }
 
@@ -141,7 +146,9 @@ def create_app(pipeline: Pipeline | None = None) -> FastAPI:
         img = _decode_image(data)
         pipeline_ = app.state.pipeline
         result = await run_in_threadpool(_run_locked, pipeline_, app.state.lock, img, debug)
-        model_info = schemas.ModelInfo(detector=pipeline_.cfg.detector_model, pack_classifier=pt.MODEL)
+        model_info = schemas.ModelInfo(
+            detector=pipeline_.cfg.detector_model, pack_classifier=_pack_classifier_name(pipeline_)
+        )
         return schemas.from_result(result, model_info)
 
     @app.post("/overlay", dependencies=[Depends(require_api_key)])

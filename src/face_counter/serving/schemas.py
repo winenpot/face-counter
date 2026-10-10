@@ -15,20 +15,25 @@ from pydantic import BaseModel, field_validator
 
 from face_counter.serving.pipeline import DEBUG_CAVEATS
 
-CAVEATS = [
-    (
-        'units_detected counts detected products, not labeling-guide "faces" '
-        "(the frontmost unit of a lane) — see docs/ISSUE_FACES_NOT_OBJECTS.md."
-    ),
-    (
-        "pack_type is a binary canned/glass split (T4 classifier, 93.8% acc on "
-        "the gold set); it does not identify brand or SKU."
-    ),
-    (
-        "One photo, no bootstrap confidence interval — compare across many "
-        "photos before drawing a conclusion from a single count."
-    ),
-]
+_FACES_CAVEAT = (
+    'units_detected counts detected products, not labeling-guide "faces" '
+    "(the frontmost unit of a lane) — see docs/ISSUE_FACES_NOT_OBJECTS.md."
+)
+_PACK_CAVEAT = (
+    "pack_type is a binary canned/glass split (T4 classifier, 93.8% acc on "
+    "the gold set); it does not identify brand or SKU."
+)
+_ONE_PHOTO_CAVEAT = (
+    "One photo, no bootstrap confidence interval — compare across many "
+    "photos before drawing a conclusion from a single count."
+)
+CLASSIFIER_OFF_CAVEAT = (
+    "Pack-type classification is off on this deployment: every box is a "
+    "generic product and categories is empty. units_detected is unaffected."
+)
+
+CAVEATS = [_FACES_CAVEAT, _PACK_CAVEAT, _ONE_PHOTO_CAVEAT]
+CAVEATS_CLASSIFIER_OFF = [_FACES_CAVEAT, CLASSIFIER_OFF_CAVEAT, _ONE_PHOTO_CAVEAT]
 
 
 def _nan_to_none(v: float) -> float | None:
@@ -37,14 +42,14 @@ def _nan_to_none(v: float) -> float | None:
 
 class BoxResponse(BaseModel):
     xyxy: tuple[float, float, float, float]
-    pack_type: str
+    pack_type: str | None = None
     category: str | None
     score: float
 
 
 class ModelInfo(BaseModel):
     detector: str
-    pack_classifier: str
+    pack_classifier: str | None = None  # None: classifier off
 
 
 class DebugBoxResponse(BaseModel):
@@ -114,5 +119,6 @@ def from_result(result, model: ModelInfo) -> CountResponse:
         ],
         model=model,
         timings_ms=result.timings_ms,
+        caveats=list(CAVEATS if model.pack_classifier else CAVEATS_CLASSIFIER_OFF),
         debug=debug,
     )
