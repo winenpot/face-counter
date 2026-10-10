@@ -40,9 +40,20 @@ dev = [
     "ruff>=0.16.8",
 ]
 analytics = [
+    # GPU-training group: hemin owns this. torch/torchvision deliberately
+    # unpinned (no index override) so uv resolves plain PyPI wheels — the
+    # CUDA-bundled build hemin's GPU needs. NEVER pin these to a CPU index
+    # here: this file + uv.lock are shared with hemin via git, and a CPU
+    # pin here would silently replace hemin's working CUDA torch on its
+    # next `uv sync`. This laptop needs this group only for two numeric
+    # tests in test_identification.py (bare `torch`, no transformers) —
+    # install a CPU-only torch directly into THIS machine's .venv instead:
+    #   uv pip install torch --index https://download.pytorch.org/whl/cpu \
+    #       --python .venv/bin/python
+    # then always `uv sync --inexact` locally so it isn't stripped back out.
     "notebook>=7.6.2",
-    "torch==2.14.0",
-    "torchvision==0.29.0",
+    "torch>=2.14",
+    "torchvision>=0.29",
     "transformers>=4.50",
     "ultralytics>=8.3",
 ]
@@ -52,15 +63,6 @@ serve = [
     "python-multipart>=0.0.9",
     "uvicorn>=0.30",
 ]
-
-[tool.uv.sources]
-torch = { index = "pytorch-cpu" }
-torchvision = { index = "pytorch-cpu" }
-
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
