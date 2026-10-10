@@ -11,9 +11,11 @@ import numpy as np
 import pytest
 from PIL import Image
 
+from face_counter.evaluation import share
 from face_counter.identification import embedder, gallery, pack_type
 from face_counter.identification.gallery import GalleryImage
 from face_counter.serving import pipeline as pipe
+from face_counter.serving import schemas
 from face_counter.training.detector_bakeoff import Detections
 from face_counter.utils import taxonomy as tax_mod
 
@@ -148,3 +150,35 @@ def test_serve_config_from_env_reads_defaults(monkeypatch):
     cfg = pipe.ServeConfig.from_env()
     assert cfg.api_key == "12345678"
     assert cfg.match_threshold == pytest.approx(0.7115)
+
+
+# ---------------------------------------------------------------------------
+# schemas.py: CountResponse / DebugResponse, NaN -> null, debug omitted
+# ---------------------------------------------------------------------------
+
+def test_from_result_omits_debug_when_absent():
+    result = pipe.Result(
+        units_detected=1,
+        categories={"canned_drinks": 1},
+        boxes=[pipe.BoxResult(xyxy=(0, 0, 10, 10), pack_type="canned", category="canned_drinks", score=0.9)],
+        timings_ms={"total_ms": 5.0},
+    )
+    resp = schemas.from_result(result, schemas.ModelInfo(detector="yolo26l-sku110k", pack_classifier="clip-vit-l14"))
+    assert resp.debug is None
+    dumped = resp.model_dump(exclude_none=True)
+    assert "debug" not in dumped
+    assert dumped["units_detected"] == 1
+
+
+def test_from_result_converts_nan_share_to_none():
+    cat_result = share.CategoryResult(ours=0, targeted=0, share=float("nan"))
+    rep = share.ShareReport(share_against="targeted", categories={"canned_drinks": cat_result}, per_photo=[])
+    debug = pipe.DebugResult(
+        boxes=[pipe.DebugBoxResult(xyxy=(0, 0, 5, 5), label="product", role=None, similarity=0.1)],
+        share=rep,
+    )
+    result = pipe.Result(units_detected=1, categories={}, boxes=[], timings_ms={}, debug=debug)
+    resp = schemas.from_result(result, schemas.ModelInfo(detector="d", pack_classifier="c"))
+    assert resp.debug is not None
+    assert resp.debug.share["canned_drinks"].share is None
+    assert any("EXPERIMENTAL" in c for c in resp.debug.caveats)
