@@ -35,7 +35,7 @@ from face_counter.identification.gallery import GalleryImage
 log = logging.getLogger("predict")
 
 
-def _crop(img: Image.Image, box: tuple[float, float, float, float]) -> Image.Image:
+def crop_box(img: Image.Image, box: tuple[float, float, float, float]) -> Image.Image:
     """Pixel-coordinate box → crop, clipped to the image boundary."""
     w, h = img.size
     x1, y1, x2, y2 = box
@@ -46,6 +46,49 @@ def _crop(img: Image.Image, box: tuple[float, float, float, float]) -> Image.Ima
     if x2 <= x1 or y2 <= y1:
         return img.crop((0, 0, max(1, w), max(1, h)))   # degenerate: return full image
     return img.crop((x1, y1, x2, y2))
+
+
+def name_crops(
+    crops: list[Image.Image],
+    gallery_labels: list[str],
+    gallery_embeddings: np.ndarray,
+    threshold: float,
+    device: str | None = None,
+) -> list[mat.Match]:
+    """Name a list of crops: embed, match against the gallery, and classify
+    whatever doesn't match as ``COMPETITOR_<pack_type>`` (T4's CLIP classifier).
+
+    Shared by ``predict_photos`` (bulk, from a ``detections.jsonl`` file) and
+    the serving pipeline (one photo's crops at request time) — the naming
+    step is identical either way, only the crop source differs.
+    """
+    n_crops = len(crops)
+    if n_crops == 0:
+        log.warning("no crops to embed; nothing to name")
+        crop_embs = np.empty((0, gallery_embeddings.shape[1] if gallery_embeddings.ndim == 2 else 1))
+    else:
+        log.info("embedding %d crops (device=%s)...", n_crops, device or "auto")
+        crop_embs = emb.embed_images(crops, device=device)
+
+    if n_crops > 0 and len(gallery_labels) > 0:
+        matches = mat.nearest_batch(crop_embs, gallery_embeddings, gallery_labels, threshold)
+    else:
+        matches = []
+
+    # Unmatched crops need pack-type classification.
+    unmatched_indices = [i for i, m in enumerate(matches) if m.label is None]
+    if unmatched_indices:
+        unmatched_crops = [crops[i] for i in unmatched_indices]
+        log.info("classifying %d unmatched crops as canned/glass...", len(unmatched_crops))
+        packs = pt.pack_types(unmatched_crops, device=device)
+        for pos, i in enumerate(unmatched_indices):
+            pack = packs[pos]
+            matches[i] = mat.Match(
+                label=f"COMPETITOR_{pack}",
+                similarity=matches[i].similarity,
+                nearest_label=matches[i].nearest_label,
+            )
+    return matches
 
 
 def predict_photos(
@@ -109,36 +152,10 @@ def predict_photos(
             (float(b[0]), float(b[1]), float(b[2]), float(b[3])) for b in raw_boxes
         ]
         file_boxes[fname] = coords
-        all_crops.extend(_crop(img, c) for c in coords)
+        all_crops.extend(crop_box(img, c) for c in coords)
 
-    # ---- embed all crops in one pass ---------------------------------------
     n_crops = len(all_crops)
-    if n_crops == 0:
-        log.warning("no crops to embed; every predicted Photo will have empty boxes")
-        crop_embs = np.empty((0, gallery_embeddings.shape[1] if gallery_embeddings.ndim == 2 else 1))
-    else:
-        log.info("embedding %d crops (device=%s)...", n_crops, device or "auto")
-        crop_embs = emb.embed_images(all_crops, device=device)
-
-    # ---- match + classify unmatched ----------------------------------------
-    if n_crops > 0 and len(gallery_labels) > 0:
-        matches = mat.nearest_batch(crop_embs, gallery_embeddings, gallery_labels, threshold)
-    else:
-        matches = []
-
-    # Unmatched crops need pack-type classification.
-    unmatched_indices = [i for i, m in enumerate(matches) if m.label is None]
-    if unmatched_indices:
-        unmatched_crops = [all_crops[i] for i in unmatched_indices]
-        log.info("classifying %d unmatched crops as canned/glass...", len(unmatched_crops))
-        packs = pt.pack_types(unmatched_crops, device=device)
-        for pos, i in enumerate(unmatched_indices):
-            pack = packs[pos]
-            matches[i] = mat.Match(
-                label=f"COMPETITOR_{pack}",
-                similarity=matches[i].similarity,
-                nearest_label=matches[i].nearest_label,
-            )
+    matches = name_crops(all_crops, gallery_labels, gallery_embeddings, threshold, device)
 
     # ---- assemble Photo objects --------------------------------------------
     crop_cursor = 0

@@ -178,6 +178,29 @@ def test_predict_gt_metadata_preserved(tmp_path, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# name_crops: the naming step shared with the serving pipeline (T6)
+# ---------------------------------------------------------------------------
+
+def test_name_crops_unmatched_get_competitor_pack(monkeypatch):
+    """A crop below threshold gets COMPETITOR_<pack> from the T4 classifier."""
+    crop = Image.new("RGB", (10, 10))
+    gallery_embs = np.array([[1.0, 0.0]])
+    monkeypatch.setattr(embedder, "embed_images",
+                        lambda imgs, **kw: np.array([[0.0, 1.0]] * len(imgs)))
+    import face_counter.identification.pack_type as pt
+    monkeypatch.setattr(pt, "score_crops", lambda crops, model_name=None, device=None: [2.0])
+
+    matches = pred_mod.name_crops([crop], ["Kix-Max_glass"], gallery_embs, threshold=0.9)
+    assert len(matches) == 1
+    assert matches[0].label == "COMPETITOR_glass"
+
+
+def test_name_crops_empty_list_returns_empty():
+    gallery_embs = np.array([[1.0, 0.0]])
+    assert pred_mod.name_crops([], ["Kix-Max_glass"], gallery_embs, threshold=0.5) == []
+
+
+# ---------------------------------------------------------------------------
 # summary_predict_comparison
 # ---------------------------------------------------------------------------
 
