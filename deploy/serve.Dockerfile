@@ -1,8 +1,8 @@
 # Detection-only serving image (docs/SERVING_STRATEGY.md, T6).
 #
-# No torch, no CLIP. `--no-dev` matters: the dev group pulls ultralytics,
-# and with it torch. Only the base dependencies plus the `serve` group are
-# installed.
+# No torch, no CLIP: only the base dependencies plus the `serve` group are
+# installed. `--no-dev` keeps test tooling (pytest, ruff, mongomock, httpx)
+# out of the image.
 #
 # Model weights are not baked in. Mount the exported ONNX directory at
 # /app/models read-only (configs/bakeoff.yaml points at
