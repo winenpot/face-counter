@@ -113,3 +113,20 @@ def test_build_never_imports_ultralytics(monkeypatch):
     detect(Image.new("RGB", (10, 10)))
 
     assert "ultralytics" not in sys.modules
+
+
+def test_session_options_disable_arena_by_default(monkeypatch):
+    # The CPU arena keeps ~1.1 GB of activation buffers after the first
+    # requests (measured on hemin, 2026-10-10); serving turns it off.
+    pytest.importorskip("onnxruntime")
+    monkeypatch.delenv("FACE_COUNTER_ORT_THREADS", raising=False)
+    so = od._session_options()
+    assert so.enable_cpu_mem_arena is False
+    assert so.enable_mem_pattern is False
+    assert so.intra_op_num_threads == 0  # 0 = onnxruntime's own default
+
+
+def test_session_options_thread_cap_from_env(monkeypatch):
+    pytest.importorskip("onnxruntime")
+    monkeypatch.setenv("FACE_COUNTER_ORT_THREADS", "2")
+    assert od._session_options().intra_op_num_threads == 2

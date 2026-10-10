@@ -17,6 +17,7 @@ cxcywh -> xyxy conversion, and greedy NMS before un-letterboxing.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import numpy as np
@@ -72,12 +73,34 @@ def _nms(boxes: np.ndarray, scores: np.ndarray, iou_threshold: float) -> list[in
     return keep
 
 
+def _session_options():
+    """Options for a long-lived serving process on a shared CPU host.
+
+    - CPU memory arena and memory-pattern planning off: with them on, the
+      process grew from ~0.3 GB to 1.44 GB within two requests and never
+      shrank; off, it idles at ~0.33 GB and peaks at ~0.8 GB per request,
+      for ~3% more latency (hemin, imgsz 1280, 2026-10-10).
+    - ``FACE_COUNTER_ORT_THREADS`` caps intra-op threads to the container's
+      CPU allowance (onnxruntime otherwise sizes to the host's cores and
+      over-subscribes a CPU quota). 0 / unset keeps onnxruntime's default.
+    """
+    import onnxruntime as ort
+
+    so = ort.SessionOptions()
+    so.enable_cpu_mem_arena = False
+    so.enable_mem_pattern = False
+    so.intra_op_num_threads = int(os.environ.get("FACE_COUNTER_ORT_THREADS", "0") or 0)
+    return so
+
+
 def _load_session(onnx_path: Path):
     """Heavy import stays inside the function, like the rest of the codebase's
     model loaders, so this module imports instantly for tests (monkeypatched)."""
     import onnxruntime as ort
 
-    return ort.InferenceSession(str(onnx_path), providers=["CPUExecutionProvider"])
+    return ort.InferenceSession(
+        str(onnx_path), sess_options=_session_options(), providers=["CPUExecutionProvider"]
+    )
 
 
 def build(onnx_path: Path, imgsz: int, conf: float, iou_threshold: float = DEFAULT_IOU):
