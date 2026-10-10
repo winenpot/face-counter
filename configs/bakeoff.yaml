@@ -42,3 +42,7 @@ yolo26l-sku110k:
   # Page: https://platform.ultralytics.com/fatih-enterprise/yolo26-sku-detection/yolo26l-sku-detector-sku-110k
   # Needs ultralytics>=8.4.156.
   weights: models/yolo26l-sku110k.pt
+  # `uv run python scripts/export_onnx.py weights onnx` once, offline (needs the
+  # `analytics` group); `serving.onnx_detector` runs this file at request time,
+  # never ultralytics itself (T6 plan, 2026-10-10). *.onnx is gitignored too.
+  onnx: models/yolo26l-sku110k.onnx
