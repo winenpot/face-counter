@@ -116,6 +116,18 @@ def resolve_weights(model: str, config_path: Path) -> Path:
     return p if p.is_absolute() else PROJECT_ROOT / p
 
 
+def resolve_onnx(model: str, config_path: Path) -> Path:
+    """The ONNX export configured for `model` in configs/bakeoff.yaml (see
+    `scripts/export_onnx.py` and `serving.onnx_detector`); relative paths are
+    relative to the project root, like `resolve_weights`."""
+    cfg = load_config(config_path) or {}
+    raw = (cfg.get(model) or {}).get("onnx")
+    if not raw:
+        raise SystemExit(f"no `{model}.onnx` in {config_path}")
+    p = Path(raw).expanduser()
+    return p if p.is_absolute() else PROJECT_ROOT / p
+
+
 def load_image(path: Path) -> Image.Image:
     """Decode (HEIF/MPO included) and apply EXIF orientation, as Label Studio displays it."""
     import pillow_heif
