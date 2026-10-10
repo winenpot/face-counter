@@ -17,10 +17,10 @@ in [[2026-10-10 Serving investigation]]; open blockers in issue #6.
 | Built from | `deploy/serve.Dockerfile`, in a shallow clone of the public repo at `~/code/face-counter` on the server |
 | Model | `~/code/face-counter/models/yolo26l-sku110k.onnx`, mounted read-only at `/app/models`; sha256 `3e1ee017…`, identical on hemin, laptop and server |
 | Bind | app listens on 0.0.0.0:8000 inside the container; host publishes **127.0.0.1:8096** only. Not reachable from the internet (verified from outside) |
-| Limits | `--memory 1200m --memory-swap 1200m --cpus 2 --cpu-shares 256 --pids-limit 256`, `FACE_COUNTER_ORT_THREADS=2` |
+| Limits | `--memory 1200m --memory-swap 1200m --cpus 2 --cpu-shares 256 --pids-limit 256`, `FACE_COUNTER_ORT_THREADS=2` (set in the server's `.env`) |
 | Hardening | `--read-only --tmpfs /tmp:size=64m --cap-drop ALL --security-opt no-new-privileges`, runs as uid 65534 |
 | Lifecycle | `--restart unless-stopped`, Docker healthcheck on `/health`, logs capped at 3 × 10 MB |
-| API key | random, rotated 2026-10-10, in `~/code/face-counter/.serve.env` on the server (mode 600, git-excluded), passed with `--env-file`. Read it there; never paste it into git, issues or chat |
+| API key | in the server's universal `~/code/face-counter/.env` (mode 600, gitignored; layout in `.env.example`), passed with `--env-file .env`. Temporarily a simple demo value set by the user, who will rotate it; fine only while the bind is loopback. Read it there; never paste it into git, issues or chat |
 
 The cap is the point of the design. If the process outgrows 1200 MiB, the
 kernel kills this container, not the production database next to it.
@@ -32,7 +32,7 @@ Open a tunnel from the laptop, then browse locally:
     ssh -N -L 8096:127.0.0.1:8096 atpg
     # http://localhost:8096/docs (Swagger UI; put the key in the x-api-key field)
 
-To see the key: `ssh atpg cat ~/code/face-counter/.serve.env`. Never paste it
+To see the key: `ssh atpg grep FACE_COUNTER_API_KEY ~/code/face-counter/.env`. Never paste it
 into git, issues or chat.
 
 ## Binding rule
@@ -48,7 +48,7 @@ Cross-project standard, with the atpg audit and migration plan:
 
 History: the container was published on all interfaces for a few hours on
 2026-10-10, then moved back to loopback once the rule was adopted. The key
-rotated then remains in use.
+now lives in the universal `.env` (the separate `.serve.env` was dropped).
 
 ## Rebuild after a code change
 
@@ -65,7 +65,7 @@ The full `docker run`, as used:
       --memory 1200m --memory-swap 1200m --cpus 2 --cpu-shares 256 --pids-limit 256 \
       --read-only --tmpfs /tmp:size=64m --cap-drop ALL --security-opt no-new-privileges \
       --log-opt max-size=10m --log-opt max-file=3 \
-      -e FACE_COUNTER_ORT_THREADS=2 --env-file .serve.env \
+      --env-file .env \
       -v "$HOME/code/face-counter/models:/app/models:ro" \
       -p 127.0.0.1:8096:8000 \
       face-counter-serve:$V
@@ -85,3 +85,12 @@ or database.
 ## Before anyone else uses it
 
 Issue #6 and #8. Done: key rotated into a secret file; loopback-only bind. Left: a TLS reverse proxy as the public front door (shared atpg decision); measure a worst-case upload against the cap; move the flags into compose.
+
+## Server `.env`
+
+One `.env` per machine, same layout as `.env.example`. On this server it holds
+only the serving variables: Docker's `--env-file` passes **every** line into
+the container, so do not keep unrelated secrets (Mongo URIs and the like) in
+this file. Values must be unquoted; `--env-file` keeps quotes literally.
+Change a value, then recreate the container (`docker rm -f` + the `docker run`
+above). A restart does not re-read the file.
