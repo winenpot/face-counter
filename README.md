@@ -29,7 +29,7 @@ cans from glass by default.
 | --- | --- | --- |
 | 0 | Export, manifest, fixed test set, labeling setup | **done** 2026-09-27 — findings in `docs/PHASE0_REMAINING.md` |
 | 1 | SKU-110K detector, reference gallery, embedding matcher | **under way** as a two-brand drinks pilot — see `docs/PILOT.md` |
-| 2 | FastAPI `/count`, `/overlay`, `/health` in Docker | **demo running** (detection only, on the apps server behind an API key); production deploy and async intake not started — `docs/SERVING_STRATEGY.md` |
+| 2 | FastAPI `/count`, `/overlay`, `/health` in Docker | **demo running** (detection only, on the apps server, loopback + SSH tunnel); production deploy and async intake not started — `docs/SERVING_STRATEGY.md` |
 | 3 | Pre-labeling loop, fine-tuning, MLflow, DVC remote | not started |
 
 The Phase 0 tooling below has run against production: 9,704 photos exported
