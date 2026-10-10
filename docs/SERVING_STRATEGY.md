@@ -15,15 +15,24 @@ estimates.
 | ONNX detector | 737 ms | unmeasured, est. 2-3 s | not used (ONNX on CPU) |
 | CLIP ViT-L/14 model load | 4.4 s (repeated on every request today) | unmeasured | unmeasured |
 | CLIP forward pass, 44 crops | 15.2 s | unmeasured, est. 40-60 s | unmeasured, expected well under 1 s |
-| Resident memory once warm | ~2.0 GB CLIP + ~0.3 GB detector | same model, same footprint | GPU memory instead of RAM for weights |
+| Resident memory once warm | ~2.3 GB total (CLIP ~0.8-2.0 GB, detector 1.44 GB); detector alone ~0.33 GB with the ONNX memory arena off | same model, same footprint | GPU memory instead of RAM for weights |
 
 Two of these numbers matter more than the rest.
 
-The first is the 2 GB floor. `transformers` loads weights lazily, so the
-process sits at ~780 MB after `from_pretrained` and jumps to ~2.0 GB on the
-first forward pass. It never gives that memory back while the process lives.
-CPU use between requests is genuinely zero; the cost of keeping the model
-"always on" is RAM, not CPU.
+The first is the memory floor. `transformers` loads weights lazily, so a
+CLIP-only process sits at ~780 MB after `from_pretrained` and jumps to
+~2.0 GB on the first forward pass. It never gives that memory back while the
+process lives. CPU use between requests is genuinely zero; the cost of keeping
+the model "always on" is RAM, not CPU.
+
+The detector has a floor of its own, and it is mostly not the model. A
+detection-only process measured on hemin uses 65 MB after imports and 307 MB
+once the ONNX session exists. It then grows to 1.44 GB within two requests,
+because ONNX Runtime's CPU memory arena keeps every activation buffer for
+reuse. With `enable_cpu_mem_arena` and `enable_mem_pattern` off, it idles at
+~330 MB and peaks at 823 MB during a request. The cost is ~20 ms more per
+photo (~3%). This is the cheapest memory fix in the system and is not applied
+yet.
 
 The second is that atpg is the wrong place to hold that floor permanently. It
 runs 32 containers, including the production MongoDB primary, with about
