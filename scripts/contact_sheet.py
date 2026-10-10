@@ -8,6 +8,7 @@ back to the list file. Photos missing from --images-dir are drawn as a red
 "MISSING" tile, not skipped, so the numbering never shifts. Output goes to
 data/label_studio/ by default (gitignored, like the photos themselves).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -37,8 +38,11 @@ def render(names: list[str], images_dir: Path, cols: int) -> Image.Image:
                 im.thumbnail((TILE - 4, TILE - 4))
                 sheet.paste(im, (x + 2, y + LABEL_H))
             caption, colour = f"{i + 1}  {name[:14]}  {w}x{h}", "black"
-        except (FileNotFoundError, OSError):
-            draw.rectangle([x + 2, y + LABEL_H, x + TILE - 3, y + LABEL_H + TILE - 3], outline="red")
+        except FileNotFoundError, OSError:
+            draw.rectangle(
+                [x + 2, y + LABEL_H, x + TILE - 3, y + LABEL_H + TILE - 3],
+                outline="red",
+            )
             caption, colour = f"{i + 1}  MISSING {name[:14]}", "red"
         draw.text((x + 4, y + 4), caption, fill=colour)
     return sheet
@@ -49,7 +53,9 @@ def main() -> None:
     ap.add_argument("list", help="text file, one photo file name per line")
     ap.add_argument("--images-dir", default="data/raw/images")
     ap.add_argument("--cols", type=int, default=5)
-    ap.add_argument("--out", default=None, help="default: data/label_studio/<list stem>_sheet.jpg")
+    ap.add_argument(
+        "--out", default=None, help="default: data/label_studio/<list stem>_sheet.jpg"
+    )
     args = ap.parse_args()
     list_path = Path(args.list)
     names = list_path.read_text(encoding="utf-8").split()
@@ -58,7 +64,9 @@ def main() -> None:
     render(names, Path(args.images_dir), args.cols).save(out, quality=88)
     print(out)
     # Swapping tiles (shelf-splits --gold-swap) must prove the list is the one on this sheet.
-    print(f"list sha256 prefix: {hashlib.sha256(list_path.read_bytes()).hexdigest()[:12]}")
+    print(
+        f"list sha256 prefix: {hashlib.sha256(list_path.read_bytes()).hexdigest()[:12]}"
+    )
 
 
 if __name__ == "__main__":

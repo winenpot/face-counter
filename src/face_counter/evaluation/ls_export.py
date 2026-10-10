@@ -9,6 +9,7 @@ Per photo, the latest submitted (not cancelled) annotation is used; drafts
 never count. Anything that looks unfinished is kept as a warning on the
 photo rather than silently fixed.
 """
+
 from __future__ import annotations
 
 import json
@@ -28,8 +29,8 @@ class Box:
 
 @dataclass
 class Photo:
-    task_id: int          # Label Studio's global id (URL ?task=<id>, API)
-    inner_id: int         # the per-project "#N" a labeler sees
+    task_id: int  # Label Studio's global id (URL ?task=<id>, API)
+    inner_id: int  # the per-project "#N" a labeler sees
     photo_id: str
     file_name: str
     width: int
@@ -42,8 +43,12 @@ class Photo:
 
 
 def _choices(result: list[dict], name: str) -> list[str]:
-    return [c for r in result if r.get("type") == "choices" and r.get("from_name") == name
-            for c in r["value"].get("choices", [])]
+    return [
+        c
+        for r in result
+        if r.get("type") == "choices" and r.get("from_name") == name
+        for c in r["value"].get("choices", [])
+    ]
 
 
 def parse_task(task: dict) -> Photo | None:
@@ -54,7 +59,9 @@ def parse_task(task: dict) -> Photo | None:
     ann = max(submitted, key=lambda a: a.get("updated_at") or a.get("created_at") or "")
     warnings = []
     if len(submitted) > 1:
-        warnings.append(f"{len(submitted)} submitted annotations; using the latest (id {ann['id']})")
+        warnings.append(
+            f"{len(submitted)} submitted annotations; using the latest (id {ann['id']})"
+        )
     for d in task.get("drafts") or []:
         if (d.get("updated_at") or "") > (ann.get("updated_at") or ""):
             warnings.append("a draft is newer than the submission (unsaved changes)")
@@ -67,8 +74,10 @@ def parse_task(task: dict) -> Photo | None:
         if r.get("type") != "rectanglelabels" or "x" not in v:
             continue
         if v.get("rotation", 0):
-            raise ValueError(f"task {task['id']} ({data.get('file_name')}): rotated box; "
-                             "rotated rectangles are not supported")
+            raise ValueError(
+                f"task {task['id']} ({data.get('file_name')}): rotated box; "
+                "rotated rectangles are not supported"
+            )
         W, H = r["original_width"], r["original_height"]
         size = size or (W, H)
         if (W, H) != size:
@@ -81,12 +90,19 @@ def parse_task(task: dict) -> Photo | None:
 
     scene = _choices(ann["result"], "scene")
     w, h = size or (0, 0)
-    return Photo(task_id=task["id"], inner_id=task.get("inner_id", 0),
-                 photo_id=data.get("photo_id", ""), file_name=data.get("file_name", ""),
-                 width=w, height=h, scene=scene[0] if scene else UNTAGGED,
-                 capture=_choices(ann["result"], "capture"),
-                 photo_issue=_choices(ann["result"], "photo_issue"),
-                 boxes=boxes, warnings=warnings)
+    return Photo(
+        task_id=task["id"],
+        inner_id=task.get("inner_id", 0),
+        photo_id=data.get("photo_id", ""),
+        file_name=data.get("file_name", ""),
+        width=w,
+        height=h,
+        scene=scene[0] if scene else UNTAGGED,
+        capture=_choices(ann["result"], "capture"),
+        photo_issue=_choices(ann["result"], "photo_issue"),
+        boxes=boxes,
+        warnings=warnings,
+    )
 
 
 def load(path: str | Path) -> list[Photo]:

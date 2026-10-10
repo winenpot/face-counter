@@ -22,6 +22,7 @@ Usage:
     uv run python scripts/build_classes.py configs/050217-\\ Proforma,Invoice,Packing.xlsm
     uv run python scripts/build_classes.py <invoice.xlsm> --drop-missing
 """
+
 from __future__ import annotations
 
 import argparse
@@ -37,7 +38,10 @@ FIELDS = ["class_name", "brand", "pack_type", "sku", "is_ours", "source"]
 # Wholesale case descriptors -- strip these, they're not a shelf-visible
 # difference. Longest-first so "Dispenser Box" doesn't get cut short.
 WHOLESALE_PACKAGING = [
-    "Dispenser Box", "Middle Box", "Card board", "Pillow pack",
+    "Dispenser Box",
+    "Middle Box",
+    "Card board",
+    "Pillow pack",
 ]
 
 # Retail-visible container -> pack type. Order matters (checked in turn).
@@ -61,6 +65,7 @@ DRINK_CONTAINERS = {
 
 class UnknownContainer(ValueError):
     """A drink row states no container and its brand has none on record."""
+
 
 BRAND_CANON = {
     "kix max": "Kix-Max",
@@ -158,7 +163,9 @@ def guess_category(desc: str) -> str | None:
 
 def guess_sku(desc: str, brand_raw: str) -> str:
     flavors = [f.strip().lower().replace(" ", "-") for f in FLAVOR_WORDS.findall(desc)]
-    flavors = sorted(set(flavors))  # alpha order: "A, B" and "B, A" collapse to one class
+    flavors = sorted(
+        set(flavors)
+    )  # alpha order: "A, B" and "B, A" collapse to one class
     if flavors:
         return flavors[0] if len(flavors) == 1 else "mix-" + "-".join(flavors)
     # no flavor word found: fall back to whatever's left after stripping
@@ -184,7 +191,8 @@ def pack_types_for(desc: str, brand: str) -> list[str]:
         raise UnknownContainer(
             f"{desc!r}: a {kind} drink with no Can/Glass in the text, and no "
             f"({brand!r}, {kind!r}) entry in DRINK_CONTAINERS. Find out how it is "
-            "sold and add it there; do not guess.")
+            "sold and add it there; do not guess."
+        )
     return list(containers)
 
 
@@ -199,8 +207,14 @@ def classes_for(desc: str) -> list[dict]:
     if sku == "unspecified" and drink_kind(clean) == "energy":
         sku = "energy-drink"
     return [
-        {"class_name": f"{brand}_{pack}_{sku}", "brand": brand, "pack_type": pack,
-         "sku": sku, "is_ours": 1, "source": "invoice"}
+        {
+            "class_name": f"{brand}_{pack}_{sku}",
+            "brand": brand,
+            "pack_type": pack,
+            "sku": sku,
+            "is_ours": 1,
+            "source": "invoice",
+        }
         for pack in pack_types_for(clean, brand)
     ]
 
@@ -233,10 +247,18 @@ def read_existing(path: Path) -> list[dict]:
 
 def _sort_key(r: dict) -> tuple:
     # Ours first (the labeling config lists classes in file order), then by name.
-    return (str(r["is_ours"]) != "1", r["brand"], r["pack_type"], r["sku"], r["class_name"])
+    return (
+        str(r["is_ours"]) != "1",
+        r["brand"],
+        r["pack_type"],
+        r["sku"],
+        r["class_name"],
+    )
 
 
-def merge(existing: list[dict], fresh: list[dict], drop_missing: bool) -> tuple[list[dict], dict]:
+def merge(
+    existing: list[dict], fresh: list[dict], drop_missing: bool
+) -> tuple[list[dict], dict]:
     """Merge a new invoice into the current class list without losing anything by accident.
 
     - `source=manual` rows are always kept, and win over an invoice row of the same name.
@@ -256,8 +278,11 @@ def merge(existing: list[dict], fresh: list[dict], drop_missing: bool) -> tuple[
             kept.append(name)
     added = [r for r in fresh if r["class_name"] not in existing_names]
     merged.extend(added)
-    report = {"added": [r["class_name"] for r in added], "kept_not_on_invoice": kept,
-              "dropped": dropped}
+    report = {
+        "added": [r["class_name"] for r in added],
+        "kept_not_on_invoice": kept,
+        "dropped": dropped,
+    }
     return sorted(merged, key=_sort_key), report
 
 
@@ -272,11 +297,16 @@ def write_classes(path: Path, rows: list[dict]) -> None:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     ap.add_argument("invoice", help="path to the proforma .xlsm")
-    ap.add_argument("--drop-missing", action="store_true",
-                    help="remove invoice-sourced classes this invoice no longer lists "
-                         "(manual rows are never removed)")
+    ap.add_argument(
+        "--drop-missing",
+        action="store_true",
+        help="remove invoice-sourced classes this invoice no longer lists "
+        "(manual rows are never removed)",
+    )
     args = ap.parse_args()
 
     out_path = Path(__file__).resolve().parents[1] / "configs" / "classes.csv"

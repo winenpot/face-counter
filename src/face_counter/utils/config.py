@@ -58,6 +58,10 @@ def mongo_client(cfg: dict):
     env_name = cfg["mongo"].get("uri_env", "MONGO_URI")
     uri = os.environ.get(env_name)
     if not uri:
-        raise SystemExit(f"Set {env_name} in .env or the environment (see .env.example).")
+        raise SystemExit(
+            f"Set {env_name} in .env or the environment (see .env.example)."
+        )
     # Short timeouts: fail fast instead of hanging if the DB server is unreachable.
-    return MongoClient(uri, serverSelectionTimeoutMS=5000, appname="shelf-detector-export")
+    return MongoClient(
+        uri, serverSelectionTimeoutMS=5000, appname="shelf-detector-export"
+    )

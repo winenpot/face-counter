@@ -17,6 +17,7 @@ untargeted to targeted, and the number is recomputed. Boxes still labeled
 COMPETITOR_<pack> cannot move by themselves: that is a rename pass in Label
 Studio, never a redraw.
 """
+
 from __future__ import annotations
 
 import csv
@@ -33,17 +34,21 @@ ROLES = ("ours", "ours_unreported", "targeted", "untargeted")
 
 @dataclass
 class Taxonomy:
-    labels: dict[str, tuple[str, str, bool]]   # label -> (brand, pack_type, is_ours)
+    labels: dict[str, tuple[str, str, bool]]  # label -> (brand, pack_type, is_ours)
     reporting: dict[str, list[str]]
     scope: taxonomy.Scope
 
     @classmethod
-    def load(cls, classes: str | Path, reporting: str | Path, scope: str | Path) -> "Taxonomy":
+    def load(
+        cls, classes: str | Path, reporting: str | Path, scope: str | Path
+    ) -> "Taxonomy":
         with open(classes, newline="", encoding="utf-8") as f:
             rows = list(csv.DictReader(f))
         rep = taxonomy.load_reporting(reporting)
         sc = taxonomy.load_scope(scope, rep)
-        taxonomy.targeted_label_names(rows, sc)   # raises on an unknown or own-brand competitor
+        taxonomy.targeted_label_names(
+            rows, sc
+        )  # raises on an unknown or own-brand competitor
         labels: dict[str, tuple[str, str, bool]] = {}
         for r in rows:
             brand, pack = r["brand"].strip(), (r["pack_type"] or "").strip()
@@ -58,10 +63,12 @@ class Taxonomy:
         if label in (taxonomy.PRODUCT, taxonomy.OUT_OF_SCOPE):
             return None
         if label in self.scope.retired and label in self.labels:
-            return None   # no longer tracked: grey, in neither side of the share
+            return None  # no longer tracked: grey, in neither side of the share
         if label not in self.labels:
-            raise ValueError(f"label {label!r} is not in classes.csv; add the row (or fix the "
-                             "label) before evaluating, or it silently drops out of the share")
+            raise ValueError(
+                f"label {label!r} is not in classes.csv; add the row (or fix the "
+                "label) before evaluating, or it silently drops out of the share"
+            )
         brand, pack, ours = self.labels[label]
         if ours:
             role = "ours" if brand in self.scope.brands else "ours_unreported"
@@ -76,10 +83,10 @@ class CategoryResult:
     ours_unreported: int = 0
     targeted: int = 0
     untargeted: int = 0
-    photos: int = 0                      # photos with a non-empty headline denominator
+    photos: int = 0  # photos with a non-empty headline denominator
     share_targeted: float = float("nan")
     share_all: float = float("nan")
-    share: float = float("nan")          # the scope's headline (share_against)
+    share: float = float("nan")  # the scope's headline (share_against)
     share_ci: tuple[float, float] = (float("nan"), float("nan"))
     per_brand: dict[str, int] = field(default_factory=dict)
 
@@ -88,7 +95,7 @@ class CategoryResult:
 class ShareReport:
     share_against: str
     categories: dict[str, CategoryResult]
-    per_photo: list[dict]                # one row per (photo, category) with any named face
+    per_photo: list[dict]  # one row per (photo, category) with any named face
 
 
 def _ratio(num: int, den: int) -> float:
@@ -101,7 +108,9 @@ def _denominator(c: Counter, against: str) -> int:
     return sum(c[r] for r in ROLES)
 
 
-def evaluate(photos: list[Photo], tax: Taxonomy, n_boot: int = 2000, seed: int = 0) -> ShareReport:
+def evaluate(
+    photos: list[Photo], tax: Taxonomy, n_boot: int = 2000, seed: int = 0
+) -> ShareReport:
     against = tax.scope.share_against
     counts: dict[str, list[tuple[Photo, Counter, Counter]]] = defaultdict(list)
     per_photo = []
@@ -123,19 +132,31 @@ def evaluate(photos: list[Photo], tax: Taxonomy, n_boot: int = 2000, seed: int =
             c = by_cat.get(cat, Counter())
             counts[cat].append((p, c, brands.get(cat, Counter())))
             if sum(c.values()):
-                per_photo.append({
-                    "inner_id": p.inner_id, "task_id": p.task_id, "file_name": p.file_name,
-                    "scene": p.scene, "category": cat, **{r: c[r] for r in ROLES},
-                    "share_targeted": _ratio(c["ours"], _denominator(c, "targeted")),
-                    "share_all": _ratio(c["ours"], _denominator(c, "all")),
-                })
+                per_photo.append(
+                    {
+                        "inner_id": p.inner_id,
+                        "task_id": p.task_id,
+                        "file_name": p.file_name,
+                        "scene": p.scene,
+                        "category": cat,
+                        **{r: c[r] for r in ROLES},
+                        "share_targeted": _ratio(
+                            c["ours"], _denominator(c, "targeted")
+                        ),
+                        "share_all": _ratio(c["ours"], _denominator(c, "all")),
+                    }
+                )
 
     cats = {}
     for cat in tax.scope.categories:
         rows = counts.get(cat, [])
         total = sum((c for _, c, _ in rows), Counter())
-        res = CategoryResult(ours=total["ours"], ours_unreported=total["ours_unreported"],
-                             targeted=total["targeted"], untargeted=total["untargeted"])
+        res = CategoryResult(
+            ours=total["ours"],
+            ours_unreported=total["ours_unreported"],
+            targeted=total["targeted"],
+            untargeted=total["untargeted"],
+        )
         res.share_targeted = _ratio(total["ours"], _denominator(total, "targeted"))
         res.share_all = _ratio(total["ours"], _denominator(total, "all"))
         res.share = res.share_all if against == "all" else res.share_targeted

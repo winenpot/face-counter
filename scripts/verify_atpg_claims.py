@@ -23,8 +23,14 @@ GB = 1024**3
 
 # Actions that a read-only user must NOT have.
 WRITE_ACTIONS = {
-    "insert", "update", "remove", "dropDatabase",
-    "dropCollection", "shutdown", "createUser", "grantRole",
+    "insert",
+    "update",
+    "remove",
+    "dropDatabase",
+    "dropCollection",
+    "shutdown",
+    "createUser",
+    "grantRole",
 }
 
 
@@ -56,49 +62,73 @@ def main() -> int:
     # 1. The photos live in GridFS. There are far more chunks than files
     #    because GridFS splits every photo into 255KB pieces.
     row("photos.files documents", f"{files.estimated_document_count():,}", "24,147")
-    row("photos.chunks documents",
-        f"{db['photos.chunks'].estimated_document_count():,}", "189,815")
+    row(
+        "photos.chunks documents",
+        f"{db['photos.chunks'].estimated_document_count():,}",
+        "189,815",
+    )
 
     # 2. Only photo_type 'shelf' is trainable. Everything else is either a
     #    different subject (sardar) or a downscaled copy (see check 3).
     by_type = {
         r["_id"]: r
-        for r in files.aggregate([{"$group": {
-            "_id": "$photo_type",
-            "n": {"$sum": 1},
-            "bytes": {"$sum": "$length"},
-        }}])
+        for r in files.aggregate(
+            [
+                {
+                    "$group": {
+                        "_id": "$photo_type",
+                        "n": {"$sum": 1},
+                        "bytes": {"$sum": "$length"},
+                    }
+                }
+            ]
+        )
     }
-    for name, surveyed in (("shelf", "9,207"),
-                           ("shelf_thumb", "7,750"),
-                           ("sardar", "3,790")):
+    for name, surveyed in (
+        ("shelf", "9,207"),
+        ("shelf_thumb", "7,750"),
+        ("sardar", "3,790"),
+    ):
         row(f"photo_type={name}", f"{by_type.get(name, {}).get('n', 0):,}", surveyed)
-    row("shelf subset on disk",
-        f"{by_type.get('shelf', {}).get('bytes', 0) / GB:,.1f} GB", "28.4 GB")
+    row(
+        "shelf subset on disk",
+        f"{by_type.get('shelf', {}).get('bytes', 0) / GB:,.1f} GB",
+        "28.4 GB",
+    )
 
     # 3. THE LEAKAGE TRAP. Thumbnails reuse the photo_id of a full-size photo,
     #    so exporting both types puts a photo and its own copy in the dataset.
     #    If they land in different splits, that is test-set leakage.
-    full = {d["photo_id"] for d in
-            files.find({"photo_type": "shelf"}, {"photo_id": 1}).limit(3000)}
-    thumb = {d["photo_id"] for d in
-             files.find({"photo_type": "shelf_thumb"}, {"photo_id": 1}).limit(3000)}
+    full = {
+        d["photo_id"]
+        for d in files.find({"photo_type": "shelf"}, {"photo_id": 1}).limit(3000)
+    }
+    thumb = {
+        d["photo_id"]
+        for d in files.find({"photo_type": "shelf_thumb"}, {"photo_id": 1}).limit(3000)
+    }
     row("photo_id shared by shelf+thumb (3k sample)", f"{len(full & thumb):,}", "1,543")
 
     # 4. store_code is a string in most documents and an int in the rest, so an
     #    equality filter silently misses whichever type it is not written for.
-    types = {r["_id"]: r["n"] for r in files.aggregate(
-        [{"$group": {"_id": {"$type": "$store_code"}, "n": {"$sum": 1}}}])}
+    types = {
+        r["_id"]: r["n"]
+        for r in files.aggregate(
+            [{"$group": {"_id": {"$type": "$store_code"}, "n": {"$sum": 1}}}]
+        )
+    }
     row("store_code stored as string", f"{types.get('string', 0):,}", "21,773")
     row("store_code stored as int", f"{types.get('int', 0):,}", "2,361")
 
     # No store uses both types, so normalising with str() cannot merge two
     # different stores into one -- which would corrupt the by-store split.
     as_str, as_int = set(), set()
-    for r in files.aggregate([
-        {"$match": {"store_code": {"$ne": None}}},
-        {"$group": {"_id": {"v": "$store_code", "t": {"$type": "$store_code"}}}},
-    ]):
+    for r in files.aggregate(
+        [
+            {"$match": {"store_code": {"$ne": None}}},
+            {"$group": {"_id": {"v": "$store_code", "t": {"$type": "$store_code"}}}},
+        ]
+    ):
         value, kind = r["_id"]["v"], r["_id"]["t"]
         (as_str if kind == "string" else as_int).add(str(value).strip())
     stores = as_str | as_int
@@ -107,35 +137,54 @@ def main() -> int:
 
     # 5. Photos carry no city or region. make_splits needs one for diverse
     #    sampling, and atpg.location supplies it via code -> store_code.
-    codes = {str(d["code"]).strip()
-             for d in db["location"].find({"code": {"$ne": None}}, {"code": 1})}
+    codes = {
+        str(d["code"]).strip()
+        for d in db["location"].find({"code": {"$ne": None}}, {"code": 1})
+    }
     matched = len(stores & codes)
-    row("stores matched in location",
-        f"{matched:,} ({matched / max(len(stores), 1):.1%})", "3,717 (99.2%)")
+    row(
+        "stores matched in location",
+        f"{matched:,} ({matched / max(len(stores), 1):.1%})",
+        "3,717 (99.2%)",
+    )
 
     # 6. Enough distinct stores to hold out 10% as a by-store test set.
-    counted = next(iter(files.aggregate([
-        {"$match": {"photo_type": "shelf"}},
-        {"$group": {"_id": "$store_code"}},
-        {"$count": "n"},
-    ])), {"n": 0})["n"]
+    counted = next(
+        iter(
+            files.aggregate(
+                [
+                    {"$match": {"photo_type": "shelf"}},
+                    {"$group": {"_id": "$store_code"}},
+                    {"$count": "n"},
+                ]
+            )
+        ),
+        {"n": 0},
+    )["n"]
     row("distinct stores with shelf photos", f"{counted:,}", "3,292")
 
     # 7. configs/export.yaml maps these field names. None of them exist.
     for field in ("visit_id", "rep_id", "city", "created_at", "metadata"):
-        row(f"documents having .{field}",
-            files.count_documents({field: {"$exists": True}}, limit=1), 0)
+        row(
+            f"documents having .{field}",
+            files.count_documents({field: {"$exists": True}}, limit=1),
+            0,
+        )
 
     # 8. The export is supposed to run as a read-only user.
-    info = client.admin.command(
-        {"connectionStatus": 1, "showPrivileges": True})["authInfo"]
+    info = client.admin.command({"connectionStatus": 1, "showPrivileges": True})[
+        "authInfo"
+    ]
     granted = set()
     for privilege in info.get("authenticatedUserPrivileges", []):
         granted.update(privilege.get("actions", []))
     can_write = sorted(granted & WRITE_ACTIONS)
     print()
-    row("credential roles",
-        ",".join(r["role"] for r in info["authenticatedUserRoles"]), "read")
+    row(
+        "credential roles",
+        ",".join(r["role"] for r in info["authenticatedUserRoles"]),
+        "read",
+    )
     row("mutating actions granted", len(can_write), 0)
     if can_write:
         print(f"    -> {', '.join(can_write)}")

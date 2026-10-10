@@ -4,6 +4,7 @@ Every labeled box counts as a product, whatever its name (a grey `product`
 box is ground truth for the detector too). Inputs are shelf-bakeoff's
 detections.jsonl and a Label Studio export; both are in displayed pixels.
 """
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -21,8 +22,17 @@ def _per_photo(photos: list[Photo], dets: dict[str, dict]) -> list[dict]:
         d = dets[p.file_name]
         gt = [b.xyxy for b in p.boxes]
         m = match.greedy([tuple(b) for b in d["boxes"]], d["scores"], gt, IOU)
-        out.append({"photo": p, "tp": m.tp, "fp": m.fp, "fn": m.fn, "dup": m.duplicates,
-                    "n_pred": len(d["boxes"]), "n_gt": len(gt)})
+        out.append(
+            {
+                "photo": p,
+                "tp": m.tp,
+                "fp": m.fp,
+                "fn": m.fn,
+                "dup": m.duplicates,
+                "n_pred": len(d["boxes"]),
+                "n_gt": len(gt),
+            }
+        )
     return out
 
 
@@ -36,8 +46,9 @@ def _precision(rows) -> float:
     return tp / (tp + fp) if tp + fp else float("nan")
 
 
-def evaluate(photos: list[Photo], detections: list[dict], n_boot: int = 2000,
-             seed: int = 0) -> list[dict]:
+def evaluate(
+    photos: list[Photo], detections: list[dict], n_boot: int = 2000, seed: int = 0
+) -> list[dict]:
     """One row per model: recall, precision, F1, AP50, AP50-95, duplicate rate,
     count MAE, bootstrap CIs, and recall per scene tag."""
     by_model: dict[str, dict[str, dict]] = defaultdict(dict)
@@ -52,20 +63,33 @@ def evaluate(photos: list[Photo], detections: list[dict], n_boot: int = 2000,
         for p in photos:
             d = dets[p.file_name]
             if (d["width"], d["height"]) != (p.width, p.height) and p.boxes:
-                raise ValueError(f"{model} {p.file_name}: detections are on a {d['width']}x{d['height']} "
-                                 f"image, labels on {p.width}x{p.height}; image size differs "
-                                 "(EXIF rotation applied on one side only?)")
+                raise ValueError(
+                    f"{model} {p.file_name}: detections are on a {d['width']}x{d['height']} "
+                    f"image, labels on {p.width}x{p.height}; image size differs "
+                    "(EXIF rotation applied on one side only?)"
+                )
         per = _per_photo(photos, dets)
         gt = {p.file_name: [b.xyxy for b in p.boxes] for p in photos}
-        pd = {p.file_name: ([tuple(b) for b in dets[p.file_name]["boxes"]], dets[p.file_name]["scores"])
-              for p in photos}
+        pd = {
+            p.file_name: (
+                [tuple(b) for b in dets[p.file_name]["boxes"]],
+                dets[p.file_name]["scores"],
+            )
+            for p in photos
+        }
         tp, fp, fn = (sum(r[k] for r in per) for k in ("tp", "fp", "fn"))
         rec, prec = _recall(per), _precision(per)
         n_pred = sum(r["n_pred"] for r in per)
         row = {
-            "model": model, "photos": len(per), "labeled_boxes": tp + fn, "predicted_boxes": n_pred,
-            "tp": tp, "fp": fp, "fn": fn,
-            "recall": rec, "precision": prec,
+            "model": model,
+            "photos": len(per),
+            "labeled_boxes": tp + fn,
+            "predicted_boxes": n_pred,
+            "tp": tp,
+            "fp": fp,
+            "fn": fn,
+            "recall": rec,
+            "precision": prec,
             "f1": 2 * prec * rec / (prec + rec) if prec + rec else 0.0,
             "ap50": match.average_precision(pd, gt, 0.5),
             "ap50_95": match.ap50_95(pd, gt),

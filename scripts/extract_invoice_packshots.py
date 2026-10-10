@@ -17,6 +17,7 @@ Usage:
     uv run python scripts/extract_invoice_packshots.py \\
         "configs/050217- Proforma,Invoice,Packing.xlsm"
 """
+
 from __future__ import annotations
 
 import re
@@ -35,8 +36,12 @@ NS_REL = "{http://schemas.openxmlformats.org/package/2006/relationships}"
 
 SHEET_XML = "xl/worksheets/sheet3.xml"  # "Proforma EN" (see xl/workbook.xml)
 SHEET_RELS = "xl/worksheets/_rels/sheet3.xml.rels"
-DRAWING_REL_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing"
-IMAGE_REL_TYPE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
+DRAWING_REL_TYPE = (
+    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing"
+)
+IMAGE_REL_TYPE = (
+    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
+)
 
 
 def _drawing_path(z: zipfile.ZipFile) -> str:
@@ -74,7 +79,9 @@ def row_to_image(z: zipfile.ZipFile) -> dict[int, bytes]:
         rid = blip.get(NS_R + "embed") if blip is not None else None
         if not rid or rid not in rid_to_target:
             continue
-        row1 = row0 + 1  # openpyxl-style 1-indexed row, matches build_classes' iter_rows
+        row1 = (
+            row0 + 1
+        )  # openpyxl-style 1-indexed row, matches build_classes' iter_rows
         if row1 not in out:  # first picture anchored to the row wins
             out[row1] = z.read(rid_to_target[rid])
     return out
@@ -99,10 +106,13 @@ def main() -> None:
     # Re-walk the same rows build_classes.py reads, so each image lines up
     # with the exact class_name already computed for that row.
     import openpyxl
+
     wb = openpyxl.load_workbook(xlsm_path, data_only=True, read_only=True)
     ws = wb["Proforma EN"]
 
-    out_dir = Path(__file__).resolve().parents[1] / "configs" / "Product" / "from_invoice"
+    out_dir = (
+        Path(__file__).resolve().parents[1] / "configs" / "Product" / "from_invoice"
+    )
     out_dir.mkdir(parents=True, exist_ok=True)
 
     saved, skipped_no_image, skipped_no_brand = 0, 0, 0
@@ -146,8 +156,10 @@ def main() -> None:
         saved += 1
 
     print(f"saved {saved} images -> {out_dir}")
-    print(f"skipped {skipped_no_image} rows with no anchored image, "
-          f"{skipped_no_brand} rows with no recognised brand")
+    print(
+        f"skipped {skipped_no_image} rows with no anchored image, "
+        f"{skipped_no_brand} rows with no recognised brand"
+    )
 
 
 if __name__ == "__main__":

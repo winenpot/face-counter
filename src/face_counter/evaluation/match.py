@@ -1,4 +1,5 @@
 """Box matching and average precision (COCO-style, one class)."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -21,12 +22,14 @@ class MatchResult:
     tp: int
     fp: int
     fn: int
-    pred_tp: list[bool]      # per prediction, in input order
+    pred_tp: list[bool]  # per prediction, in input order
     matched_pred: list[int]  # indices of predictions that matched a labeled box
-    duplicates: int          # false positives sitting on an already-matched labeled box
+    duplicates: int  # false positives sitting on an already-matched labeled box
 
 
-def greedy(preds: list[Box], scores: list[float], gt: list[Box], thr: float = 0.5) -> MatchResult:
+def greedy(
+    preds: list[Box], scores: list[float], gt: list[Box], thr: float = 0.5
+) -> MatchResult:
     """Highest score first; each prediction takes the best still-free labeled box
     with IoU >= thr. One labeled box matches at most one prediction."""
     order = sorted(range(len(preds)), key=lambda i: -scores[i])
@@ -48,12 +51,21 @@ def greedy(preds: list[Box], scores: list[float], gt: list[Box], thr: float = 0.
         elif overlaps_taken:
             dup += 1
     tp = sum(pred_tp)
-    return MatchResult(tp=tp, fp=len(preds) - tp, fn=len(gt) - tp, pred_tp=pred_tp,
-                       matched_pred=sorted(i for i, t in enumerate(pred_tp) if t), duplicates=dup)
+    return MatchResult(
+        tp=tp,
+        fp=len(preds) - tp,
+        fn=len(gt) - tp,
+        pred_tp=pred_tp,
+        matched_pred=sorted(i for i, t in enumerate(pred_tp) if t),
+        duplicates=dup,
+    )
 
 
-def average_precision(dets: dict[str, tuple[list[Box], list[float]]],
-                      gt: dict[str, list[Box]], thr: float = 0.5) -> float:
+def average_precision(
+    dets: dict[str, tuple[list[Box], list[float]]],
+    gt: dict[str, list[Box]],
+    thr: float = 0.5,
+) -> float:
     """Area under the precision-recall curve over all photos, 101-point interpolated."""
     scored: list[tuple[float, bool]] = []
     for key, g in gt.items():

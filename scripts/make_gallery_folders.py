@@ -18,14 +18,19 @@ would not produce is a name the matcher will not look for.
 configs/Product/ is gitignored (real product photography), so this script, not
 the folders, is the tracked artifact.
 """
+
 from __future__ import annotations
 
 import argparse
 import csv
 from pathlib import Path
 
-from face_counter.utils.config import (DEFAULT_CLASSES, DEFAULT_REPORTING, DEFAULT_SCOPE,
-                                       PROJECT_ROOT)
+from face_counter.utils.config import (
+    DEFAULT_CLASSES,
+    DEFAULT_REPORTING,
+    DEFAULT_SCOPE,
+    PROJECT_ROOT,
+)
 from face_counter.utils.taxonomy import load_reporting, load_scope, targeted_label_names
 
 DEFAULT_GALLERY_DIR = PROJECT_ROOT / "configs" / "Product" / "competitors"
@@ -64,8 +69,11 @@ What does not:
 """
 
 
-def gallery_labels(scope_path: Path = DEFAULT_SCOPE, classes_path: Path = DEFAULT_CLASSES,
-                   reporting_path: Path = DEFAULT_REPORTING) -> list[tuple[str, str, str, str]]:
+def gallery_labels(
+    scope_path: Path = DEFAULT_SCOPE,
+    classes_path: Path = DEFAULT_CLASSES,
+    reporting_path: Path = DEFAULT_REPORTING,
+) -> list[tuple[str, str, str, str]]:
     """(label, brand, pack_type, category) per tracked competitor pack type."""
     reporting = load_reporting(reporting_path)
     scope = load_scope(scope_path, reporting)
@@ -82,19 +90,24 @@ def gallery_labels(scope_path: Path = DEFAULT_SCOPE, classes_path: Path = DEFAUL
 def count_images(folder: Path) -> int:
     if not folder.is_dir():
         return 0
-    return sum(1 for p in folder.iterdir()
-               if p.is_file() and p.suffix.lower() in IMAGE_SUFFIXES)
+    return sum(
+        1
+        for p in folder.iterdir()
+        if p.is_file() and p.suffix.lower() in IMAGE_SUFFIXES
+    )
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     ap.add_argument("--gallery-dir", type=Path, default=DEFAULT_GALLERY_DIR)
     ap.add_argument("--scope", type=Path, default=DEFAULT_SCOPE)
     ap.add_argument("--classes", type=Path, default=DEFAULT_CLASSES)
     ap.add_argument("--reporting", type=Path, default=DEFAULT_REPORTING)
-    ap.add_argument("--check", action="store_true",
-                    help="report what is missing; create nothing")
+    ap.add_argument(
+        "--check", action="store_true", help="report what is missing; create nothing"
+    )
     args = ap.parse_args()
 
     labels = gallery_labels(args.scope, args.classes, args.reporting)
@@ -108,26 +121,38 @@ def main() -> int:
             folder.mkdir(parents=True, exist_ok=True)
             readme = folder / "README.md"
             if not readme.exists():
-                readme.write_text(README.format(label=label, brand=brand, pack=pack,
-                                                category=category, min_images=MIN_IMAGES),
-                                  encoding="utf-8")
+                readme.write_text(
+                    README.format(
+                        label=label,
+                        brand=brand,
+                        pack=pack,
+                        category=category,
+                        min_images=MIN_IMAGES,
+                    ),
+                    encoding="utf-8",
+                )
                 made = True
         n = count_images(folder)
         mark = "ok  " if n >= MIN_IMAGES else "NEED"
-        print(f"  {mark} {label:<24} {category:<14} {n} image(s)"
-              + ("   (folder created)" if made else ""))
+        print(
+            f"  {mark} {label:<24} {category:<14} {n} image(s)"
+            + ("   (folder created)" if made else "")
+        )
         if n < MIN_IMAGES:
             short.append((label, n))
 
     if short:
-        print(f"\n{len(short)} folder(s) still need images "
-              f"(at least {MIN_IMAGES} each):")
+        print(
+            f"\n{len(short)} folder(s) still need images (at least {MIN_IMAGES} each):"
+        )
         for label, n in short:
             print(f"  - {label}: {MIN_IMAGES - n} more")
         print("\nThe embedding matcher cannot name a rival with an empty folder.")
     else:
-        print("\nEvery tracked competitor has a gallery. "
-              "Next: the embedding matcher (docs/PILOT.md step 4b).")
+        print(
+            "\nEvery tracked competitor has a gallery. "
+            "Next: the embedding matcher (docs/PILOT.md step 4b)."
+        )
     return 0
 
 

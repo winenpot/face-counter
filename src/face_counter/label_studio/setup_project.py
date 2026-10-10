@@ -35,6 +35,7 @@ Where the settings come from:
 What it never does: delete or rename a project, task, annotation or storage,
 or touch any project other than the one named by --title.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -90,6 +91,7 @@ def step(msg: str) -> None:
 
 # --- token -------------------------------------------------------------------
 
+
 def read_token(env_file: Path) -> str:
     """The API token: the LS_API_TOKEN environment variable, else the .env file.
 
@@ -104,7 +106,8 @@ def read_token(env_file: Path) -> str:
         raise SystemExit(
             f"No Label Studio API token. Create a Personal Access Token in Label Studio "
             f"(account menu > Account & Settings > Personal Access Token) and put it in "
-            f"{env_file} as LS_API_TOKEN=<token>. That file is gitignored.")
+            f"{env_file} as LS_API_TOKEN=<token>. That file is gitignored."
+        )
     return token
 
 
@@ -115,6 +118,7 @@ def is_personal_access_token(token: str) -> bool:
 
 
 # --- HTTP client ---------------------------------------------------------------
+
 
 class LabelStudio:
     """A minimal Label Studio API client on the standard library.
@@ -133,11 +137,15 @@ class LabelStudio:
         if not self._pat:
             return f"Token {self._token}"
         if self._access is None:
-            got = self._raw("POST", "/api/token/refresh", {"refresh": self._token}, auth=False)
+            got = self._raw(
+                "POST", "/api/token/refresh", {"refresh": self._token}, auth=False
+            )
             self._access = got["access"]
         return f"Bearer {self._access}"
 
-    def _raw(self, method: str, path: str, body=None, params=None, auth=True, raw=False):
+    def _raw(
+        self, method: str, path: str, body=None, params=None, auth=True, raw=False
+    ):
         url = self.base + path
         if params:
             url += "?" + urllib.parse.urlencode(params)
@@ -163,7 +171,9 @@ class LabelStudio:
                     self._access = None  # expired: fetch a new one and retry
                     continue
                 detail = e.read().decode("utf-8", "replace")[:800]
-                raise SystemExit(f"Label Studio refused {method} {path}: HTTP {e.code}\n{detail}")
+                raise SystemExit(
+                    f"Label Studio refused {method} {path}: HTTP {e.code}\n{detail}"
+                )
         raise AssertionError("unreachable")
 
     def fetch(self, path: str):
@@ -173,6 +183,7 @@ class LabelStudio:
 
 # --- the setup steps (each works on any object with a .request method) ---------
 
+
 def _results(page):
     """Label Studio returns some lists bare and some wrapped in {"results": [...]}."""
     return page["results"] if isinstance(page, dict) else page
@@ -181,14 +192,18 @@ def _results(page):
 def ensure_project(ls, title: str, config: str, model_version: str | None) -> dict:
     """Find the project by title, creating or updating it as needed."""
     if title in FROZEN_TITLES:
-        raise SystemExit(f"project {title!r} is frozen (evaluation ground truth, see "
-                         f"data/label_studio/FROZEN.md); this script never writes to it. "
-                         f"Use a new title for a new project.")
+        raise SystemExit(
+            f"project {title!r} is frozen (evaluation ground truth, see "
+            f"data/label_studio/FROZEN.md); this script never writes to it. "
+            f"Use a new title for a new project."
+        )
     projects = _results(ls.request("GET", "/api/projects/", params={"page_size": 1000}))
     same = [p for p in projects if p.get("title") == title]
     if len(same) > 1:
-        raise SystemExit(f"{len(same)} projects are titled {title!r} (ids "
-                         f"{[p['id'] for p in same]}); rename or delete the extra one in the UI.")
+        raise SystemExit(
+            f"{len(same)} projects are titled {title!r} (ids "
+            f"{[p['id'] for p in same]}); rename or delete the extra one in the UI."
+        )
     # "Use predictions to prelabel tasks" in the UI = show_collab_predictions,
     # with model_version choosing whose predictions are shown. The config is
     # stripped because Label Studio stores it without the file's final newline;
@@ -200,8 +215,11 @@ def ensure_project(ls, title: str, config: str, model_version: str | None) -> di
         say(f"creating project {title!r}")
         return ls.request("POST", "/api/projects/", {"title": title, **wanted})
     proj = same[0]
-    stale = {k: v for k, v in wanted.items()
-             if (proj.get(k).strip() if isinstance(proj.get(k), str) else proj.get(k)) != v}
+    stale = {
+        k: v
+        for k, v in wanted.items()
+        if (proj.get(k).strip() if isinstance(proj.get(k), str) else proj.get(k)) != v
+    }
     if not stale:
         say(f"project {title!r} (id {proj['id']}) is already up to date")
         return proj
@@ -212,26 +230,37 @@ def ensure_project(ls, title: str, config: str, model_version: str | None) -> di
 def ensure_storage(ls, project_id: int, path: str) -> dict:
     """Add the Local files storage entry once. Label Studio refuses to serve a
     local file that no storage entry covers, even when it is mounted."""
-    existing = _results(ls.request("GET", "/api/storages/localfiles/",
-                                   params={"project": project_id}))
+    existing = _results(
+        ls.request("GET", "/api/storages/localfiles/", params={"project": project_id})
+    )
     for s in existing:
         if s.get("path") == path:
             say(f"photo storage {path} already present (id {s['id']})")
             return s
     say(f"adding photo storage {path} (not synced: tasks come from the import)")
-    return ls.request("POST", "/api/storages/localfiles/", {
-        "project": project_id, "path": path, "title": "photos",
-        # use_blob_urls=False: don't turn every file in the folder into a task.
-        "use_blob_urls": False, "regex_filter": "",
-    })
+    return ls.request(
+        "POST",
+        "/api/storages/localfiles/",
+        {
+            "project": project_id,
+            "path": path,
+            "title": "photos",
+            # use_blob_urls=False: don't turn every file in the folder into a task.
+            "use_blob_urls": False,
+            "regex_filter": "",
+        },
+    )
 
 
 def existing_photo_ids(ls, project_id: int) -> set[str]:
     """photo_id of every task already in the project, page by page."""
     ids, page = set(), 1
     while True:
-        got = ls.request("GET", "/api/tasks/",
-                         params={"project": project_id, "page": page, "page_size": 100})
+        got = ls.request(
+            "GET",
+            "/api/tasks/",
+            params={"project": project_id, "page": page, "page_size": 100},
+        )
         tasks = got["tasks"] if isinstance(got, dict) else got
         ids |= {t["data"].get("photo_id") for t in tasks}
         total = got.get("total", len(tasks)) if isinstance(got, dict) else len(tasks)
@@ -269,17 +298,22 @@ def model_version_of(tasks: list[dict]) -> str | None:
     versions = {p.get("model_version") for t in tasks for p in t.get("predictions", [])}
     versions.discard(None)
     if len(versions) > 1:
-        raise SystemExit(f"tasks carry predictions from several models: {sorted(versions)}")
+        raise SystemExit(
+            f"tasks carry predictions from several models: {sorted(versions)}"
+        )
     return versions.pop() if versions else None
 
 
 # --- photos and tunnel -------------------------------------------------------
 
+
 def copy_photos(images: Path, ssh_host: str, remote_dir: str, dry_run: bool) -> None:
     """rsync the staged photos to the server. Adds and updates, never deletes:
     a labeled task whose photo disappears can't be reopened or reviewed."""
     if not images.is_dir() or not any(images.iterdir()):
-        raise SystemExit(f"no staged photos in {images}; run shelf-label-prep --stage-images first")
+        raise SystemExit(
+            f"no staged photos in {images}; run shelf-label-prep --stage-images first"
+        )
     cmd = ["rsync", "-a", "--itemize-changes", "--mkpath"]
     if dry_run:
         cmd.append("--dry-run")
@@ -287,8 +321,10 @@ def copy_photos(images: Path, ssh_host: str, remote_dir: str, dry_run: bool) -> 
     out = subprocess.run(cmd, check=True, capture_output=True, text=True).stdout
     sent = [line for line in out.splitlines() if line.startswith("<f")]
     total = sum(1 for _ in images.iterdir())
-    say(f"{len(sent)} of {total} photos {'would be ' if dry_run else ''}copied to "
-        f"{ssh_host}:{remote_dir} (the rest were already there)")
+    say(
+        f"{len(sent)} of {total} photos {'would be ' if dry_run else ''}copied to "
+        f"{ssh_host}:{remote_dir} (the rest were already there)"
+    )
 
 
 def _free_port() -> int:
@@ -303,15 +339,28 @@ def ssh_tunnel(ssh_host: str, remote_port: int):
     Yields the local base URL; the tunnel closes when the block ends."""
     port = _free_port()
     proc = subprocess.Popen(
-        ["ssh", "-N", "-o", "BatchMode=yes", "-o", "ExitOnForwardFailure=yes",
-         "-L", f"127.0.0.1:{port}:127.0.0.1:{remote_port}", ssh_host],
-        stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+        [
+            "ssh",
+            "-N",
+            "-o",
+            "BatchMode=yes",
+            "-o",
+            "ExitOnForwardFailure=yes",
+            "-L",
+            f"127.0.0.1:{port}:127.0.0.1:{remote_port}",
+            ssh_host,
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+    )
     try:
         deadline = time.monotonic() + 30
         while True:  # wait until the forwarded port accepts connections
             if proc.poll() is not None:
-                raise SystemExit(f"SSH tunnel to {ssh_host} failed: "
-                                 f"{proc.stderr.read().decode().strip()}")
+                raise SystemExit(
+                    f"SSH tunnel to {ssh_host} failed: "
+                    f"{proc.stderr.read().decode().strip()}"
+                )
             try:
                 socket.create_connection(("127.0.0.1", port), timeout=1).close()
                 break
@@ -327,48 +376,88 @@ def ssh_tunnel(ssh_host: str, remote_port: int):
 
 # --- check ---------------------------------------------------------------------
 
+
 def verify(ls, project_id: int, expected_tasks: int) -> None:
     """Read the result back the way a labeler would see it."""
     proj = ls.request("GET", f"/api/projects/{project_id}/")
-    got = ls.request("GET", "/api/tasks/", params={"project": project_id, "page_size": 1})
+    got = ls.request(
+        "GET", "/api/tasks/", params={"project": project_id, "page_size": 1}
+    )
     tasks = got["tasks"] if isinstance(got, dict) else got
     total = got.get("total", len(tasks)) if isinstance(got, dict) else len(tasks)
     if total < expected_tasks:
-        raise SystemExit(f"project has {total} tasks, expected at least {expected_tasks}")
+        raise SystemExit(
+            f"project has {total} tasks, expected at least {expected_tasks}"
+        )
     task = ls.request("GET", f"/api/tasks/{tasks[0]['id']}/")
     boxes = sum(len(p.get("result", [])) for p in task.get("predictions", []))
     status, ctype, body = ls.fetch(task["data"]["image"])
     if status != 200 or not ctype.startswith("image/"):
-        raise SystemExit(f"photo {task['data']['image']} did not load ({status} {ctype})")
-    say(f"project {proj['title']!r}: {total} tasks, prelabeling "
-        f"{'on' if proj.get('show_collab_predictions') else 'OFF'}")
-    say(f"sample task {task['id']}: photo loads ({len(body) // 1024} KB), {boxes} pre-drawn boxes")
+        raise SystemExit(
+            f"photo {task['data']['image']} did not load ({status} {ctype})"
+        )
+    say(
+        f"project {proj['title']!r}: {total} tasks, prelabeling "
+        f"{'on' if proj.get('show_collab_predictions') else 'OFF'}"
+    )
+    say(
+        f"sample task {task['id']}: photo loads ({len(body) // 1024} KB), {boxes} pre-drawn boxes"
+    )
 
 
 # --- command line --------------------------------------------------------------
 
+
 def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--title", required=True,
-                    help="project title (the key: one project per title). Frozen projects "
-                         f"are refused: {', '.join(sorted(FROZEN_TITLES))}")
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    ap.add_argument(
+        "--title",
+        required=True,
+        help="project title (the key: one project per title). Frozen projects "
+        f"are refused: {', '.join(sorted(FROZEN_TITLES))}",
+    )
     ap.add_argument("--config", default=str(DEFAULT_CONFIG), help="labeling config XML")
-    ap.add_argument("--tasks", default=str(DEFAULT_TASKS), help="tasks JSON from shelf-label-prep")
-    ap.add_argument("--images", default=str(DEFAULT_IMAGES), help="staged photos to copy")
-    ap.add_argument("--ssh-host", default=DEFAULT_SSH_HOST, help="server alias in ~/.ssh/config")
-    ap.add_argument("--remote-images", default=DEFAULT_REMOTE_IMAGES, help="photo folder on the server")
-    ap.add_argument("--remote-port", type=int, default=DEFAULT_REMOTE_PORT,
-                    help="Label Studio's port on the server")
-    ap.add_argument("--env-file", default=str(DEFAULT_ENV), help="where LS_API_TOKEN is read from")
-    ap.add_argument("--skip-photos", action="store_true", help="don't copy photos (already there)")
-    ap.add_argument("--dry-run", action="store_true",
-                    help="copy nothing, change nothing; report what would happen")
+    ap.add_argument(
+        "--tasks", default=str(DEFAULT_TASKS), help="tasks JSON from shelf-label-prep"
+    )
+    ap.add_argument(
+        "--images", default=str(DEFAULT_IMAGES), help="staged photos to copy"
+    )
+    ap.add_argument(
+        "--ssh-host", default=DEFAULT_SSH_HOST, help="server alias in ~/.ssh/config"
+    )
+    ap.add_argument(
+        "--remote-images",
+        default=DEFAULT_REMOTE_IMAGES,
+        help="photo folder on the server",
+    )
+    ap.add_argument(
+        "--remote-port",
+        type=int,
+        default=DEFAULT_REMOTE_PORT,
+        help="Label Studio's port on the server",
+    )
+    ap.add_argument(
+        "--env-file", default=str(DEFAULT_ENV), help="where LS_API_TOKEN is read from"
+    )
+    ap.add_argument(
+        "--skip-photos", action="store_true", help="don't copy photos (already there)"
+    )
+    ap.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="copy nothing, change nothing; report what would happen",
+    )
     args = ap.parse_args()
 
     token = read_token(Path(args.env_file))
     if args.title in FROZEN_TITLES:  # before any photo is copied or tunnel opened
-        raise SystemExit(f"project {args.title!r} is frozen (data/label_studio/FROZEN.md); "
-                         "nothing was done.")
+        raise SystemExit(
+            f"project {args.title!r} is frozen (data/label_studio/FROZEN.md); "
+            "nothing was done."
+        )
     config = Path(args.config).read_text(encoding="utf-8")
     tasks = json.loads(Path(args.tasks).read_text(encoding="utf-8"))
     model_version = model_version_of(tasks)
@@ -385,7 +474,9 @@ def main() -> None:
         me = ls.request("GET", "/api/current-user/whoami")
         say(f"signed in as {me.get('email') or me.get('username')}")
         if args.dry_run:
-            projects = _results(ls.request("GET", "/api/projects/", params={"page_size": 1000}))
+            projects = _results(
+                ls.request("GET", "/api/projects/", params={"page_size": 1000})
+            )
             same = [p for p in projects if p.get("title") == args.title]
             step("Dry run: stopping here. Nothing was changed.")
             state = f"exists (id {same[0]['id']})" if same else "would be created"
@@ -402,8 +493,11 @@ def main() -> None:
         step("6/6 Check")
         verify(ls, proj["id"], len(tasks))
 
-    print(f"\nDone. Open the project: project id {proj['id']}, "
-          f"http://<server>:{args.remote_port}/projects/{proj['id']}/data", flush=True)
+    print(
+        f"\nDone. Open the project: project id {proj['id']}, "
+        f"http://<server>:{args.remote_port}/projects/{proj['id']}/data",
+        flush=True,
+    )
 
 
 if __name__ == "__main__":

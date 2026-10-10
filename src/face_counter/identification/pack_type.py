@@ -13,6 +13,7 @@ A crop the matcher *did* name (ours or a tracked competitor) already has a
 pack type from ``classes.csv`` and never goes through this -- it only applies
 to crops below the matcher's threshold that still need a category.
 """
+
 from __future__ import annotations
 
 from PIL import Image
@@ -25,8 +26,10 @@ PACKS = ("canned", "glass")
 # does: text-embed every prompt, mean, re-normalise.
 PROMPTS = (
     ("a photo of an aluminum drink can", "a photo of a glass bottle"),
-    ("a cropped photo of a canned drink on a shelf",
-     "a cropped photo of a glass bottled drink on a shelf"),
+    (
+        "a cropped photo of a canned drink on a shelf",
+        "a cropped photo of a glass bottled drink on a shelf",
+    ),
     ("a metal can of soda", "a glass bottle of soda with a cap"),
 )
 
@@ -34,11 +37,14 @@ PROMPTS = (
 def _load_model(name: str, device: str):
     from transformers import CLIPModel, CLIPProcessor
 
-    return CLIPProcessor.from_pretrained(name), CLIPModel.from_pretrained(name).to(device).eval()
+    return CLIPProcessor.from_pretrained(name), CLIPModel.from_pretrained(name).to(
+        device
+    ).eval()
 
 
-def score_crops(crops: list[Image.Image], model_name: str = MODEL,
-                device: str | None = None) -> list[float]:
+def score_crops(
+    crops: list[Image.Image], model_name: str = MODEL, device: str | None = None
+) -> list[float]:
     """Glass-minus-can cosine score per crop; > threshold means glass."""
     import torch
 
@@ -52,27 +58,42 @@ def score_crops(crops: list[Image.Image], model_name: str = MODEL,
     def image_emb():
         out = []
         for i in range(0, len(crops), 32):
-            x = proc(images=crops[i:i + 32], return_tensors="pt").to(device)
-            out.append(torch.nn.functional.normalize(feats(model.get_image_features(**x)), dim=-1).cpu())
+            x = proc(images=crops[i : i + 32], return_tensors="pt").to(device)
+            out.append(
+                torch.nn.functional.normalize(
+                    feats(model.get_image_features(**x)), dim=-1
+                ).cpu()
+            )
         return torch.cat(out) if out else torch.empty(0)
 
     @torch.no_grad()
     def text_emb(texts):
         x = proc(text=list(texts), return_tensors="pt", padding=True).to(device)
-        return torch.nn.functional.normalize(feats(model.get_text_features(**x)), dim=-1).cpu()
+        return torch.nn.functional.normalize(
+            feats(model.get_text_features(**x)), dim=-1
+        ).cpu()
 
     img = image_emb()
     can_e = torch.nn.functional.normalize(
-        text_emb([c for c, _ in PROMPTS]).mean(0), dim=0)
+        text_emb([c for c, _ in PROMPTS]).mean(0), dim=0
+    )
     glass_e = torch.nn.functional.normalize(
-        text_emb([g for _, g in PROMPTS]).mean(0), dim=0)
+        text_emb([g for _, g in PROMPTS]).mean(0), dim=0
+    )
     scores = (img @ glass_e - img @ can_e).tolist()
     if device == "cuda":
         torch.cuda.empty_cache()
     return scores
 
 
-def pack_types(crops: list[Image.Image], model_name: str = MODEL, device: str | None = None,
-               threshold: float = THRESHOLD) -> list[str]:
-    """"canned" or "glass" per crop, from the promoted zero-shot classifier."""
-    return ["glass" if s > threshold else "canned" for s in score_crops(crops, model_name, device)]
+def pack_types(
+    crops: list[Image.Image],
+    model_name: str = MODEL,
+    device: str | None = None,
+    threshold: float = THRESHOLD,
+) -> list[str]:
+    """ "canned" or "glass" per crop, from the promoted zero-shot classifier."""
+    return [
+        "glass" if s > threshold else "canned"
+        for s in score_crops(crops, model_name, device)
+    ]

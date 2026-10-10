@@ -11,6 +11,7 @@ category, that file changes and every existing annotation stays valid.
 every pack type we sell and every pack type a category reports on, or labelers
 would have to lump a future category into `other` and it would need relabeling.
 """
+
 from __future__ import annotations
 
 from collections import Counter
@@ -30,13 +31,17 @@ SOURCES = {"invoice", "manual"}
 
 def load_reporting(path: str | Path) -> dict[str, list[str]]:
     """{category: [pack_type, ...]}. A pack type may belong to at most one category."""
-    cats = {name: list(spec.get("pack_types") or [])
-            for name, spec in (load_config(path).get("categories") or {}).items()}
+    cats = {
+        name: list(spec.get("pack_types") or [])
+        for name, spec in (load_config(path).get("categories") or {}).items()
+    }
     owner: dict[str, str] = {}
     for name, packs in cats.items():
         for p in packs:
             if p in owner:
-                raise ValueError(f"pack type {p!r} is in both {owner[p]!r} and {name!r}")
+                raise ValueError(
+                    f"pack type {p!r} is in both {owner[p]!r} and {name!r}"
+                )
             owner[p] = name
     return cats
 
@@ -64,7 +69,9 @@ def problems(rows: list[dict], reporting: dict[str, list[str]]) -> list[str]:
         ours = str(r.get("is_ours", "")).strip()
         source = (r.get("source") or "").strip()
         if source not in SOURCES:
-            out.append(f"{name}: source must be one of {sorted(SOURCES)}, got {source!r}")
+            out.append(
+                f"{name}: source must be one of {sorted(SOURCES)}, got {source!r}"
+            )
         if name == OUT_OF_SCOPE:
             if ours != "0":
                 out.append(f"{name}: is_ours must be 0")
@@ -74,14 +81,18 @@ def problems(rows: list[dict], reporting: dict[str, list[str]]) -> list[str]:
         if brand == COMPETITOR:
             competitor_packs.add(pack)
             if name != f"{COMPETITOR}_{pack}":
-                out.append(f"{name}: competitor rows must be named {COMPETITOR}_<pack_type>")
+                out.append(
+                    f"{name}: competitor rows must be named {COMPETITOR}_<pack_type>"
+                )
             if ours != "0":
                 out.append(f"{name}: a competitor must have is_ours=0")
         elif ours == "0":
             # A named (targeted) competitor, e.g. Icy-Monkey_canned: brand level
             # only, added by hand, never from an invoice (invoices list ours).
             if name != f"{brand}_{pack}":
-                out.append(f"{name}: named competitor rows must be named <brand>_<pack_type>")
+                out.append(
+                    f"{name}: named competitor rows must be named <brand>_<pack_type>"
+                )
             if source != "manual":
                 out.append(f"{name}: named competitor rows must be source=manual")
         else:
@@ -92,14 +103,20 @@ def problems(rows: list[dict], reporting: dict[str, list[str]]) -> list[str]:
     if OUT_OF_SCOPE not in names:
         out.append(f"missing {OUT_OF_SCOPE!r} class")
     if "other" not in competitor_packs:
-        out.append(f"missing {COMPETITOR}_other (catch-all for a pack type nobody listed yet)")
+        out.append(
+            f"missing {COMPETITOR}_other (catch-all for a pack type nobody listed yet)"
+        )
     for pack in sorted(our_packs):
         if pack not in competitor_packs:
-            out.append(f"we sell pack type {pack!r} but there is no {COMPETITOR}_{pack}")
+            out.append(
+                f"we sell pack type {pack!r} but there is no {COMPETITOR}_{pack}"
+            )
     for cat, packs in reporting.items():
         for pack in packs:
             if pack not in competitor_packs:
-                out.append(f"category {cat!r} reports on {pack!r} but there is no {COMPETITOR}_{pack}")
+                out.append(
+                    f"category {cat!r} reports on {pack!r} but there is no {COMPETITOR}_{pack}"
+                )
     return out
 
 
@@ -124,14 +141,14 @@ SHARE_AGAINST = ("targeted", "all")
 
 @dataclass(frozen=True)
 class Scope:
-    brands: list[str]          # "ours" in the reported share
-    categories: list[str]      # reporting categories in play
-    pack_types: list[str]      # union of those categories' pack types
-    detail: str = "sku"        # one of DETAILS
+    brands: list[str]  # "ours" in the reported share
+    categories: list[str]  # reporting categories in play
+    pack_types: list[str]  # union of those categories' pack types
+    detail: str = "sku"  # one of DETAILS
     # Targeted competitors, named by brand. The pilot's share is
     # ours / (ours + these); untargeted competitors are in neither.
     competitors: list[str] = field(default_factory=list)
-    share_against: str = "targeted"   # one of SHARE_AGAINST
+    share_against: str = "targeted"  # one of SHARE_AGAINST
     # `<brand>_<pack_type>` labels no longer tracked (the brand may stay tracked
     # for its other pack types). Old labels still parse; the evaluator reads them
     # as grey `product`, labelers are not offered them, no gallery is built.
@@ -154,33 +171,60 @@ def load_scope(path: str | Path, reporting: dict[str, list[str]]) -> Scope:
     if detail not in DETAILS:
         raise ValueError(f"scope detail must be one of {DETAILS}, got {detail!r}")
     if share_against not in SHARE_AGAINST:
-        raise ValueError(f"scope share_against must be one of {SHARE_AGAINST}, got {share_against!r}")
+        raise ValueError(
+            f"scope share_against must be one of {SHARE_AGAINST}, got {share_against!r}"
+        )
     packs = [p for c in cats for p in reporting[c]]
-    return Scope(brands=brands, categories=cats, pack_types=packs, detail=detail,
-                 competitors=competitors, share_against=share_against, retired=retired)
+    return Scope(
+        brands=brands,
+        categories=cats,
+        pack_types=packs,
+        detail=detail,
+        competitors=competitors,
+        share_against=share_against,
+        retired=retired,
+    )
 
 
 def targeted_label_names(rows: list[dict], scope: Scope) -> list[str]:
     """The scope's named competitors, one `<brand>_<pack_type>` per scoped pack
     type the class list has for them. Every listed competitor must exist in
     the class list as a named competitor, or labelers would have nothing to pick."""
-    named = {(r.get("brand") or "").strip() for r in rows
-             if str(r.get("is_ours", "")).strip() == "0"
-             and (r.get("brand") or "").strip() not in (COMPETITOR, OUT_OF_SCOPE)}
-    ours = {(r.get("brand") or "").strip() for r in rows if str(r.get("is_ours", "")).strip() == "1"}
+    named = {
+        (r.get("brand") or "").strip()
+        for r in rows
+        if str(r.get("is_ours", "")).strip() == "0"
+        and (r.get("brand") or "").strip() not in (COMPETITOR, OUT_OF_SCOPE)
+    }
+    ours = {
+        (r.get("brand") or "").strip()
+        for r in rows
+        if str(r.get("is_ours", "")).strip() == "1"
+    }
     bad = [c for c in scope.competitors if c in ours or c not in named]
     if bad:
-        raise ValueError(f"scope competitors must be named competitor brands in classes.csv "
-                         f"(is_ours=0), not ours or missing: {bad}")
-    known = {r["class_name"].strip() for r in rows if str(r.get("is_ours", "")).strip() == "0"}
-    typos = [n for n in scope.retired if n not in known]   # a typo would retire nothing
+        raise ValueError(
+            f"scope competitors must be named competitor brands in classes.csv "
+            f"(is_ours=0), not ours or missing: {bad}"
+        )
+    known = {
+        r["class_name"].strip()
+        for r in rows
+        if str(r.get("is_ours", "")).strip() == "0"
+    }
+    typos = [n for n in scope.retired if n not in known]  # a typo would retire nothing
     if typos:
-        raise ValueError(f"scope retired labels must be named competitor rows in classes.csv: {typos}")
-    return sorted(r["class_name"].strip() for r in rows
-                  if str(r.get("is_ours", "")).strip() == "0"
-                  and (r.get("brand") or "").strip() in scope.competitors
-                  and (r.get("pack_type") or "").strip() in scope.pack_types
-                  and r["class_name"].strip() not in scope.retired)
+        raise ValueError(
+            f"scope retired labels must be named competitor rows in classes.csv: {typos}"
+        )
+    return sorted(
+        r["class_name"].strip()
+        for r in rows
+        if str(r.get("is_ours", "")).strip() == "0"
+        and (r.get("brand") or "").strip() in scope.competitors
+        and (r.get("pack_type") or "").strip() in scope.pack_types
+        and r["class_name"].strip() not in scope.retired
+    )
 
 
 def scoped_label_names(rows: list[dict], scope: Scope) -> list[str]:
@@ -191,9 +235,12 @@ def scoped_label_names(rows: list[dict], scope: Scope) -> list[str]:
     competitors. At detail "brand" our classes collapse to `<brand>_<pack_type>`.
     Targeted competitors come last so adding one never moves an existing label
     (labelers' number keys follow this order)."""
-    ours = [r for r in rows
-            if str(r.get("is_ours", "")).strip() == "1"
-            and (r.get("pack_type") or "").strip() in scope.pack_types]
+    ours = [
+        r
+        for r in rows
+        if str(r.get("is_ours", "")).strip() == "1"
+        and (r.get("pack_type") or "").strip() in scope.pack_types
+    ]
     if scope.detail == "brand":
         names = {f"{r['brand'].strip()}_{r['pack_type'].strip()}" for r in ours}
     else:
