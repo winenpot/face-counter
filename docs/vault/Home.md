@@ -15,7 +15,7 @@
 ## Status (2026-10-10)
 
 - **T6 done, scope revised:** a detection-only demo API (`/count`, `/overlay`,
-  `/health`) runs on the apps server, localhost only, memory-capped. Brand
+  `/health`) runs on the apps server, published on port 8096 behind a rotated API key, memory-capped. Brand
   matching is behind `debug=true`; the CLIP canned/glass stage is off by
   default. See [[Demo API on the apps server]].
 - Serving is ONNX Runtime on CPU with no torch in the process; training stays
