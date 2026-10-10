@@ -26,6 +26,7 @@ shelf-ls-setup = "face_counter.label_studio.setup_project:main"
 shelf-bakeoff = "face_counter.training.detector_bakeoff:main"
 shelf-eval = "face_counter.evaluation.cli:main"
 shelf-match = "face_counter.identification.cli:main"
+shelf-serve = "face_counter.serving.app:main"
 
 [build-system]
 requires = ["uv_build>=0.12.15,<0.13.0"]
@@ -33,15 +34,33 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "httpx>=0.27",
     "mongomock>=4.1",
     "pytest>=8.0",
     "ruff>=0.16.8",
 ]
 analytics = [
     "notebook>=7.6.2",
+    "torch==2.14.0",
+    "torchvision==0.29.0",
     "transformers>=4.50",
     "ultralytics>=8.3",
 ]
+serve = [
+    "fastapi>=0.115",
+    "onnxruntime>=1.18",
+    "python-multipart>=0.0.9",
+    "uvicorn>=0.30",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
