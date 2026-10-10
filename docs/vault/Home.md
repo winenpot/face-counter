@@ -2,7 +2,29 @@
 
 **Resume here:** `docs/PILOT.md`, section "Current checkpoint" (next action + ordered to-do). Full plan: `docs/ROADMAP.md`.
 
-## Status (2026-09-30)
+## Map
+
+- Architecture: [[Serving pipeline]]
+- DevOps: [[Demo API on the apps server]], [[Environments and dependency groups]]
+- Decisions: [[ADR-0001 Serve the detector through ONNX Runtime only]],
+  [[ADR-0002 Pack-type stage off by default]],
+  [[ADR-0003 Async intake and pull workers (proposed)]]
+- Debt: [[Open issues (serving)]]
+- Findings: [[2026-10-10 Serving investigation]] (every measured number from the serving work)
+
+## Status (2026-10-10)
+
+- **T6 done, scope revised:** a detection-only demo API (`/count`, `/overlay`,
+  `/health`) runs on the apps server, localhost only, memory-capped. Brand
+  matching is behind `debug=true`; the CLIP canned/glass stage is off by
+  default. See [[Demo API on the apps server]].
+- Serving is ONNX Runtime on CPU with no torch in the process; training stays
+  on hemin's GPU. See [[Environments and dependency groups]].
+- The production shape (async intake, pull workers, queues later) is proposed,
+  not built: [[ADR-0003 Async intake and pull workers (proposed)]].
+- Next: T7 (where the service lives for real, plus issue #6's blockers), T7b, T8.
+
+## Status (2026-09-30, superseded)
 
 - **Test-set labels frozen as v1** (all objects): `data/label_studio/FROZEN.md`.
   Project `pilot-test-cans-glass` (id 3) is never written to again;
@@ -64,6 +86,11 @@ but Label Studio and everything else on the box share this same root.
 `label-studio-db-1` was using 25.57MiB of its 1GiB limit (2.5%) — Postgres
 memory is not currently a risk on this box.
 
+**CPU and RAM, rechecked 2026-10-10:** AVX2 and FMA only, **no AVX-512 and no
+VNNI**, so int8-quantized models will not speed up here. RAM showed ~10 GB
+`available` (`free` looks low only because of page cache). The serving demo
+container is capped at 1200 MiB; see [[Demo API on the apps server]].
+
 ### db server
 
 Identical specs to apps server. **No current SSH access** (as of 2026-09-22).
@@ -116,15 +143,11 @@ or `stop` keeps the volumes. Take a JSON export plus `pg_dump` before any
 upgrade or cleanup (`deploy/label-studio/README.md`, "Stopping without losing
 labels").
 
-## Future: FastAPI inference service (Phase 2)
+## FastAPI inference service (Phase 2)
 
-This repo will also be the launchpad for the model-inference FastAPI app
-once Phase 2 starts (`/count`, `/overlay`, `/health` per `docs/ROADMAP.md`).
-`src/face_counter/serving/` already exists as the placeholder package for
-it (see the 2026-09-24 role-based restructuring: `training/`,
-`label_studio/`, `utils/`, `serving/`). Expect a same-shaped deploy/ entry
-(e.g. `deploy/serving/`) with its own docker-compose and README when that
-phase starts, following the same pattern established for Label Studio:
-this repo's compose file as the single source of truth, deployed via
-rsync + `docker compose up -d`, never hand-edited live without syncing
-the change back into git first.
+Built in T6 and running as a demo since 2026-10-10. Current state:
+[[Serving pipeline]] (code), [[Demo API on the apps server]] (deployment and
+runbook). One deviation from the plan described here before: it is not yet
+compose-driven. It was started with a hand-written `docker run` from
+`deploy/serve.Dockerfile`; moving that into `deploy/serving/` (compose file +
+deploy script, the Label Studio pattern below) is owed under T7 and issue #6.
