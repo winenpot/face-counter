@@ -52,6 +52,8 @@ analytics = [
     #       --python .venv/bin/python
     # then always `uv sync --inexact` locally so it isn't stripped back out.
     "notebook>=7.6.2",
+    "onnx>=1.12,<2.0",  # scripts/export_onnx.py: ultralytics' own ONNX-export requirement
+    "onnxslim>=0.1.82",  # ditto
     "torch>=2.14",
     "torchvision>=0.29",
     "transformers>=4.50",
