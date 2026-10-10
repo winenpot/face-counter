@@ -1,18 +1,33 @@
 """FastAPI service: `POST /count`, `POST /overlay`, `GET /health` (T6 plan,
 Task 5). The pipeline (serving/pipeline.py) decides what's reliable; this
 module is presentation only — decoding uploads, drawing an overlay, and
-shaping the HTTP surface. No API-key check yet (Task 5b adds it next).
+shaping the HTTP surface.
+
+`/count` and `/overlay` require a static `X-API-Key` header (Task 5b) —
+a placeholder, not real auth; see `require_api_key`'s docstring. `/health`
+stays open for monitoring.
 """
 
 from __future__ import annotations
 
+import hmac
 import io
+import logging
 import os
 import subprocess
 import threading
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, File, HTTPException, Query, UploadFile
+from fastapi import (
+    Depends,
+    FastAPI,
+    File,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+)
 from PIL import Image, ImageDraw, ImageOps
 from starlette.concurrency import run_in_threadpool
 from starlette.responses import Response
@@ -21,6 +36,8 @@ from face_counter.identification import pack_type as pt
 from face_counter.serving import schemas
 from face_counter.serving.pipeline import BoxResult, Pipeline, ServeConfig
 from face_counter.utils.config import PROJECT_ROOT
+
+log = logging.getLogger("serve.app")
 
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 
@@ -47,6 +64,16 @@ def _decode_image(data: bytes) -> Image.Image:
         return ImageOps.exif_transpose(Image.open(io.BytesIO(data))).convert("RGB")
     except Exception as e:
         raise HTTPException(400, f"could not decode image: {e}") from e
+
+
+def require_api_key(request: Request, x_api_key: str = Header(default="")) -> None:
+    """Static shared-secret check — a placeholder, not real auth (no
+    accounts, no rotation, no scopes). Decided 2026-10-10: good enough to
+    keep the service off the open internet for now; replace before this
+    goes anywhere less trusted than an internal demo."""
+    expected = request.app.state.pipeline.cfg.api_key
+    if not hmac.compare_digest(x_api_key, expected):
+        raise HTTPException(401, "invalid API key")
 
 
 def _run_locked(pipeline: Pipeline, lock: threading.Lock, img: Image.Image, debug: bool):
@@ -79,6 +106,12 @@ def create_app(pipeline: Pipeline | None = None) -> FastAPI:
     async def _lifespan(app: FastAPI):
         if app.state.pipeline is None:
             app.state.pipeline = Pipeline.load(ServeConfig.from_env())
+        if app.state.pipeline.cfg.api_key == ServeConfig.api_key:  # the dataclass default
+            log.warning(
+                "FACE_COUNTER_API_KEY is still the placeholder default — "
+                "rotate it before this service is reachable from anywhere "
+                "but a local, trusted demo."
+            )
         yield
 
     app = FastAPI(title="face-counter", lifespan=_lifespan)
@@ -95,7 +128,12 @@ def create_app(pipeline: Pipeline | None = None) -> FastAPI:
             "version": _git_sha(),
         }
 
-    @app.post("/count", response_model=schemas.CountResponse, response_model_exclude_none=True)
+    @app.post(
+        "/count",
+        response_model=schemas.CountResponse,
+        response_model_exclude_none=True,
+        dependencies=[Depends(require_api_key)],
+    )
     async def count(file: UploadFile = File(...), debug: bool = Query(False)):  # noqa: B008
         data = await file.read()
         if len(data) > MAX_UPLOAD_BYTES:
@@ -106,7 +144,7 @@ def create_app(pipeline: Pipeline | None = None) -> FastAPI:
         model_info = schemas.ModelInfo(detector=pipeline_.cfg.detector_model, pack_classifier=pt.MODEL)
         return schemas.from_result(result, model_info)
 
-    @app.post("/overlay")
+    @app.post("/overlay", dependencies=[Depends(require_api_key)])
     async def overlay(file: UploadFile = File(...)):  # noqa: B008
         data = await file.read()
         if len(data) > MAX_UPLOAD_BYTES:

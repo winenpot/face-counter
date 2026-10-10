@@ -199,6 +199,9 @@ def _png_bytes(size=(40, 30), color=(10, 20, 30)) -> bytes:
     return buf.getvalue()
 
 
+_AUTH = {"X-API-Key": "12345678"}  # matches ServeConfig's default used by _make_pipeline
+
+
 def test_health_reports_model_names(tmp_path):
     def fake_detector(img):
         return Detections(boxes=[], scores=[], labels=[])
@@ -220,7 +223,7 @@ def test_count_endpoint_omits_debug_by_default(tmp_path, monkeypatch):
     monkeypatch.setattr(pack_type, "pack_types", lambda crops, **kw: ["canned"])
 
     with TestClient(app_mod.create_app(pipeline=p)) as client:
-        r = client.post("/count", files={"file": ("a.png", _png_bytes(), "image/png")})
+        r = client.post("/count", headers=_AUTH, files={"file": ("a.png", _png_bytes(), "image/png")})
     assert r.status_code == 200
     body = r.json()
     assert body["units_detected"] == 1
@@ -245,7 +248,7 @@ def test_count_endpoint_debug_true_includes_debug_field(tmp_path, monkeypatch):
     monkeypatch.setattr(embedder, "embed_images", lambda imgs, **kw: np.array([[1.0, 0.0]] * len(imgs)))
 
     with TestClient(app_mod.create_app(pipeline=p)) as client:
-        r = client.post("/count", params={"debug": "true"},
+        r = client.post("/count", params={"debug": "true"}, headers=_AUTH,
                         files={"file": ("a.png", _png_bytes(), "image/png")})
     assert r.status_code == 200
     body = r.json()
@@ -259,7 +262,7 @@ def test_count_endpoint_rejects_undecodable_bytes(tmp_path):
 
     p = _make_pipeline(tmp_path, fake_detector, None)
     with TestClient(app_mod.create_app(pipeline=p)) as client:
-        r = client.post("/count", files={"file": ("a.png", b"not an image", "image/png")})
+        r = client.post("/count", headers=_AUTH, files={"file": ("a.png", b"not an image", "image/png")})
     assert r.status_code == 400
 
 
@@ -271,7 +274,48 @@ def test_overlay_endpoint_returns_jpeg(tmp_path, monkeypatch):
     monkeypatch.setattr(pack_type, "pack_types", lambda crops, **kw: ["canned"])
 
     with TestClient(app_mod.create_app(pipeline=p)) as client:
-        r = client.post("/overlay", files={"file": ("a.png", _png_bytes(), "image/png")})
+        r = client.post("/overlay", headers=_AUTH, files={"file": ("a.png", _png_bytes(), "image/png")})
     assert r.status_code == 200
     assert r.headers["content-type"] == "image/jpeg"
     assert r.content[:2] == b"\xff\xd8"  # JPEG magic bytes
+
+
+def test_count_endpoint_missing_api_key_rejected(tmp_path):
+    def fake_detector(img):
+        return Detections(boxes=[], scores=[], labels=[])
+
+    p = _make_pipeline(tmp_path, fake_detector, None)
+    with TestClient(app_mod.create_app(pipeline=p)) as client:
+        r = client.post("/count", files={"file": ("a.png", _png_bytes(), "image/png")})
+    assert r.status_code == 401
+
+
+def test_count_endpoint_wrong_api_key_rejected(tmp_path):
+    def fake_detector(img):
+        return Detections(boxes=[], scores=[], labels=[])
+
+    p = _make_pipeline(tmp_path, fake_detector, None)
+    with TestClient(app_mod.create_app(pipeline=p)) as client:
+        r = client.post("/count", headers={"X-API-Key": "wrong"},
+                        files={"file": ("a.png", _png_bytes(), "image/png")})
+    assert r.status_code == 401
+
+
+def test_overlay_endpoint_missing_api_key_rejected(tmp_path):
+    def fake_detector(img):
+        return Detections(boxes=[], scores=[], labels=[])
+
+    p = _make_pipeline(tmp_path, fake_detector, None)
+    with TestClient(app_mod.create_app(pipeline=p)) as client:
+        r = client.post("/overlay", files={"file": ("a.png", _png_bytes(), "image/png")})
+    assert r.status_code == 401
+
+
+def test_health_does_not_require_api_key(tmp_path):
+    def fake_detector(img):
+        return Detections(boxes=[], scores=[], labels=[])
+
+    p = _make_pipeline(tmp_path, fake_detector, None)
+    with TestClient(app_mod.create_app(pipeline=p)) as client:
+        r = client.get("/health")
+    assert r.status_code == 200
