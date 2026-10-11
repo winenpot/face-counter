@@ -4,7 +4,7 @@
 work and its ordered to-do list. `ROADMAP.md` still holds the full,
 horizontal plan; nothing in it is cancelled, only sequenced after this.
 
-## Current checkpoint (2026-10-10, end of day)
+## Current checkpoint (2026-10-11, end of day)
 
 Branch `master`, 213 tests pass (`uv run pytest`). `uv run ruff check .`
 reports 56 errors, all pre-existing (count unchanged by this work). Replace
@@ -23,11 +23,10 @@ handoff"); serving detail is in `.hermes/plans/2026-10-10_111130-t6-fastapi-serv
 - **Read before more serving work:** `docs/SERVING_STRATEGY.md` (why BI wants
   async intake and pull workers, and the queue path) and
   `docs/PACK_TYPE_ALTERNATIVES.md` (CLIP alternatives; its 93.8% was never
-  measured on detector boxes). Open GitHub issues: #2, #3, #5, #6, #7.
-- **Next, in order:** T7. The plan says the db server, which has no SSH
-  access, while the demo already runs on the apps server, so decide which;
-  issue #6's blockers come first either way. Then T7b, then T8 (the demo,
-  with its caveats).
+  measured on detector boxes). Open GitHub issues: #2, #3, #5, #6, #7, #8.
+- **Next, in order:** T8 (the demo: pick photos, draft caveats; set a random
+  key first if anyone outside will see it). Then #6 (worst-case memory test,
+  compose file), T7 (db server vs apps server, Caddy front door, #8), T7b.
 - **Never:** write to project 3; run `shelf-splits --force`; `docker compose
   down -v` on Label Studio; rsync code to hemin; publish credentials or IP
   addresses (the repo is public). The Persian config and the checksums in
