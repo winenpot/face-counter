@@ -74,6 +74,7 @@ class ServeConfig:
     match_threshold: float = 0.7115  # debug-path only; see T6 plan's resolved questions
     device: str | None = "cpu"
     api_key: str = "12345678"  # placeholder, see Task 5b; rotate before non-local use
+    demo_password: str = ""  # HTTP Basic Auth for GET /; empty = disabled
     classify: bool = False  # CLIP pack-type stage; see module docstring
 
     @classmethod
@@ -92,6 +93,7 @@ class ServeConfig:
             match_threshold=float(_s("FACE_COUNTER_MATCH_THRESHOLD", "0.7115")),
             device=_s("FACE_COUNTER_DEVICE", "cpu"),
             api_key=_s("FACE_COUNTER_API_KEY", "12345678"),
+            demo_password=_s("FACE_COUNTER_DEMO_PASSWORD", ""),
             classify=_s("FACE_COUNTER_CLASSIFY", "0").strip().lower() in {"1", "true", "yes", "on"},
         )
 

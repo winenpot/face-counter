@@ -30,10 +30,10 @@ from fastapi import (
 )
 from PIL import Image, ImageDraw, ImageOps
 from starlette.concurrency import run_in_threadpool
-from starlette.responses import Response
+from starlette.responses import HTMLResponse, Response
 
 from face_counter.identification import pack_type as pt
-from face_counter.serving import schemas
+from face_counter.serving import demo_page, schemas
 from face_counter.serving.pipeline import BoxResult, Pipeline, ServeConfig
 from face_counter.utils.config import PROJECT_ROOT
 
@@ -81,6 +81,30 @@ def require_api_key(request: Request, x_api_key: str = Header(default="")) -> No
         raise HTTPException(401, "invalid API key")
 
 
+def require_demo_password(request: Request) -> None:
+    """HTTP Basic Auth gate for GET /.  Skipped when demo_password is empty
+    (e.g. in tests that don't set the field).  Username is ignored; any
+    non-empty username + the correct password is accepted."""
+    password = request.app.state.pipeline.cfg.demo_password
+    if not password:
+        return  # protection disabled — local dev / test
+    import base64
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Basic "):
+        try:
+            decoded = base64.b64decode(auth[6:]).decode("utf-8", errors="replace")
+            _, _, provided = decoded.partition(":")
+            if hmac.compare_digest(provided, password):
+                return
+        except ValueError:
+            pass
+    raise HTTPException(
+        401,
+        "Authentication required",
+        headers={"WWW-Authenticate": 'Basic realm="face-counter demo"'},
+    )
+
+
 def _run_locked(pipeline: Pipeline, lock: threading.Lock, img: Image.Image, debug: bool):
     """Runs in a worker thread (via run_in_threadpool): the lock's blocking
     acquire must never happen on the event-loop thread."""
@@ -122,6 +146,14 @@ def create_app(pipeline: Pipeline | None = None) -> FastAPI:
     app = FastAPI(title="face-counter", lifespan=_lifespan)
     app.state.pipeline = pipeline
     app.state.lock = threading.Lock()
+
+    @app.get("/", response_class=HTMLResponse, include_in_schema=False,
+             dependencies=[Depends(require_demo_password)])
+    def demo_ui(request: Request) -> str:
+        """Upload page for the supervisor demo. Embeds the API key so the
+        browser sends it automatically; protected by HTTP Basic Auth when
+        FACE_COUNTER_DEMO_PASSWORD is set."""
+        return demo_page.render(app.state.pipeline.cfg.api_key)
 
     @app.get("/health")
     def health() -> dict:

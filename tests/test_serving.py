@@ -424,3 +424,54 @@ def test_health_does_not_require_api_key(tmp_path):
     with TestClient(app_mod.create_app(pipeline=p)) as client:
         r = client.get("/health")
     assert r.status_code == 200
+
+
+# --- Demo page (GET /) ---
+
+def test_demo_page_served_at_root_without_key(tmp_path):
+    def fake_detector(img):
+        return Detections(boxes=[], scores=[], labels=[])
+
+    p = _make_pipeline(tmp_path, fake_detector, None)
+    with TestClient(app_mod.create_app(pipeline=p)) as client:
+        r = client.get("/")
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/html")
+    assert 'type="file"' in r.text
+    assert "/overlay" in r.text
+
+
+def test_demo_page_embeds_configured_key(tmp_path):
+    def fake_detector(img):
+        return Detections(boxes=[], scores=[], labels=[])
+
+    p = _make_pipeline(tmp_path, fake_detector, None)
+    with TestClient(app_mod.create_app(pipeline=p)) as client:
+        r = client.get("/")
+    assert _AUTH["X-API-Key"] in r.text
+
+
+def test_demo_page_password_required_when_set(tmp_path):
+    def fake_detector(img):
+        return Detections(boxes=[], scores=[], labels=[])
+
+    p = _make_pipeline(tmp_path, fake_detector, None)
+    p.cfg.demo_password = "s3cr3t"
+    with TestClient(app_mod.create_app(pipeline=p), raise_server_exceptions=False) as client:
+        r = client.get("/")
+    assert r.status_code == 401
+
+
+def test_demo_page_password_accepted(tmp_path):
+    import base64
+
+    def fake_detector(img):
+        return Detections(boxes=[], scores=[], labels=[])
+
+    p = _make_pipeline(tmp_path, fake_detector, None)
+    p.cfg.demo_password = "s3cr3t"
+    creds = base64.b64encode(b"demo:s3cr3t").decode()
+    with TestClient(app_mod.create_app(pipeline=p)) as client:
+        r = client.get("/", headers={"Authorization": f"Basic {creds}"})
+    assert r.status_code == 200
+    assert 'type="file"' in r.text
