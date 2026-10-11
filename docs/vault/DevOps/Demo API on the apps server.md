@@ -27,8 +27,8 @@ kernel kills this container, not the production database next to it.
 
 ## How to look at it
 
-Browse `http://<apps-server-ip>:8096/docs` (Swagger UI), click Authorize
-and enter the key.
+Browse `http://<apps-server-ip>:8096/` (demo upload page — file picker, returns
+overlay; HTTP Basic Auth, password in `.env`). For the Swagger UI: `http://<apps-server-ip>:8096/docs`, click Authorize and enter the key.
 
 > **Risk while public.** Anyone on the internet can reach this port (Docker
 > bypasses ufw, and ufw is off anyway). The only protection is the API key,

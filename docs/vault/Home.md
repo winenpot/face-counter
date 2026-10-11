@@ -12,6 +12,14 @@
 - Debt: [[Open issues (serving)]]
 - Findings: [[2026-10-10 Serving investigation]] (every measured number from the serving work)
 
+## Status (2026-10-11)
+
+- **T8a done:** demo upload page at `GET /` — file picker, sends `POST /overlay`
+  with the API key embedded, returns the boxed photo. HTTP Basic Auth on `/`
+  (FACE_COUNTER_DEMO_PASSWORD in `.env`). Deployed as `face-counter-serve:461866d`.
+- Browse: open `http://<apps-server-ip>:8096/`, enter any username + the demo
+  password, upload a shelf photo, get the overlay back.
+
 ## Status (2026-10-10)
 
 - **T6 done, scope revised:** a detection-only demo API (`/count`, `/overlay`,
