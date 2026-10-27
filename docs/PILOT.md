@@ -4,33 +4,67 @@
 work and its ordered to-do list. `ROADMAP.md` still holds the full,
 horizontal plan; nothing in it is cancelled, only sequenced after this.
 
-## Current checkpoint (2026-10-11, end of day)
+## Current checkpoint (2026-10-26, end of day)
 
-Branch `master`, 213 tests pass (`uv run pytest`). `uv run ruff check .`
-reports 56 errors, all pre-existing (count unchanged by this work). Replace
-this section at every stop; don't append. The ordered task list and the full
-handoff are in `.hermes/plans/2026-10-04_demo-path.md` (section "Current
-handoff"); serving detail is in `.hermes/plans/2026-10-10_111130-t6-fastapi-service.md`.
+Branch `master`, 217 tests pass (`uv run pytest`). `uv run ruff check .`
+reports 56 errors, all pre-existing. Replace this section at every stop;
+don't append. The ordered task list and the full handoff are in
+`.hermes/plans/2026-10-04_demo-path.md` (section "Current handoff"); serving
+detail is in `.hermes/plans/2026-10-10_111130-t6-fastapi-service.md`.
 
-- **Done: T6, with revised scope.** The demo API is detection-only. `/count`
-  returns units detected plus boxes, and `/overlay` draws one neutral box per
-  unit. Brand matching (identity 65.3% on gold) is opt-in behind
-  `?debug=true`. The CLIP canned/glass stage is off by default
-  (`FACE_COUNTER_CLASSIFY`): it costs ~15 s and ~2 GB per process on CPU.
-- **Running:** container `face-counter-serve` on the apps server, public on port 8096 for demos (plain HTTP, demo key: risk note in the runbook),
-  memory-capped, ~5 s per photo. Runbook and measurements:
-  `docs/vault/DevOps/Demo API on the apps server.md`.
-- **Read before more serving work:** `docs/SERVING_STRATEGY.md` (why BI wants
-  async intake and pull workers, and the queue path) and
-  `docs/PACK_TYPE_ALTERNATIVES.md` (CLIP alternatives; its 93.8% was never
-  measured on detector boxes). Open GitHub issues: #2, #3, #5, #6, #7, #8.
-- **Next, in order:** T8 (the demo: pick photos, draft caveats; set a random
-  key first if anyone outside will see it). Then #6 (worst-case memory test,
-  compose file), T7 (db server vs apps server, Caddy front door, #8), T7b.
-- **Never:** write to project 3; run `shelf-splits --force`; `docker compose
-  down -v` on Label Studio; rsync code to hemin; publish credentials or IP
-  addresses (the repo is public). The Persian config and the checksums in
-  FROZEN.md are the only data-adjacent files tracked.
+**Where the pilot stands, honestly.** The measurement half works (frozen test
+set, gold set, `shelf-eval`, detector). The prediction half is wired end to
+end but does not yet answer the pilot's question: brand identity is 65.3% on
+gold, so the predicted share is far off ground truth (T5) and the demo API
+counts products only. Rough completeness: ~65% of the pilot/demo, ~25% of
+`ROADMAP.md` Phases 0-4.
+
+- **Running:** demo API `face-counter-serve` on the apps server, public on
+  port 8096 (plain HTTP, demo key, Basic Auth on the upload page `/`).
+  Detection-only; brand matching behind `?debug=true`; CLIP canned/glass off.
+  Runbook: `docs/vault/DevOps/Demo API on the apps server.md`.
+- **Labeling (training batches, step 6b) started.** Five Label Studio
+  projects `pilot-batch-01`..`05` (ids 6-10, 250 tasks each, Persian scope
+  config). Read over the API on 2026-10-26 09:07: 232 of 1,250 submitted
+  (01: 125, 02: 8, 03: 78, 04: 0, 05: 21) by three labelers plus the project owner. Live numbers and
+  the review findings: `docs/vault/Findings/2026-10-26 Training batch labeling status.md`.
+  Quality is below the test set's (misses, wrong names, per the user's own
+  review); 14 photos were submitted with zero edits to the pre-drawn boxes
+  and a few tasks carry two annotations. Both must be fixed before any
+  export is trained on. No fine-tuning round has run, so there is no
+  learning curve yet: whether 1,250 photos is enough is unmeasured
+  (`LABELING_STRATEGY.md` §8 guesses 300-600 for geometry to plateau).
+- **Next, in plan order (demo path):** T8 demo prep (photos, caveats, random
+  key), then #6, T7, T7b.
+- **Labeling track, in parallel (labelers work on their own):**
+  1. Batch hygiene: send the 14 zero-edit photos back to their labelers,
+     reduce multi-annotation tasks to one, take a dated JSON export per
+     batch project.
+  2. Round 1 of 6b: fine-tune on the cleaned batch-01 export (face-only
+     boxes), score on gold, confirm on the test set, plot the first
+     learning-curve point.
+- **The gap that decides the pilot's number:** identity. SKU-level galleries
+  on the gold crops (demo-path T3/T5 open item) are the next cheap
+  experiment; not yet scheduled ahead of T8.
+- **2026-10-26/27 (committed):** best-practice audit, audit sources,
+  candidate model survey (`docs/vault/Findings/`); labeling status with a
+  day-by-day table to 27 Oct 06:00 (337 annotations on 332 photos, 15
+  zero-edit, 4 duplicate tasks); reports for trade marketing and a technical
+  version (`docs/reports/2026-10-27_*`); plan tasks T9-T13; scripts
+  `scripts/labeler_qc.py`, `ls_status.py`, `packtype_match.py`.
+- **Next session runs on the GPU PC** (the user's from now on; the colleague
+  has not left yet, so his account and files stay untouched). First, in
+  order: `git pull` there; check `uv sync`, `pytest`, GPU visible to torch;
+  back up weights and `runs/`. Then the cheapest high-value GPU work:
+  T11's Cat2Real-DINOv3-384 drop-in on the 225 gold crops, T9 parity, T12
+  RF-DETR timing probe, then MLflow and round 1 (6b) when the user says.
+- **Open standing work:** face audit in a v2 copy project
+  (`ISSUE_FACES_NOT_OBJECTS.md`, waits on BI answers); face/behind field in
+  the evaluator; inter-annotator agreement (`ERROR_ANALYSIS.md` §3). Open
+  GitHub issues: #1, #2, #3, #5, #6, #7, #8.
+- **Never:** write to project 3 (test) or edit project 5 (gold); run
+  `shelf-splits --force`; `docker compose down -v` on Label Studio; rsync
+  code to hemin; publish credentials or IP addresses (the repo is public).
 
 > **Standing issue (2026-09-30): the pilot counts *faces*, not every object.**
 > A face is the frontmost unit of a lane, one per lane; units behind it are
@@ -94,7 +128,7 @@ Three rules keep the pilot from closing off the wider system:
       aisles), a few only snacks or oil. The frozen set must not change; the
       exact subset falls out of the labels (a photo with no named can or glass
       bottle), so the evaluation script counts it rather than an eyeball.
-- [ ] **3. Label the test set: one pass, brand level.** Decided 2026-09-27: one
+- [x] **3. Label the test set: one pass, brand level.** Decided 2026-09-27: one
       labeler, so one pass (fix YOLO26l's boxes and name the drinks on the
       same visit), and brand + pack type labels, no flavours
       (`scope.yaml` `detail: brand`, 7 labels). Runbook:
@@ -115,7 +149,8 @@ Three rules keep the pilot from closing off the wider system:
       **2026-09-30: labels frozen as v1** (all objects, rename pass done):
       `data/label_studio/FROZEN.md`. The project is never edited again; the
       face audit is done in a separate copy project and saved as v2.
-- [ ] **3b. Gold validation set.** About 30 photos from **val-split** stores,
+      **Done as v1.** The face audit is still open (standing issue).
+- [x] **3b. Gold validation set.** About 30 photos from **val-split** stores,
       labeled exactly like the test set (same guide, same scope labels). It is
       what weekly tuning, model comparison and vendor scoring run on, so the
       frozen test set is only read to confirm (`LABELING_STRATEGY.md` §8).
@@ -132,7 +167,12 @@ Three rules keep the pilot from closing off the wider system:
         manifest, so it needs no tag.
       - Load it as its own Label Studio project, so its tasks never mix with
         training batches.
-- [ ] **4. Gallery for the in-scope classes.** Invoice images in
+      **Done 2026-10-05:** project `pilot-gold-val` (id 5), 30/30 labeled
+      with scene/capture/photo-issue fields, export
+      `data/label_studio/exports/gold-val-2026-10-05.json`, 1,970 boxes.
+      List sha `71c7f434c344`. Scene tags exist on gold only; the frozen
+      test set has none.
+- [x] **4. Gallery for the in-scope classes.** Invoice images in
       `configs/Product/from_invoice/` (about 2 per SKU) plus crops from labeled
       non-test photos. Targeted competitors need a gallery too (2026-09-29):
       the matcher has to name them. Untargeted ones need none: not ours and
@@ -143,16 +183,25 @@ Three rules keep the pilot from closing off the wider system:
       index and Persian brand names in `configs/Product/competitors/README.md`.
       Waiting on the packshots themselves (you); at least 2 per folder, never
       crops from the frozen test set.
-- [ ] **4b. Embedding matcher.** Embed each crop (DINOv2 or CLIP), take the
+      **Filled 2026-10-04/05:** 9 of 10 folders, 154 images
+      (Laimon-Fresh_glass retired). Cleanup of a few bad images is optional
+      (demo-path T1).
+- [x] **4b. Embedding matcher.** Embed each crop (DINOv2 or CLIP), take the
       nearest gallery match, and call it not-ours below a similarity
       threshold. This is the identifier half of the two-stage design; without
       it nothing names a crop outside Label Studio. Tune the threshold on
       non-test crops only.
-- [ ] **5. Can vs glass for non-ours crops.** Nothing in the plan does this
+      **Built 2026-10-05** (`src/face_counter/identification/`, `shelf-match`):
+      DINOv2, threshold tuned on gold. Identity accuracy is **weak, 65.3%**;
+      next experiment is SKU-level galleries (demo-path T3/T5).
+- [x] **5. Can vs glass for non-ours crops.** Nothing in the plan does this
       yet, and the per-category share needs it. Cheapest candidates:
       zero-shot text match ("a can" vs "a glass bottle"), or YOLOE's own
       `can`/`bottle` prompt labels.
-- [ ] **6. Evaluation script.** Implements the metric tables in
+      **Done 2026-10-05:** CLIP ViT-L/14, ensemble prompts, AUC 0.985 / acc
+      93.8% on gold human boxes (never measured on detector boxes: issue #2).
+      Off by default in serving (ADR-0002).
+- [~] **6. Evaluation script.** Implements the metric tables in
       `docs/reports/2026-09-27_detector_step_zero.md` §7. Per category:
       share-of-shelf error, the ours-vs-competitor confusion both ways (the
       error that moves the number), and detector recall on drinks.
@@ -169,7 +218,10 @@ Three rules keep the pilot from closing off the wider system:
       are scored against *faces*, and a behind false-positive rate is added;
       the all-object numbers stay as a diagnostic column. This needs a
       face/behind field in the label parser (`ls_export.py`).
-- [ ] **6b. Fine-tune and re-score, in weekly rounds.** Label a training batch (never test
+      **2026-10-05:** `shelf-eval --predict` gives predicted share and its
+      error (demo-path T5: cans -37.6 pp, glass -26.9 pp on v1). Still open:
+      the face/behind scoring above.
+- [~] **6b. Fine-tune and re-score, in weekly rounds.** Label a training batch (never test
       stores), fine-tune the leading candidates (YOLO26, RF-DETR, DEIM-D-FINE),
       and score them on the same test set, on face metrics. Labels are
       face-only and no raw SKU-110K annotations go in (standing issue).
@@ -180,9 +232,19 @@ Three rules keep the pilot from closing off the wider system:
       "not a shelf photo, skip" answer before the batch goes out
       (`PHASE0_REMAINING.md` §2). The round-by-round loop (batch choice,
       capacity, vendors, stopping rule) is `LABELING_STRATEGY.md` §8.
-- [ ] **7. Phase 2, narrowed.** `/count` and `/overlay` for the two
+      **Started:** batches 01-05 (`data/splits/label_batch_0N.txt`, 250
+      photos each) are Label Studio projects 6-10; 232/1,250 submitted on
+      2026-10-26. No training round yet. Status and review findings:
+      `docs/vault/Findings/2026-10-26 Training batch labeling status.md`.
+      Before round 1: set up MLflow on the GPU PC (local, SQLite, ~half a
+      day; ROADMAP MLflow item) so round 1 is the logged baseline.
+- [~] **7. Phase 2, narrowed.** `/count` and `/overlay` for the two
       categories, per `ROADMAP.md`.
-- [ ] **8. The extensibility test.** Add a category (e.g. `oils`) or a
+      **2026-10-10/11:** service built and deployed, scope cut to
+      detection-only (per-category share behind `debug=true` until identity
+      improves); upload page at `/`. Hosting decision and hardening open
+      (demo-path T7, issues #6, #8).
+- [~] **8. The extensibility test.** Add a category (e.g. `oils`) or a
       named competitor to the scope, and record what else had to change.
       Findings so far:
       - 2026-09-29, named competitors: `taxonomy.problems()` rejected any

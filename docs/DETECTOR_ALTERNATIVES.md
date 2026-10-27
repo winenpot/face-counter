@@ -107,8 +107,13 @@ box, unverified.
 | **RT-DETR / v2** | Apache-2.0 | NMS-free, strong on dense scenes, permissive | Heavier CPU inference than YOLO |
 | **D-FINE** | check | Best accuracy/latency trade in the real-time class; distributional boxes suit ambiguous shelf seams | Newer, thinner tooling |
 | **DEIM(-D-FINE)** | **Apache-2.0** | SOTA real-time; halves training cost; **best-in-class on small objects**; fits one GPU overnight | Newest; ONNX-on-CPU path unproven for us |
-| **DEIMv2** | check | DINOv3 backbones; Pico/Femto/Atto for edge/CPU | Very new, unverified |
+| **DEIMv2** | **non-commercial** (custom licence, checked 2026-10-27) | DINOv3 backbones; Pico/Femto/Atto for edge/CPU | Not usable for the service; research reference only |
+| **RF-DETR (N/S/M/L)** | Apache-2.0 (XL/2XL: PML) | DINOv2 backbone; native 384-704 px; 300 queries, configurable; COCO M 54.7 / L 56.5 | No SKU-110K weights; slow to converge; tracked as plan T12 |
+| **RT-DETRv4** | Apache-2.0 | DINOv3 teacher at training time only, no extra inference cost; COCO L 55.4 | Young repo |
+| **YOLO26 + P2 head** | AGPL-3.0 | Extra high-resolution head for small objects; same toolchain as today | No published P2 weights; memory at 1280 on 8 GB untested |
 | **Co-DETR / DINO-DETR** | varies | Accuracy ceiling reference | Far too heavy for 4 CPU cores |
+
+*Table refreshed 2026-10-27; survey and sources in `docs/vault/Findings/2026-10-27 Candidate model survey.md`. No 2025-2026 paper above reports SKU-110K results.*
 
 ## The shortcut we should try before training anything
 

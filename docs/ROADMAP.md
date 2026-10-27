@@ -132,23 +132,24 @@ By day 10: a script turns a photo into SKU counts end to end, with accuracy meas
 - [~] **Detector, step zero — try published SKU-110K weights before training anything.** *Ran 2026-09-26 on the GPU box over the frozen test set (box counts in `LOGS.md`); overlays in `runs/bakeoff/20260926-141557/`. Picked 2026-09-27 for pre-drawing boxes: `yolo26l-sku110k` (run `runs/bakeoff/20260927-114232/`, `PILOT.md` step 1). Every candidate is re-scored after fine-tuning, on faces rather than on all objects (standing issue).* Several exist (a DETR-ResNet-50 reporting 58.9 mAP, trained on a 4060 Ti; a YOLO26l reporting 0.906 mAP50; the original CVPR19 RetinaNet). Evaluating them costs an afternoon; training costs a night. Domain shift to Iranian shops/fridges is unmeasured — our frozen test set decides. Add **YOLOE-26** (open-vocabulary, text-prompted with generic packaging nouns) as a third entrant, scored by recall on the same test set; it may also pre-fill `COMPETITOR_<category>` labels. See [`DETECTOR_ALTERNATIVES.md`](DETECTOR_ALTERNATIVES.md).
 - [ ] **Detector.** If step zero isn't enough, train a small YOLO on SKU-110K overnight on the 4060 Ti. Check by eye that it finds most faces on 10 of our photos. SKU-110K teaches "box every visible product", so treat it as a starting point: the fine-tune must use face-only labels (standing issue).
 - [ ] **Keep the detector swappable.** A `Detector` protocol with one `detect(image) -> boxes`, backend chosen in config, so everything downstream is detector-agnostic. YOLO is the starting point, not the conclusion — the DETR branch (RT-DETR, D-FINE, DEIM) now leads real-time detection, and DEIM is Apache-2.0, halves training cost, and gains most on small objects, which is exactly our weakness. Rationale and candidate table in [`DETECTOR_ALTERNATIVES.md`](DETECTOR_ALTERNATIVES.md).
-- [ ] **Small objects.** Use a larger input size (1280) or tiled inference (SAHI) for whole-aisle photos.
-- [ ] **Label the test set** in Label Studio with the detector's boxes pre-filled, in two passes: geometry first (class `product` only, faces only: units behind a face are not boxed), then identity (our SKU, `COMPETITOR_<category>`, or `out_of_scope`). Two labelers on the first five photos to measure agreement. Brand level first if time is short. See [`LABELING_STRATEGY.md`](LABELING_STRATEGY.md) §2, §7.
+- [~] **Small objects.** Use a larger input size (1280) or tiled inference (SAHI) for whole-aisle photos. — *pre-drawing and serving run at imgsz 1280; SAHI not tried.*
+- [x] **Label the test set** in Label Studio with the detector's boxes pre-filled, in two passes: geometry first (class `product` only, faces only: units behind a face are not boxed), then identity (our SKU, `COMPETITOR_<category>`, or `out_of_scope`). Two labelers on the first five photos to measure agreement. Brand level first if time is short. See [`LABELING_STRATEGY.md`](LABELING_STRATEGY.md) §2, §7. — *done as one pass at brand level (one labeler, so no agreement measured); frozen as v1 2026-09-30, `data/label_studio/FROZEN.md`. Gold validation set labeled the same way 2026-10-05.*
 - [ ] **Face audit of the test labels** (standing issue). Mark every labeled box face or behind, report how many behind units the ~2,900 boxes hold, and save a new dated export. Comes before the labels are called final. See [`ISSUE_FACES_NOT_OBJECTS.md`](ISSUE_FACES_NOT_OBJECTS.md) §7.
 - [ ] **Cluster labeling, first batch.** Crop `label_batch_01.txt` with the detector, embed with DINOv2, cluster, pre-suggest classes from the invoice packshots, and name whole clusters in Label Studio. Measure crops per cluster, seconds per decision, and the `mixed` rate. Never over test-store photos. See [`LABELING_STRATEGY.md`](LABELING_STRATEGY.md) §3.
-- [ ] **Reference gallery.** Packshots plus crops from the corrected test-adjacent photos (never from the test set itself), face boxes only, one folder per SKU.
-- [ ] **Embedding matcher.** Embed each crop, find the nearest gallery match, and label it `other` below a similarity threshold.
-- [ ] **Evaluation script.** Per-brand face-count error and share-of-shelf error on the test set, plus detector **face** recall and precision and the behind false-positive rate (standing issue). All-object recall stays as a diagnostic column, never the headline.
+- [~] **Reference gallery.** Packshots plus crops from the corrected test-adjacent photos (never from the test set itself), face boxes only, one folder per SKU. — *pilot scope only: brand-level folders, 9 of 10 tracked-competitor folders filled (154 images) plus invoice images for ours. SKU-level folders not built.*
+- [~] **Embedding matcher.** Embed each crop, find the nearest gallery match, and label it `other` below a similarity threshold. — *built 2026-10-05 (`src/face_counter/identification/`, DINOv2, tuned on gold); identity accuracy 65.3%, too weak to report share. See `PILOT.md` 4b.*
+- [~] **Evaluation script.** Per-brand face-count error and share-of-shelf error on the test set, plus detector **face** recall and precision and the behind false-positive rate (standing issue). All-object recall stays as a diagnostic column, never the headline. — *`shelf-eval` (ground-truth and predicted share, CIs, detector recall) done; face/behind scoring waits on the face audit.*
 
 ## Phase 2 — MVP demo (days 11–15)
 
 By day 15: a deployed API, a visual overlay, honest numbers, and the plan for month 2. Days 16–21 are buffer, not new features.
 
-- [ ] **FastAPI service:**
+- [~] **FastAPI service:**
   - `POST /count`: upload, nested counts by brand → category → SKU, share of shelf per category, and a write to `predictions`.
   - `POST /overlay`: returns the photo with colored boxes. Managers trust what they can see, and it's the best debugging tool.
   - `GET /health`: model version and status.
-- [ ] **Docker** with CPU and memory limits, deployed on the db server beside the existing containers, touching no existing app.
+  — *2026-10-10/11: built and deployed, detection-only (brand/category counts behind `debug=true`), upload page at `/`, no write to `predictions` (issue #7).*
+- [~] **Docker** with CPU and memory limits, deployed on the db server beside the existing containers, touching no existing app. — *capped container runs on the apps server instead (user's call, 2026-10-10); db server and compose file open (demo-path T7, #6).*
 - [ ] **Run on the test set** and report results in business terms ("brand counts off by X faces per photo"), not just mAP.
 - [ ] **Demo:** the overlay, the JSON, the numbers, and Phases 3–4 as the path forward.
 
@@ -173,7 +174,7 @@ photos they correct is the budget. (This is what "human-in-the-loop" actually
 means here; it is **not** RLHF — detection has ground truth, so corrections are
 training data directly. See `ERROR_ANALYSIS.md` §3.)
 
-- [ ] **Pre-labeling loop.** The model labels batches of the corpus; labelers correct pre-filled boxes.
+- [~] **Pre-labeling loop.** The model labels batches of the corpus; labelers correct pre-filled boxes. — *started 2026-10: batches 01-05 pre-drawn by `yolo26l-sku110k`, Label Studio projects 6-10, 232/1,250 corrected by 2026-10-26; no retrain yet, so the loop has not closed once.*
 - [ ] **Sampling strategy,** in order of value-for-effort: uncertainty → ensemble disagreement (free, we hold two detectors from the Phase-1 bake-off) → diversity over **detected-object-region** features, not whole-image (NORIS: 20–30% labeling-cost cut) → class-balanced allocation for the long tail (ALMUS) → density. Seed each round with the previous model's worst-50.
 - [ ] **Labeling ROI curve** plotted every round — accuracy vs. photos labeled. When it flattens, change strategy or stop, instead of burning labeler-months on a flat line.
 - [ ] **Inter-annotator agreement:** 2 labelers, same 20 photos, monthly. Human agreement is the accuracy ceiling; disagreements are bug reports against `labeling-guide/README.md`.
@@ -185,7 +186,7 @@ training data directly. See `ERROR_ANALYSIS.md` §3.)
 - [ ] **Fine-tune the detector** on our corrected face boxes (face-only labels; no raw all-object data such as SKU-110K annotations mixed in); re-run the Phase-1 bake-off now that we have real labels — a DEIM-trained D-FINE is the leading alternative and fits one 4060 Ti overnight.
 - [ ] **Train a crop classifier** for the ~400 classes; keep the embedding matcher as a fallback for new SKUs.
 - [ ] **Hyperparameter tuning,** time-boxed and in the right order: data → resolution/tiling → confidence and NMS thresholds → the `other` similarity cutoff → LR schedule. Tune on validation, never on test.
-- [ ] **MLflow,** self-hosted: log every experiment and register models. A model is promoted only if it beats the current one on the fixed test set, on face metrics (never all-object AP or box count).
+- [ ] **MLflow,** self-hosted: log every experiment and register models. A model is promoted only if it beats the current one on the fixed test set, on face metrics (never all-object AP or box count). *Timing (2026-10-27): set up right before the first detector fine-tune (PILOT 6b round 1), on the GPU PC: local MLflow, SQLite backend, artifacts on its ~5 TB disk; Ultralytics' built-in MLflow logging for detector runs, a few lines for matcher/embedder runs. Move to the planned storage server later; not on atpg (memory). Earlier runs stay as `runs/` JSON with export sha256.*
 - [ ] **Dataset versioning** with DVC on object storage. SeaweedFS or Garage go on a new disk on the db server; check MinIO's current licensing before choosing it.
 - [ ] **Disk:** budget an extra 500 GB–1 TB drive. The 100 GB free now won't hold exports, datasets, and model artifacts.
 
@@ -224,7 +225,7 @@ The biggest risk is flavor-level confusion; brand-level counts will be reliable 
 
 ## Resources and dependencies
 
-The MVP needs no purchases; month 2 needs one extra disk and labeler time.
+The MVP needs no purchases; month 2 needs labeler time. The GPU PC has ~5 TB, enough for training data; a storage server is planned later (owner, 2026-10-27).
 
 | Need | From | When |
 | --- | --- | --- |
@@ -232,7 +233,7 @@ The MVP needs no purchases; month 2 needs one extra disk and labeler time.
 | Packshots, 2–5 per SKU | Marketing | Day 5 |
 | 4060 Ti PC for overnight training | IT / owner of the PC | Day 4 onward |
 | Docker deploy slot on db server | Engineering | Day 12 |
-| Extra 500 GB–1 TB disk on db server | Management | Month 2 |
+| Storage server (backups, data versioning; possibly field-app photos) | Owner | Later, no date |
 | 5–10 labelers, 3–4 h/day | Management | Month 2 |
 | Labeling platform with review + assignment (CVAT Community, free; or Label Studio Enterprise, paid) | Engineering / Management | Before month-2 labelers start |
 | Rep correction screen in field app | Engineering | Month 3 |
