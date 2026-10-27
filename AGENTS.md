@@ -1,3 +1,11 @@
+## Skills (agents: read first)
+
+- Load the `face-counter-project` skill before any work in this repo, then
+  load every skill its "Skills to load with this one" section names for the
+  task (research, model choice, serving, Label Studio, handoff).
+- Start each substantial task with one line: "Skills loaded: ...".
+- When delegating, name the required skills in each subagent's context.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.

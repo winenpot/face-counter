@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+Skills: follow the "Skills (agents: read first)" section of `AGENTS.md`.
+
 ## Project state
 
 Early-stage. **Phase 0 (foundations) is implemented**; the API and inference layers are not.
