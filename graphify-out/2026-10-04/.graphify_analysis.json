@@ -72,43 +72,39 @@
     ],
     "1": [
       "any",
+      "argparse",
       "datetime",
-      "detector",
+      "face_counter_evaluation",
       "hashlib",
-      "image",
       "io",
       "logging",
-      "os",
-      "src_face_counter_training_detector_bakeoff",
-      "src_face_counter_training_detector_bakeoff_build_detr_r50_sku110k",
-      "src_face_counter_training_detector_bakeoff_build_detr_r50_sku110k_detect",
-      "src_face_counter_training_detector_bakeoff_build_sku110k_yolo11s",
-      "src_face_counter_training_detector_bakeoff_build_yolo26l_sku110k",
-      "src_face_counter_training_detector_bakeoff_build_yoloe_26s",
-      "src_face_counter_training_detector_bakeoff_clean_legacy_config",
-      "src_face_counter_training_detector_bakeoff_detections",
-      "src_face_counter_training_detector_bakeoff_detr_config",
-      "src_face_counter_training_detector_bakeoff_draw_overlay",
-      "src_face_counter_training_detector_bakeoff_load_image",
-      "src_face_counter_training_detector_bakeoff_ls_prediction",
-      "src_face_counter_training_detector_bakeoff_ls_task",
-      "src_face_counter_training_detector_bakeoff_main",
-      "src_face_counter_training_detector_bakeoff_py_path",
-      "src_face_counter_training_detector_bakeoff_rationale_1",
-      "src_face_counter_training_detector_bakeoff_rationale_109",
-      "src_face_counter_training_detector_bakeoff_rationale_120",
-      "src_face_counter_training_detector_bakeoff_rationale_149",
-      "src_face_counter_training_detector_bakeoff_rationale_159",
-      "src_face_counter_training_detector_bakeoff_rationale_169",
-      "src_face_counter_training_detector_bakeoff_rationale_178",
-      "src_face_counter_training_detector_bakeoff_rationale_197",
-      "src_face_counter_training_detector_bakeoff_rationale_235",
-      "src_face_counter_training_detector_bakeoff_rationale_79",
-      "src_face_counter_training_detector_bakeoff_resolve_prompts",
-      "src_face_counter_training_detector_bakeoff_resolve_weights",
-      "src_face_counter_training_detector_bakeoff_run",
-      "src_face_counter_training_detector_bakeoff_ultralytics_detector",
-      "src_face_counter_training_detector_bakeoff_ultralytics_detector_detect",
+      "path",
+      "pathlib",
+      "pil",
+      "pillow_heif",
+      "scripts_can_vs_glass_spike",
+      "scripts_can_vs_glass_spike_auc",
+      "scripts_can_vs_glass_spike_collect_crops",
+      "scripts_can_vs_glass_spike_main",
+      "scripts_can_vs_glass_spike_open",
+      "scripts_can_vs_glass_spike_rationale_1",
+      "scripts_can_vs_glass_spike_rationale_112",
+      "scripts_can_vs_glass_spike_rationale_57",
+      "scripts_can_vs_glass_spike_rationale_66",
+      "scripts_can_vs_glass_spike_rationale_86",
+      "scripts_can_vs_glass_spike_score_model",
+      "scripts_can_vs_glass_spike_score_model_feats",
+      "scripts_can_vs_glass_spike_score_model_image_emb",
+      "scripts_can_vs_glass_spike_score_model_text_emb",
+      "scripts_can_vs_glass_spike_summarize",
+      "scripts_contact_sheet",
+      "scripts_contact_sheet_main",
+      "scripts_contact_sheet_py_path",
+      "scripts_contact_sheet_rationale_1",
+      "scripts_contact_sheet_render",
+      "scripts_scan_images",
+      "scripts_scan_images_rationale_9",
+      "scripts_scan_images_scan_images",
       "src_face_counter_training_export_photos",
       "src_face_counter_training_export_photos_export",
       "src_face_counter_training_export_photos_ext_for",
@@ -133,11 +129,9 @@
       "src_face_counter_utils_config_rationale_1",
       "src_face_counter_utils_config_rationale_36",
       "src_face_counter_utils_config_rationale_49",
-      "time",
       "yaml"
     ],
     "2": [
-      "argparse",
       "collections",
       "csv",
       "face_counter_utils_config",
@@ -153,13 +147,6 @@
       "logs_logs",
       "logs_\u06f1\u06f4\u06f0\u06f5_\u06f0\u06f6_\u06f3\u06f1_\u06f2\u06f0\u06f2\u06f6_\u06f0\u06f9_\u06f2\u06f2_\u06cc\u06a9_\u0631\u0648\u0632_\u06a9\u0627\u0645\u0644_\u0627\u062f\u063a\u0627\u0645_shelf_detector_\u06cc\u06a9_\u0628\u0627\u06af_\u0648\u0627\u0642\u0639\u06cc_\u062f\u0631_\u0627\u0633\u06a9\u06cc\u0645\u0627_\u0631\u0627\u0647_\u0627\u0646\u062f\u0627\u0632\u06cc_\u0633\u0631\u0648\u0631_gpu",
       "logs_\u06f1\u06f4\u06f0\u06f5_\u06f0\u06f7_\u06f0\u06f2_\u06f2\u06f0\u06f2\u06f6_\u06f0\u06f9_\u06f2\u06f4_the_export_finally_ran_the_model_landscape_moved_a_user_tip_corrected_a_wrong_call",
-      "path",
-      "pil",
-      "pillow_heif",
-      "scripts_contact_sheet",
-      "scripts_contact_sheet_main",
-      "scripts_contact_sheet_rationale_1",
-      "scripts_contact_sheet_render",
       "scripts_make_gallery_folders",
       "scripts_make_gallery_folders_count_images",
       "scripts_make_gallery_folders_gallery_labels",
@@ -194,54 +181,6 @@
       "xml_sax_saxutils"
     ],
     "3": [
-      "githooks_commit_msg",
-      "githooks_commit_msg_main",
-      "githooks_commit_msg_rationale_2",
-      "openpyxl",
-      "pathlib",
-      "re",
-      "scripts_build_classes",
-      "scripts_build_classes_build_classes",
-      "scripts_build_classes_classes_for",
-      "scripts_build_classes_drink_kind",
-      "scripts_build_classes_guess_brand",
-      "scripts_build_classes_guess_category",
-      "scripts_build_classes_guess_sku",
-      "scripts_build_classes_load_descriptions",
-      "scripts_build_classes_main",
-      "scripts_build_classes_merge",
-      "scripts_build_classes_pack_types_for",
-      "scripts_build_classes_py_path",
-      "scripts_build_classes_rationale_1",
-      "scripts_build_classes_rationale_110",
-      "scripts_build_classes_rationale_129",
-      "scripts_build_classes_rationale_177",
-      "scripts_build_classes_rationale_192",
-      "scripts_build_classes_rationale_217",
-      "scripts_build_classes_rationale_240",
-      "scripts_build_classes_rationale_265",
-      "scripts_build_classes_rationale_63",
-      "scripts_build_classes_read_existing",
-      "scripts_build_classes_sort_key",
-      "scripts_build_classes_strip_wholesale_packaging",
-      "scripts_build_classes_unknowncontainer",
-      "scripts_build_classes_write_classes",
-      "scripts_extract_invoice_packshots",
-      "scripts_extract_invoice_packshots_drawing_path",
-      "scripts_extract_invoice_packshots_guess_ext",
-      "scripts_extract_invoice_packshots_main",
-      "scripts_extract_invoice_packshots_rationale_1",
-      "scripts_extract_invoice_packshots_rationale_52",
-      "scripts_extract_invoice_packshots_row_to_image",
-      "scripts_scan_images",
-      "scripts_scan_images_rationale_9",
-      "scripts_scan_images_scan_images",
-      "sys",
-      "valueerror",
-      "xml_etree",
-      "zipfile"
-    ],
-    "4": [
       "contextlib",
       "socket",
       "src_face_counter_label_studio_setup_project",
@@ -283,11 +222,101 @@
       "src_face_counter_label_studio_setup_project_step",
       "src_face_counter_label_studio_setup_project_tasks_to_import",
       "src_face_counter_label_studio_setup_project_verify",
+      "time",
       "urllib_error",
       "urllib_request"
     ],
+    "4": [
+      "docs_phase0_remaining_done",
+      "face_counter_training",
+      "fixture",
+      "mongomock",
+      "mongomock_gridfs",
+      "tests_test_phase0",
+      "tests_test_phase0_build_fake_db",
+      "tests_test_phase0_cfg",
+      "tests_test_phase0_fake_db",
+      "tests_test_phase0_gold_setup",
+      "tests_test_phase0_jpeg",
+      "tests_test_phase0_rationale_1",
+      "tests_test_phase0_rationale_102",
+      "tests_test_phase0_rationale_134",
+      "tests_test_phase0_rationale_153",
+      "tests_test_phase0_rationale_182",
+      "tests_test_phase0_rationale_223",
+      "tests_test_phase0_rationale_239",
+      "tests_test_phase0_rationale_273",
+      "tests_test_phase0_rationale_29",
+      "tests_test_phase0_rationale_341",
+      "tests_test_phase0_rationale_373",
+      "tests_test_phase0_rationale_396",
+      "tests_test_phase0_rationale_455",
+      "tests_test_phase0_sha",
+      "tests_test_phase0_test_date_filter",
+      "tests_test_phase0_test_export_is_complete_and_resumable",
+      "tests_test_phase0_test_gold_swap_never_brings_back_a_rejected_photo",
+      "tests_test_phase0_test_gold_swap_refuses_a_stale_sheet_and_bad_tiles_and_changes_nothing",
+      "tests_test_phase0_test_gold_swap_refuses_when_there_are_not_enough_unused_stores",
+      "tests_test_phase0_test_gold_swap_replaces_only_the_named_tiles_from_unused_val_stores",
+      "tests_test_phase0_test_gold_val_is_never_overwritten_once_written",
+      "tests_test_phase0_test_gold_val_is_val_only_disjoint_and_leaves_everything_else_byte_identical",
+      "tests_test_phase0_test_gold_val_refuses_pcts_that_disagree_with_splits_csv",
+      "tests_test_phase0_test_gridfs_source_respects_photo_type_query",
+      "tests_test_phase0_test_heic_photo_is_exported_not_dropped",
+      "tests_test_phase0_test_int_store_code_normalised_to_string",
+      "tests_test_phase0_test_label_batches_never_repeat_a_photo",
+      "tests_test_phase0_test_label_studio_files",
+      "tests_test_phase0_test_region_join_fills_city",
+      "tests_test_phase0_test_shipped_config_is_filled_in",
+      "tests_test_phase0_test_splits_no_leakage_and_stable",
+      "tests_test_phase0_test_store_join_resolves_visit_code_to_real_store",
+      "tests_test_phase0_test_unedited_config_refuses_to_run"
+    ],
     "5": [
-      "face_counter_evaluation",
+      "githooks_commit_msg",
+      "githooks_commit_msg_main",
+      "githooks_commit_msg_rationale_2",
+      "openpyxl",
+      "re",
+      "scripts_build_classes",
+      "scripts_build_classes_build_classes",
+      "scripts_build_classes_classes_for",
+      "scripts_build_classes_drink_kind",
+      "scripts_build_classes_guess_brand",
+      "scripts_build_classes_guess_category",
+      "scripts_build_classes_guess_sku",
+      "scripts_build_classes_load_descriptions",
+      "scripts_build_classes_main",
+      "scripts_build_classes_merge",
+      "scripts_build_classes_pack_types_for",
+      "scripts_build_classes_py_path",
+      "scripts_build_classes_rationale_1",
+      "scripts_build_classes_rationale_110",
+      "scripts_build_classes_rationale_129",
+      "scripts_build_classes_rationale_177",
+      "scripts_build_classes_rationale_192",
+      "scripts_build_classes_rationale_217",
+      "scripts_build_classes_rationale_240",
+      "scripts_build_classes_rationale_265",
+      "scripts_build_classes_rationale_63",
+      "scripts_build_classes_read_existing",
+      "scripts_build_classes_sort_key",
+      "scripts_build_classes_strip_wholesale_packaging",
+      "scripts_build_classes_unknowncontainer",
+      "scripts_build_classes_write_classes",
+      "scripts_extract_invoice_packshots",
+      "scripts_extract_invoice_packshots_drawing_path",
+      "scripts_extract_invoice_packshots_guess_ext",
+      "scripts_extract_invoice_packshots_main",
+      "scripts_extract_invoice_packshots_rationale_1",
+      "scripts_extract_invoice_packshots_rationale_52",
+      "scripts_extract_invoice_packshots_row_to_image",
+      "sys",
+      "valueerror",
+      "xml_etree",
+      "zipfile"
+    ],
+    "6": [
       "tests_test_evaluation",
       "tests_test_evaluation_ann",
       "tests_test_evaluation_box",
@@ -327,46 +356,8 @@
       "tests_test_evaluation_test_the_shipped_configs_resolve_every_label_in_the_live_labeling_config",
       "tests_test_evaluation_write"
     ],
-    "6": [
-      "docs_phase0_remaining_done",
-      "face_counter_training",
-      "mongomock",
-      "mongomock_gridfs",
-      "tests_test_phase0",
-      "tests_test_phase0_build_fake_db",
-      "tests_test_phase0_cfg",
-      "tests_test_phase0_fake_db",
-      "tests_test_phase0_jpeg",
-      "tests_test_phase0_py_fixture",
-      "tests_test_phase0_rationale_1",
-      "tests_test_phase0_rationale_102",
-      "tests_test_phase0_rationale_134",
-      "tests_test_phase0_rationale_153",
-      "tests_test_phase0_rationale_182",
-      "tests_test_phase0_rationale_223",
-      "tests_test_phase0_rationale_239",
-      "tests_test_phase0_rationale_273",
-      "tests_test_phase0_rationale_29",
-      "tests_test_phase0_rationale_341",
-      "tests_test_phase0_rationale_373",
-      "tests_test_phase0_rationale_383",
-      "tests_test_phase0_test_date_filter",
-      "tests_test_phase0_test_export_is_complete_and_resumable",
-      "tests_test_phase0_test_gold_val_is_never_overwritten_once_written",
-      "tests_test_phase0_test_gold_val_is_val_only_disjoint_and_leaves_everything_else_byte_identical",
-      "tests_test_phase0_test_gold_val_refuses_pcts_that_disagree_with_splits_csv",
-      "tests_test_phase0_test_gridfs_source_respects_photo_type_query",
-      "tests_test_phase0_test_heic_photo_is_exported_not_dropped",
-      "tests_test_phase0_test_int_store_code_normalised_to_string",
-      "tests_test_phase0_test_label_batches_never_repeat_a_photo",
-      "tests_test_phase0_test_label_studio_files",
-      "tests_test_phase0_test_region_join_fills_city",
-      "tests_test_phase0_test_shipped_config_is_filled_in",
-      "tests_test_phase0_test_splits_no_leakage_and_stable",
-      "tests_test_phase0_test_store_join_resolves_visit_code_to_real_store",
-      "tests_test_phase0_test_unedited_config_refuses_to_run"
-    ],
     "7": [
+      "os",
       "pytest",
       "shutil",
       "skipif",
@@ -402,6 +393,40 @@
       "tests_test_gallery_folders_test_untracked_competitors_get_no_gallery"
     ],
     "8": [
+      "detector",
+      "image",
+      "src_face_counter_training_detector_bakeoff",
+      "src_face_counter_training_detector_bakeoff_build_detr_r50_sku110k",
+      "src_face_counter_training_detector_bakeoff_build_detr_r50_sku110k_detect",
+      "src_face_counter_training_detector_bakeoff_build_sku110k_yolo11s",
+      "src_face_counter_training_detector_bakeoff_build_yolo26l_sku110k",
+      "src_face_counter_training_detector_bakeoff_build_yoloe_26s",
+      "src_face_counter_training_detector_bakeoff_clean_legacy_config",
+      "src_face_counter_training_detector_bakeoff_detections",
+      "src_face_counter_training_detector_bakeoff_detr_config",
+      "src_face_counter_training_detector_bakeoff_draw_overlay",
+      "src_face_counter_training_detector_bakeoff_load_image",
+      "src_face_counter_training_detector_bakeoff_ls_prediction",
+      "src_face_counter_training_detector_bakeoff_ls_task",
+      "src_face_counter_training_detector_bakeoff_main",
+      "src_face_counter_training_detector_bakeoff_py_path",
+      "src_face_counter_training_detector_bakeoff_rationale_1",
+      "src_face_counter_training_detector_bakeoff_rationale_109",
+      "src_face_counter_training_detector_bakeoff_rationale_120",
+      "src_face_counter_training_detector_bakeoff_rationale_149",
+      "src_face_counter_training_detector_bakeoff_rationale_159",
+      "src_face_counter_training_detector_bakeoff_rationale_169",
+      "src_face_counter_training_detector_bakeoff_rationale_178",
+      "src_face_counter_training_detector_bakeoff_rationale_197",
+      "src_face_counter_training_detector_bakeoff_rationale_235",
+      "src_face_counter_training_detector_bakeoff_rationale_79",
+      "src_face_counter_training_detector_bakeoff_resolve_prompts",
+      "src_face_counter_training_detector_bakeoff_resolve_weights",
+      "src_face_counter_training_detector_bakeoff_run",
+      "src_face_counter_training_detector_bakeoff_ultralytics_detector",
+      "src_face_counter_training_detector_bakeoff_ultralytics_detector_detect"
+    ],
+    "9": [
       "docs_pilot_current_checkpoint_2026_09_30_end_of_day",
       "docs_pilot_deferred_not_dropped",
       "docs_pilot_pilot_two_brands_cans_and_glass_bottles",
@@ -433,7 +458,7 @@
       "src_face_counter_utils_taxonomy_problems",
       "src_face_counter_utils_taxonomy_rationale_53"
     ],
-    "9": [
+    "10": [
       "tests_test_taxonomy",
       "tests_test_taxonomy_rationale_1",
       "tests_test_taxonomy_reporting",
@@ -464,7 +489,7 @@
       "tests_test_taxonomy_test_shipped_scope_is_the_two_brand_drinks_pilot",
       "tests_test_taxonomy_test_unknown_scope_detail_is_rejected"
     ],
-    "10": [
+    "11": [
       "docs_proposal",
       "docs_proposal_10_deployment",
       "docs_proposal_11_performance_considerations",
@@ -494,7 +519,7 @@
       "docs_proposal_phase_5_integration",
       "docs_proposal_proposal_ai_based_product_face_counting_web_service"
     ],
-    "11": [
+    "12": [
       "src_face_counter_label_studio_init",
       "tests_test_setup_project",
       "tests_test_setup_project_fakels",
@@ -522,7 +547,7 @@
       "tests_test_setup_project_test_trailing_newline_label_studio_strips_is_not_a_change",
       "tests_test_setup_project_test_two_projects_with_the_same_title_stop_the_run"
     ],
-    "12": [
+    "13": [
       "src_face_counter_training_init",
       "tests_test_bakeoff",
       "tests_test_bakeoff_rationale_1",
@@ -550,7 +575,32 @@
       "tests_test_bakeoff_test_yoloe_builder_passes_the_prompts_to_the_model_set_classes",
       "tests_test_bakeoff_yolo26_cfg"
     ],
-    "13": [
+    "14": [
+      "dataframe",
+      "pandas",
+      "src_face_counter_label_studio_make_splits",
+      "src_face_counter_label_studio_make_splits_already_sent",
+      "src_face_counter_label_studio_make_splits_diverse_sample",
+      "src_face_counter_label_studio_make_splits_group_key",
+      "src_face_counter_label_studio_make_splits_main",
+      "src_face_counter_label_studio_make_splits_make_gold_val",
+      "src_face_counter_label_studio_make_splits_make_splits",
+      "src_face_counter_label_studio_make_splits_py_path",
+      "src_face_counter_label_studio_make_splits_rationale_1",
+      "src_face_counter_label_studio_make_splits_rationale_155",
+      "src_face_counter_label_studio_make_splits_rationale_173",
+      "src_face_counter_label_studio_make_splits_rationale_205",
+      "src_face_counter_label_studio_make_splits_rationale_254",
+      "src_face_counter_label_studio_make_splits_rationale_269",
+      "src_face_counter_label_studio_make_splits_rationale_51",
+      "src_face_counter_label_studio_make_splits_rationale_76",
+      "src_face_counter_label_studio_make_splits_split_for",
+      "src_face_counter_label_studio_make_splits_split_frame",
+      "src_face_counter_label_studio_make_splits_swap_gold_val",
+      "src_face_counter_label_studio_make_splits_write_list",
+      "src_face_counter_label_studio_make_splits_write_next_batch"
+    ],
+    "15": [
       "tests_test_build_classes",
       "tests_test_build_classes_rationale_1",
       "tests_test_build_classes_test_brand_is_recognised_and_canonicalised",
@@ -573,28 +623,7 @@
       "tests_test_build_classes_test_write_is_atomic_and_keeps_column_order",
       "tests_test_build_classes_write"
     ],
-    "14": [
-      "dataframe",
-      "pandas",
-      "src_face_counter_label_studio_make_splits",
-      "src_face_counter_label_studio_make_splits_already_sent",
-      "src_face_counter_label_studio_make_splits_diverse_sample",
-      "src_face_counter_label_studio_make_splits_group_key",
-      "src_face_counter_label_studio_make_splits_main",
-      "src_face_counter_label_studio_make_splits_make_gold_val",
-      "src_face_counter_label_studio_make_splits_make_splits",
-      "src_face_counter_label_studio_make_splits_py_path",
-      "src_face_counter_label_studio_make_splits_rationale_1",
-      "src_face_counter_label_studio_make_splits_rationale_152",
-      "src_face_counter_label_studio_make_splits_rationale_190",
-      "src_face_counter_label_studio_make_splits_rationale_205",
-      "src_face_counter_label_studio_make_splits_rationale_47",
-      "src_face_counter_label_studio_make_splits_rationale_72",
-      "src_face_counter_label_studio_make_splits_split_for",
-      "src_face_counter_label_studio_make_splits_write_list",
-      "src_face_counter_label_studio_make_splits_write_next_batch"
-    ],
-    "15": [
+    "16": [
       "face_counter_label_studio",
       "tests_test_label_prep",
       "tests_test_label_prep_labels",
@@ -615,7 +644,7 @@
       "tests_test_label_prep_test_tasks_point_at_the_served_file_and_keep_the_original_name",
       "xml_dom"
     ],
-    "16": [
+    "17": [
       "docs_labeling_strategy_1_the_job_is_not_label_9_500_photos",
       "docs_labeling_strategy_2_separate_where_from_what",
       "docs_labeling_strategy_3_cluster_labeling_how_identity_scales",
@@ -631,7 +660,7 @@
       "docs_labeling_strategy_what_each_round_does",
       "docs_labeling_strategy_what_survives_when_the_taxonomy_grows"
     ],
-    "17": [
+    "18": [
       "docs_error_analysis_1_error_analysis",
       "docs_error_analysis_2_hyperparameter_tuning",
       "docs_error_analysis_3_human_in_the_loop_and_why_it_is_not_rlhf",
@@ -646,7 +675,22 @@
       "docs_error_analysis_the_failure_taxonomy",
       "docs_error_analysis_what_we_actually_want_active_learning"
     ],
-    "18": [
+    "19": [
+      "docs_reports_2026_09_27_detector_step_zero",
+      "docs_reports_2026_09_27_detector_step_zero_1_what_was_done",
+      "docs_reports_2026_09_27_detector_step_zero_2_measured_results_no_ground_truth_yet",
+      "docs_reports_2026_09_27_detector_step_zero_3_visual_review_of_the_overlays",
+      "docs_reports_2026_09_27_detector_step_zero_4_interpretation",
+      "docs_reports_2026_09_27_detector_step_zero_5_limitations",
+      "docs_reports_2026_09_27_detector_step_zero_6_next_steps",
+      "docs_reports_2026_09_27_detector_step_zero_7_evaluation_metrics",
+      "docs_reports_2026_09_27_detector_step_zero_business_output",
+      "docs_reports_2026_09_27_detector_step_zero_detector_step_zero_report_and_evaluation_plan",
+      "docs_reports_2026_09_27_detector_step_zero_operational",
+      "docs_reports_2026_09_27_detector_step_zero_stage_1_detector_finds_every_face",
+      "docs_reports_2026_09_27_detector_step_zero_stage_2_identifier_names_each_box"
+    ],
+    "20": [
       "deploy_label_studio_readme",
       "deploy_label_studio_readme_deploying_changes",
       "deploy_label_studio_readme_first_run",
@@ -660,7 +704,7 @@
       "deploy_label_studio_readme_rules",
       "deploy_label_studio_readme_stopping_without_losing_labels"
     ],
-    "19": [
+    "21": [
       "docs_pilot_labeling",
       "docs_pilot_labeling_0_build_the_files_on_this_machine",
       "docs_pilot_labeling_1_4_put_it_on_the_server_one_command",
@@ -674,7 +718,7 @@
       "docs_pilot_labeling_labeling_the_test_set_for_the_pilot_step_by_step",
       "docs_pilot_labeling_words_used_here"
     ],
-    "20": [
+    "22": [
       "docs_roadmap_approach",
       "docs_roadmap_architecture",
       "docs_roadmap_phase_0_foundations_days_1_3",
@@ -688,20 +732,7 @@
       "docs_roadmap_standing_issue_count_faces_not_every_object",
       "docs_roadmap_summary"
     ],
-    "21": [
-      "docs_detector_alternatives",
-      "docs_detector_alternatives_constraints",
-      "docs_detector_alternatives_detector_alternatives_the_knobs_we_deliberately_left_reachable",
-      "docs_detector_alternatives_first_three_things_the_roadmap_s_phrasing_hides",
-      "docs_detector_alternatives_open_vocabulary_detection_yoloe_26_as_a_third_candidate",
-      "docs_detector_alternatives_sources",
-      "docs_detector_alternatives_the_candidates",
-      "docs_detector_alternatives_the_landscape_and_why_it_moved",
-      "docs_detector_alternatives_the_shortcut_we_should_try_before_training_anything",
-      "docs_detector_alternatives_what_this_actually_requires_of_phase_1",
-      "docs_detector_alternatives_where_it_fits_strongest_first"
-    ],
-    "22": [
+    "23": [
       "docs_labeling_guide_readme_fa_\u062f\u06a9\u0645\u0647_\u0647\u0627_\u0648_\u062a\u0646\u0638\u06cc\u0645\u0627\u062a_label_studio_\u0627\u0646\u06af\u0644\u06cc\u0633\u06cc_\u0645\u06cc_\u0645\u0627\u0646\u0646\u062f",
       "docs_labeling_guide_readme_fa_\u0631\u0627\u0647\u0646\u0645\u0627\u06cc_\u0628\u0631\u0686\u0633\u0628_\u06af\u0630\u0627\u0631\u06cc_\u0686\u0647\u0631\u0647_\u06cc_\u0645\u062d\u0635\u0648\u0644\u0627\u062a_\u0631\u0648\u06cc_\u0642\u0641\u0633\u0647",
       "docs_labeling_guide_readme_fa_\u0633\u0647_\u0628\u062e\u0634_\u067e\u0627\u06cc\u06cc\u0646_\u0639\u06a9\u0633",
@@ -714,7 +745,7 @@
       "docs_labeling_guide_readme_fa_\u06a9\u0627\u062f\u0631\u0647\u0627\u06cc_\u0627\u0632\u067e\u06cc\u0634_\u06a9\u0634\u06cc\u062f\u0647_\u0648_\u0639\u062f\u062f\u0647\u0627\u06cc\u0634\u0627\u0646",
       "docs_labeling_guide_readme_fa_\u06cc\u0627\u062f\u062f\u0627\u0634\u062a_\u0647\u0627"
     ],
-    "23": [
+    "24": [
       "readme",
       "readme_commit_messages",
       "readme_data",
@@ -727,7 +758,19 @@
       "readme_setup",
       "readme_status_phase_0_done_phase_1_under_way"
     ],
-    "24": [
+    "25": [
+      "docs_detector_alternatives_constraints",
+      "docs_detector_alternatives_detector_alternatives_the_knobs_we_deliberately_left_reachable",
+      "docs_detector_alternatives_first_three_things_the_roadmap_s_phrasing_hides",
+      "docs_detector_alternatives_open_vocabulary_detection_yoloe_26_as_a_third_candidate",
+      "docs_detector_alternatives_sources",
+      "docs_detector_alternatives_the_candidates",
+      "docs_detector_alternatives_the_landscape_and_why_it_moved",
+      "docs_detector_alternatives_the_shortcut_we_should_try_before_training_anything",
+      "docs_detector_alternatives_what_this_actually_requires_of_phase_1",
+      "docs_detector_alternatives_where_it_fits_strongest_first"
+    ],
+    "26": [
       "docs_labeling_guide_readme_before_you_submit",
       "docs_labeling_guide_readme_class_names",
       "docs_labeling_guide_readme_edge_cases",
@@ -739,7 +782,7 @@
       "docs_labeling_guide_readme_the_three_photo_fields_from_2026_09_28",
       "docs_labeling_guide_readme_what_to_box"
     ],
-    "25": [
+    "27": [
       "docs_dataset_preparation",
       "docs_dataset_preparation_1_data_collection",
       "docs_dataset_preparation_2_organization_initial_preprocessing",
@@ -750,7 +793,7 @@
       "docs_dataset_preparation_dataset_preparation",
       "docs_dataset_preparation_recommended_tooling"
     ],
-    "26": [
+    "28": [
       "docs_issue_faces_not_objects_1_the_problem",
       "docs_issue_faces_not_objects_2_what_a_face_is",
       "docs_issue_faces_not_objects_3_where_the_plan_goes_wrong_today",
@@ -761,7 +804,7 @@
       "docs_issue_faces_not_objects_8_where_this_is_written_down",
       "docs_issue_faces_not_objects_issue_count_faces_not_every_object"
     ],
-    "27": [
+    "29": [
       "docs_reports_2026_09_28_test_set_label_review",
       "docs_reports_2026_09_28_test_set_label_review_1_name_the_unnamed_cans_and_glass_bottles",
       "docs_reports_2026_09_28_test_set_label_review_2_small_fixes",
@@ -772,7 +815,7 @@
       "docs_reports_2026_09_28_test_set_label_review_to_do_in_order",
       "docs_reports_2026_09_28_test_set_label_review_verdict_labels_not_final_yet"
     ],
-    "28": [
+    "30": [
       "docs_vault_home",
       "docs_vault_home_apps_server",
       "docs_vault_home_db_server",
@@ -783,7 +826,7 @@
       "docs_vault_home_status_2026_09_28_superseded",
       "docs_vault_home_status_2026_09_30"
     ],
-    "29": [
+    "31": [
       "pymongo",
       "pymongo_errors",
       "scripts_verify_atpg_claims",
@@ -794,7 +837,7 @@
       "scripts_verify_atpg_claims_rationale_40",
       "scripts_verify_atpg_claims_row"
     ],
-    "30": [
+    "32": [
       "scripts_deploy_label_studio",
       "scripts_deploy_label_studio_dest",
       "scripts_deploy_label_studio_die",
@@ -805,7 +848,7 @@
       "scripts_deploy_label_studio_step",
       "scripts_deploy_label_studio_warn"
     ],
-    "31": [
+    "33": [
       "claude",
       "claude_architecture_notes",
       "claude_claude_md",
@@ -815,17 +858,8 @@
       "claude_project_state",
       "claude_taxonomy_labels_categories_scope"
     ],
-    "32": [
-      "docs_reports_2026_09_27_detector_step_zero",
-      "docs_reports_2026_09_27_detector_step_zero_1_what_was_done",
-      "docs_reports_2026_09_27_detector_step_zero_2_measured_results_no_ground_truth_yet",
-      "docs_reports_2026_09_27_detector_step_zero_3_visual_review_of_the_overlays",
-      "docs_reports_2026_09_27_detector_step_zero_4_interpretation",
-      "docs_reports_2026_09_27_detector_step_zero_5_limitations",
-      "docs_reports_2026_09_27_detector_step_zero_6_next_steps",
-      "docs_reports_2026_09_27_detector_step_zero_detector_step_zero_report_and_evaluation_plan"
-    ],
-    "33": [
+    "34": [
+      "docs_detector_alternatives",
       "docs_error_analysis",
       "docs_issue_faces_not_objects",
       "docs_labeling_guide_readme",
@@ -834,20 +868,13 @@
       "docs_pilot",
       "docs_roadmap"
     ],
-    "34": [
+    "35": [
       "docs_phase0_remaining",
       "docs_phase0_remaining_1_fix_the_test_set",
       "docs_phase0_remaining_2_data_quality",
       "docs_phase0_remaining_3_blocked_on_the_business",
       "docs_phase0_remaining_4_then_phase_1",
       "docs_phase0_remaining_phase_0_what_is_left"
-    ],
-    "35": [
-      "docs_reports_2026_09_27_detector_step_zero_7_evaluation_metrics",
-      "docs_reports_2026_09_27_detector_step_zero_business_output",
-      "docs_reports_2026_09_27_detector_step_zero_operational",
-      "docs_reports_2026_09_27_detector_step_zero_stage_1_detector_finds_every_face",
-      "docs_reports_2026_09_27_detector_step_zero_stage_2_identifier_names_each_box"
     ],
     "36": [
       "docs_requests",
@@ -892,55 +919,55 @@
       "scripts_sync_to_hemin_sh__entry"
     ],
     "45": [
-      "fixture"
-    ],
-    "46": [
       "pkg_face_counter"
     ],
-    "47": [
+    "46": [
       "scripts_make_gallery_folders_py_path"
     ],
-    "48": [
+    "47": [
       "src_face_counter_serving_init"
+    ],
+    "48": [
+      "tests_test_phase0_py_fixture"
     ]
   },
   "cohesion": {
     "0": 0.05004389815627744,
-    "1": 0.05704365079365079,
-    "2": 0.05656565656565657,
-    "3": 0.07342995169082125,
-    "4": 0.07641196013289037,
-    "5": 0.1214574898785425,
-    "6": 0.08708708708708708,
-    "7": 0.07575757575757576,
-    "8": 0.06666666666666667,
-    "9": 0.13054187192118227,
-    "10": 0.07142857142857142,
-    "11": 0.11076923076923077,
-    "12": 0.08923076923076922,
-    "13": 0.1,
-    "14": 0.22807017543859648,
-    "15": 0.1695906432748538,
-    "16": 0.14285714285714285,
-    "17": 0.15384615384615385,
-    "18": 0.16666666666666666,
-    "19": 0.16666666666666666,
+    "1": 0.05727644652250146,
+    "2": 0.06567992599444958,
+    "3": 0.07399577167019028,
+    "4": 0.07822410147991543,
+    "5": 0.08013937282229965,
+    "6": 0.12660028449502134,
+    "7": 0.07308377896613191,
+    "8": 0.11895161290322581,
+    "9": 0.06666666666666667,
+    "10": 0.13054187192118227,
+    "11": 0.07142857142857142,
+    "12": 0.11076923076923077,
+    "13": 0.08923076923076922,
+    "14": 0.1976284584980237,
+    "15": 0.1,
+    "16": 0.1695906432748538,
+    "17": 0.14285714285714285,
+    "18": 0.15384615384615385,
+    "19": 0.15384615384615385,
     "20": 0.16666666666666666,
-    "21": 0.18181818181818182,
-    "22": 0.18181818181818182,
+    "21": 0.16666666666666666,
+    "22": 0.16666666666666666,
     "23": 0.18181818181818182,
-    "24": 0.2,
-    "25": 0.2222222222222222,
-    "26": 0.2222222222222222,
+    "24": 0.18181818181818182,
+    "25": 0.2,
+    "26": 0.2,
     "27": 0.2222222222222222,
     "28": 0.2222222222222222,
-    "29": 0.2777777777777778,
-    "30": 0.3888888888888889,
-    "31": 0.25,
-    "32": 0.25,
-    "33": 0.5714285714285714,
-    "34": 0.3333333333333333,
-    "35": 0.4,
+    "29": 0.2222222222222222,
+    "30": 0.2222222222222222,
+    "31": 0.2777777777777778,
+    "32": 0.3888888888888889,
+    "33": 0.25,
+    "34": 0.5,
+    "35": 0.3333333333333333,
     "36": 0.4,
     "37": 0.6666666666666666,
     "38": 0.6666666666666666,
@@ -977,14 +1004,14 @@
       "degree": 12
     },
     {
-      "id": "docs_roadmap_shelf_detector_roadmap",
-      "label": "Shelf Detector Roadmap",
+      "id": "tests_test_phase0_cfg",
+      "label": "_cfg()",
       "degree": 12
     },
     {
-      "id": "src_face_counter_training_export_photos_export",
-      "label": "export()",
-      "degree": 11
+      "id": "docs_roadmap_shelf_detector_roadmap",
+      "label": "Shelf Detector Roadmap",
+      "degree": 12
     },
     {
       "id": "src_face_counter_evaluation_share_evaluate",
@@ -992,13 +1019,13 @@
       "degree": 11
     },
     {
-      "id": "tests_test_evaluation_taxonomy",
-      "label": "_taxonomy()",
+      "id": "src_face_counter_training_export_photos_export",
+      "label": "export()",
       "degree": 11
     },
     {
-      "id": "tests_test_phase0_cfg",
-      "label": "_cfg()",
+      "id": "tests_test_evaluation_taxonomy",
+      "label": "_taxonomy()",
       "degree": 11
     },
     {
@@ -1042,21 +1069,21 @@
       "why": "inferred connection - not explicitly stated in source; crosses file types (code \u2194 doc); connects across different repos/directories; bridges separate communities"
     },
     {
-      "source": "1405/07/07 (2026-09-29) \u2014 the Persian font finally renders",
-      "target": "labeling_config()",
-      "source_files": [
-        "LOGS.md",
-        "src/face_counter/label_studio/prepare_label_studio.py"
-      ],
-      "confidence": "INFERRED",
-      "relation": "references",
-      "why": "inferred connection - not explicitly stated in source; crosses file types (code \u2194 doc); connects across different repos/directories; peripheral node `1405/07/07 (2026-09-29) \u2014 the Persian font finally renders` unexpectedly reaches hub `labeling_config()`"
-    },
-    {
       "source": "To do, in order",
       "target": "diverse_sample()",
       "source_files": [
         "docs/PILOT.md",
+        "src/face_counter/label_studio/make_splits.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "references",
+      "why": "inferred connection - not explicitly stated in source; crosses file types (code \u2194 doc); connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "Done",
+      "target": "group_key()",
+      "source_files": [
+        "docs/PHASE0_REMAINING.md",
         "src/face_counter/label_studio/make_splits.py"
       ],
       "confidence": "INFERRED",
