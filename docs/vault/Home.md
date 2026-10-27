@@ -10,9 +10,29 @@
   [[ADR-0002 Pack-type stage off by default]],
   [[ADR-0003 Async intake and pull workers (proposed)]]
 - Debt: [[Open issues (serving)]]
-- Findings: [[2026-10-10 Serving investigation]] (every measured number from the serving work)
+- Findings: [[2026-10-10 Serving investigation]] (every measured number from the serving work),
+  [[2026-10-26 Training batch labeling status]], [[2026-10-26 Best-practice audit]],
+  [[2026-10-26 Audit sources]], [[2026-10-27 Candidate model survey]]
 
-## Status (2026-10-11)
+## Status (2026-10-27)
+
+- Labeling: 337 annotations on 332 of 1,250 photos by 27 Oct 06:00; 15
+  zero-edit, 4 duplicates. Day-by-day table in the labeling-status note.
+- Audit and model survey done; next experiments ranked (Cat2Real drop-in
+  first). Plan tasks T9-T13. Reports in `docs/reports/2026-10-27_*`.
+- Next session on the GPU PC: setup checks, backup, then T11/T9/T12.
+
+## Status (2026-10-26, superseded)
+
+- **Training-batch labeling started** (PILOT 6b): projects `pilot-batch-01`..`05`
+  (ids 6-10), 232/1,250 submitted, three labelers plus the owner. Quality below the test set;
+  14 zero-edit submissions and a few double annotations to fix before round 1.
+  See [[2026-10-26 Training batch labeling status]].
+- Pilot ~65% complete, roadmap ~25%. The blocker for the pilot's number is
+  brand identity (65.3% on gold), not detection or serving.
+- Demo path unchanged: next is T8 prep, then #6, T7, T7b.
+
+## Status (2026-10-11, superseded)
 
 - **T8a done:** demo upload page at `GET /` — file picker, sends `POST /overlay`
   with the API key embedded, returns the boxed photo. HTTP Basic Auth on `/`
